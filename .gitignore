@@ -1,0 +1,6 @@
+# Archivos de entorno (evita que se suban)
+.env
+.env.local
+.env*.local
+
+node_modules
