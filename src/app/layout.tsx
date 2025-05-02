@@ -1,7 +1,7 @@
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import type { Metadata } from 'next';
-
+import { Providers } from '@/app/providers/Providers'; // CORREGIDO aquí
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,15 +20,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${inter.variable} ${robotoMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="es">
+      <body className={`${inter.variable} ${robotoMono.variable}`}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

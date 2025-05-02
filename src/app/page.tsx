@@ -1,54 +1,54 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-
 import Panel from '@/app/components/Panel';
 import Leads from '@/app/components/Leads';
 import Settings from '@/app/components/Settings';
 import Messagess from '@/app/components/Messagess';
-import Marketing from '@/app/components/marketing';
+import Marketing from '@/app/components/Marketing';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Panelcontrol');
-  const router = useRouter();
-
+  
   const renderContent = () => {
     switch (activeTab) {
-      case 'Panelcontrol':
-        return <Panel />;
-      case 'Mensajes':
-        return <Messagess />;
-      case 'Leads':
-        return <Leads />;
-      case 'Ajustes':
-        return <Settings />;
-      case 'Marketing':
-        return <Marketing />;
-      default:
-        return <Panel />;
+      case 'Panelcontrol': return <Panel />;
+      case 'Mensajes': return <Messagess />;
+      case 'Leads': return <Leads />;
+      case 'Ajustes': return <Settings />;
+      case 'Marketing': return <Marketing />;
+      default: return <Panel />;
     }
   };
 
-  
-
   return (
     <div className="flex min-h-screen">
-      <div className="w-64 bg-grey text-black p-4 flex flex-col justify-between">
-        {/* Menú lateral */}
-        <div className="flex flex-col space-y-4">
-          <div className="text-2xl font-bold mb-4">📊 Bdatam CRM</div>
-          <button onClick={() => setActiveTab('Panelcontrol')} className="p-2 rounded hover:bg-blue-800 text-left">Panel de control</button>
-          <button onClick={() => setActiveTab('Mensajes')} className="p-2 rounded hover:bg-blue-800 text-left">Mensajes</button>
-          <button onClick={() => setActiveTab('Leads')} className="p-2 rounded hover:bg-blue-800 text-left">Leads</button>
-          <button onClick={() => setActiveTab('Ajustes')} className="p-2 rounded hover:bg-blue-800 text-left">Ajustes</button>
-          <button onClick={() => setActiveTab('Marketing')} className="p-2 rounded hover:bg-blue-800 text-left">Marketing</button>
-        </div>
-
-        
+      {/* Menú lateral fijo */}
+      <div className="w-64 bg-gray-800 text-white p-4 flex flex-col">
+        <div className="text-2xl font-bold mb-6 p-2">📊 Bdatam CRM</div>
+        <nav className="flex-1 space-y-2">
+          {[
+            { name: 'Panelcontrol', label: 'Panel de control' },
+            { name: 'Mensajes', label: 'Mensajes' },
+            { name: 'Leads', label: 'Leads' },
+            { name: 'Ajustes', label: 'Ajustes' },
+            { name: 'Marketing', label: 'Marketing' }
+          ].map((item) => (
+            <button
+              key={item.name}
+              onClick={() => setActiveTab(item.name)}
+              className={`w-full text-left p-3 rounded-lg transition-colors ${
+                activeTab === item.name ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      <main className="flex-1 p-6 bg-gray-100 text-black">
+      {/* Área de contenido principal */}
+      <main className="flex-1 overflow-auto bg-gray-50">
         {renderContent()}
       </main>
     </div>

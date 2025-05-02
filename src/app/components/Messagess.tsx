@@ -1,63 +1,219 @@
-import React, { useState } from 'react';
-import { Send, Paperclip, Smile } from 'lucide-react';
+'use client';
+import { useCallback, useMemo, useState, memo, ChangeEvent } from 'react';
+import WhatsAppChat from '@/app/components/whatsapp/WhatsAppChat';
+import Input from '@/app/components/ui/Input';
+import { Loader2, Search, ArrowLeft, MoreVertical, Frown, Smile, RefreshCw, Settings } from 'lucide-react';
+import { useWhatsApp } from '@/app/providers/WhatsAppProvider';
+import { cn } from '@/lib/utils';
+import Button from '@/app/components/ui/Button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/app/components/ui/dropdown-menu'; // ← FIX aquí
 
-const messagesData = [
-    { id: 1, sender: 'John', text: 'Hola, ¿cómo estás?', time: '10:30 AM' },
-    { id: 2, sender: 'Me', text: '¡Hola! Todo bien, ¿y tú?', time: '10:32 AM' },
-    { id: 3, sender: 'John', text: 'Bien también, gracias.', time: '10:34 AM' }
-];
+interface MessagessProps {
+  initialContact?: string;
+}
 
-const Messages = () => {
-    const [messages, setMessages] = useState(messagesData);
-    const [input, setInput] = useState('');
+// 🔍 Diagnóstico de tipos en consola
+console.log('DropdownMenu:', typeof DropdownMenu);
+console.log('DropdownMenuTrigger:', typeof DropdownMenuTrigger);
+console.log('DropdownMenuContent:', typeof DropdownMenuContent);
+console.log('DropdownMenuItem:', typeof DropdownMenuItem);
+console.log('WhatsAppChat:', typeof WhatsAppChat);
+console.log('Input:', typeof Input);
+console.log('Button:', typeof Button);
 
-    const sendMessage = () => {
-        if (input.trim() === '') return;
-        const newMessage = { id: messages.length + 1, sender: 'Me', text: input, time: 'Ahora' };
-        setMessages([...messages, newMessage]);
-        setInput('');
-    };
+export default function Messagess({ initialContact }: MessagessProps) {
+  const {
+    contacts,
+    selectedContact,
+    messages,
+    loading,
+    error,
+    selectContact,
+    sendMessage,
+    refreshContacts,
+  } = useWhatsApp();
 
-    return (
-        <div className="flex h-screen bg-gray-100">
-            {/* Lista de conversaciones */}
-            <div className="w-1/3 bg-white border-r p-4">
-                <h2 className="text-lg font-bold mb-4">Mensajes</h2>
-                <ul>
-                    <li className="p-3 bg-gray-200 rounded-lg cursor-pointer">John Doe</li>
-                </ul>
-            </div>
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-            {/* Chat principal */}
-            <div className="flex-1 flex flex-col">
-                {/* Encabezado del chat */}
-                <div className="p-4 bg-white border-b font-bold">John Doe</div>
-
-                {/* Mensajes */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-2">
-                    {messages.map((msg) => (
-                        <div key={msg.id} className={`flex ${msg.sender === 'Me' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`p-3 rounded-lg ${msg.sender === 'Me' ? 'bg-blue-500 text-white' : 'bg-gray-300'} max-w-xs`}>{msg.text}</div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Entrada de mensaje */}
-                <div className="p-4 bg-white border-t flex items-center gap-2">
-                    <button className="p-2 text-gray-500 hover:text-gray-700"><Smile size={20} /></button>
-                    <button className="p-2 text-gray-500 hover:text-gray-700"><Paperclip size={20} /></button>
-                    <input 
-                        type="text" 
-                        className="flex-1 border p-2 rounded-lg" 
-                        placeholder="Escribe un mensaje..." 
-                        value={input} 
-                        onChange={(e) => setInput(e.target.value)}
-                    />
-                    <button onClick={sendMessage} className="p-2 bg-blue-500 text-white rounded-lg"><Send size={20} /></button>
-                </div>
-            </div>
-        </div>
+  const filteredContacts = useMemo(() => {
+    return contacts.filter(contact =>
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-};
+  }, [contacts, searchTerm]);
 
-export default Messages;
+  const currentContact = useMemo(() => {
+    return contacts.find(c => c.id === selectedContact);
+  }, [contacts, selectedContact]);
+
+  const handleSelectContact = useCallback((id: string) => {
+    selectContact(id);
+    setIsMobileChatOpen(true);
+  }, [selectContact]);
+
+  const handleSearchChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const handleLoadMoreMessages = useCallback(() => {
+    console.log('Cargando más mensajes...');
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    refreshContacts();
+  }, [refreshContacts]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-50">
+        <Loader2 className="animate-spin h-12 w-12 text-blue-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-gray-50 text-red-500 p-4">
+        <Frown className="h-12 w-12 mb-4" />
+        <p className="text-lg font-medium mb-2">Error al cargar conversaciones</p>
+        <p className="text-sm mb-4">{error}</p>
+        <Button variant="outline" onClick={handleRefresh}>
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-64px)] bg-gray-50">
+      <div className={cn(
+        "w-full md:w-96 flex flex-col border-r bg-white transition-all duration-300",
+        isMobileChatOpen ? "hidden md:flex" : "flex"
+      )}>
+        <div className="p-3 border-b sticky top-0 bg-white z-10">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl font-semibold">Conversaciones</h2>
+            <DropdownMenu onOpenChange={setIsMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className={cn(
+                  "rounded-full hover:bg-gray-100",
+                  isMenuOpen && "bg-gray-100"
+                )}>
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleRefresh}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <span>Actualizar</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configuración</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar contactos..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+                  </div>
+      </div>
+
+      <div className={cn(
+        "flex-1 flex flex-col bg-gray-50",
+        isMobileChatOpen ? "flex" : "hidden md:flex"
+      )}>
+        {selectedContact ? (
+          <>
+            <div className="p-3 border-b bg-white sticky top-0 z-10 flex items-center justify-between">
+              <div className="flex items-center">
+                <button 
+                  onClick={() => setIsMobileChatOpen(false)}
+                  className="md:hidden mr-2 p-1 rounded-full hover:bg-gray-100"
+                  aria-label="Volver"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {currentContact?.avatar ? (
+                        <img 
+                          src={currentContact.avatar} 
+                          alt={currentContact.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-gray-600 font-medium">
+                          {currentContact?.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    {currentContact?.isOnline && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{currentContact?.name}</h3>
+                    <p className="text-xs text-gray-500">
+                      {currentContact?.isOnline ? 'En línea' : 'Últ. vez hoy a las 14:30'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button className="p-1 rounded-full hover:bg-gray-100">
+                <MoreVertical className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <WhatsAppChat 
+                messages={messages}
+                onSendMessage={sendMessage}
+                onLoadMore={handleLoadMoreMessages}
+                selectedContact={currentContact}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+            <div className="max-w-md">
+              <Smile className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-xl font-medium text-gray-500 mb-2">
+                {isMobileChatOpen ? 'Volver a conversaciones' : 'Selecciona una conversación'}
+              </h3>
+              <p className="text-gray-400 mb-6">
+                {isMobileChatOpen ? '' : 'Elige un contacto para comenzar a chatear'}
+              </p>
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleRefresh}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Actualizar lista
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
