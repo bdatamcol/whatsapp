@@ -5,10 +5,15 @@ import { handleWebhookEvent } from '@/lib/whatsapp/whatsapp.handler';
 // GET: Para verificación inicial por Meta
 export async function GET(request: NextRequest) {
   const { valid, challenge } = verifyWebhook(request);
-  return valid 
-    ? NextResponse.json(challenge) 
-    : NextResponse.json({ error: 'Token inválido' }, { status: 403 });
+
+  return valid && challenge
+    ? new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      })
+    : new Response('Token inválido', { status: 403 });
 }
+
 
 // POST: Recibe mensajes en tiempo real
 export async function POST(request: NextRequest) {
@@ -16,3 +21,5 @@ export async function POST(request: NextRequest) {
   await handleWebhookEvent(body); // Procesa el mensaje
   return NextResponse.json({ success: true });
 }
+
+// Webhook de verificación corregido para Meta
