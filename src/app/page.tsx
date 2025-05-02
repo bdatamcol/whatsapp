@@ -5,7 +5,7 @@ import Panel from '@/app/components/Panel';
 import Leads from '@/app/components/Leads';
 import Settings from '@/app/components/Settings';
 import Messagess from '@/app/components/Messagess';
-import Marketing from '@/app/components/Marketing';
+import Marketing from '@/app/components/MarketingDashboard';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Panelcontrol');
