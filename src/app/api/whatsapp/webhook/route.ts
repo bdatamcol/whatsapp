@@ -1,25 +1,75 @@
+// app/api/whatsapp/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyWebhook } from '@/app/middlewares/whatsapp/whatsapp.verification';
-import { handleWebhookEvent } from '@/lib/whatsapp/whatsapp.handler';
 
-// GET: Para verificación inicial por Meta
+
+
 export async function GET(request: NextRequest) {
-  const { valid, challenge } = verifyWebhook(request);
+  // 1. Manejo de redirección www -> non-www
+  const url = new URL(request.url);
+  if (url.hostname.startsWith('www.')) {
+    const newUrl = url.toString().replace('//www.', '//');
+    return NextResponse.redirect(newUrl, 301);
+  }
 
-  return valid && challenge
-    ? new Response(challenge, {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain' },
-      })
-    : new Response('Token inválido', { status: 403 });
+  // 2. Verificación del token
+  const token = request.nextUrl.searchParams.get('hub.verify_token');
+  const expectedToken = process.env.WHATSAPP_WEBHOOK_TOKEN;
+
+  console.log('[WEBHOOK] Token recibido:', token);
+  console.log('[WEBHOOK] Token esperado:', expectedToken);
+
+  if (token === expectedToken) {
+    const challenge = request.nextUrl.searchParams.get('hub.challenge');
+    console.log('[WEBHOOK] Verificación exitosa, retornando challenge');
+    return new Response(challenge, { 
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain',
+        'Cache-Control': 'no-store'
+      }
+    });
+  }
+
+  console.error('[WEBHOOK] Error: Token inválido');
+  return new Response('Token inválido', { 
+    status: 403,
+    headers: {
+      'Content-Type': 'text/plain'
+    }
+  });
 }
 
-
-// POST: Recibe mensajes en tiempo real
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  await handleWebhookEvent(body); // Procesa el mensaje
-  return NextResponse.json({ success: true });
-}
+  try {
+    // 1. Manejo de redirección www -> non-www
+    const url = new URL(request.url);
+    if (url.hostname.startsWith('www.')) {
+      const newUrl = url.toString().replace('//www.', '//');
+      return NextResponse.redirect(newUrl, 307);
+    }
 
-// Webhook de verificación corregido para Meta
+    // 2. Procesamiento de mensajes
+    const body = await request.json();
+    console.log('[WEBHOOK] Mensaje recibido:', JSON.stringify(body, null, 2));
+
+    // Aquí añade tu lógica para manejar los mensajes
+    // Ejemplo básico:
+    if (body.object === 'whatsapp_business_account') {
+      const entries = body.entry;
+      for (const entry of entries) {
+        // Procesa cada entrada
+      }
+    }
+
+    return NextResponse.json(
+      { success: true },
+      { status: 200, headers: { 'Cache-Control': 'no-store' } }
+    );
+  } catch (error) {
+    console.error('[WEBHOOK] Error procesando mensaje:', error);
+    return NextResponse.json(
+      { success: false, error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
