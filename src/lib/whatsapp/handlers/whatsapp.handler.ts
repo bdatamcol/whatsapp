@@ -26,3 +26,4 @@ export async function handleWebhookEvent(payload: any) {
     throw error;
   }
 }
+
