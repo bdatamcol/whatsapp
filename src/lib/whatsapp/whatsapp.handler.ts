@@ -1,29 +1,28 @@
 import { WebhookService } from '@/app/api/whatsapp/webhook/webhook.service';
-const { WhatsAppClient } = require('@/lib/whatsapp/whatsapp.client');
-/**
- * Procesa eventos entrantes del webhook de WhatsApp
- * Documentación oficial: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks
- */
+
 export async function handleWebhookEvent(payload: any) {
-  const service = new WebhookService();
-  const client = new WhatsAppClient();
+  console.log('[WEBHOOK] Iniciando procesamiento');
 
-  // Verificar si es un mensaje válido
-  if (payload.object !== 'whatsapp_business_account') return;
+  // 1. Validación básica del payload
+  if (!payload || payload.object !== 'whatsapp_business_account') {
+    console.error('[WEBHOOK] Payload inválido');
+    return;
+  }
 
-  const entry = payload.entry?.[0];
-  const changes = entry?.changes?.[0];
-  const message = changes?.value?.messages?.[0];
+  try {
+    const service = new WebhookService();
+    const entry = payload.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const message = changes?.value?.messages?.[0];
 
-  if (message) {
-    await service.processMessage(message);
-    
-    // Auto-respuesta ejemplo (opcional)
-    if (message.type === 'text') {
-      await client.sendText(
-        message.from, 
-        `Recibimos tu mensaje: "${message.text?.body}"`
-      );
+    if (message) {
+      console.log('[WEBHOOK] Mensaje detectado:', message.type);
+      await service.processMessage(message);
+    } else {
+      console.log('[WEBHOOK] Evento sin mensaje:', changes?.value);
     }
+  } catch (error) {
+    console.error('[WEBHOOK] Error procesando mensaje:', error);
+    throw error;
   }
 }
