@@ -1,8 +1,7 @@
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import type { Metadata } from 'next';
-import { Providers } from '@/app/providers/Providers'; // CORREGIDO aquí
-
+import { Providers } from '@/app/providers/Providers';   
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],

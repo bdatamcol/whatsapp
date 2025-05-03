@@ -28,6 +28,13 @@
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/marketing/insights/route-e31f98c9ae60c9da.js"
     ],
+    "/api/whatsapp/contacts/route": [
+      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
+      "static/chunks/684-ec48f98a8f9dc675.js",
+      "static/chunks/main-app-ae11710d9e5e429c.js",
+      "static/chunks/app/api/whatsapp/contacts/route-9b20f8b772e5d275.js"
+    ],
     "/api/whatsapp/deleteMessage/route": [
       "static/chunks/webpack-923da62b5a835d14.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
@@ -41,13 +48,6 @@
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/deleteMessage/updateMessages/route-e1173c882f0787ea.js"
-    ],
-    "/api/whatsapp/contacts/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/contacts/route-9b20f8b772e5d275.js"
     ],
     "/api/whatsapp/getMessages/route": [
       "static/chunks/webpack-923da62b5a835d14.js",
@@ -63,12 +63,12 @@
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/messagess/route-da5901a740aa63df.js"
     ],
-    "/api/whatsapp/webhook/route": [
+    "/api/whatsapp/sendMessage/route": [
       "static/chunks/webpack-923da62b5a835d14.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/webhook/route-17a17c2f3164f65e.js"
+      "static/chunks/app/api/whatsapp/sendMessage/route-d2554338d9203859.js"
     ],
     "/api/whatsapp/templates/route": [
       "static/chunks/webpack-923da62b5a835d14.js",
@@ -77,20 +77,20 @@
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/templates/route-bd99e58203e27461.js"
     ],
+    "/api/whatsapp/webhook/route": [
+      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
+      "static/chunks/684-ec48f98a8f9dc675.js",
+      "static/chunks/main-app-ae11710d9e5e429c.js",
+      "static/chunks/app/api/whatsapp/webhook/route-17a17c2f3164f65e.js"
+    ],
     "/layout": [
       "static/chunks/webpack-923da62b5a835d14.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/css/b61c4bc974f2677d.css",
+      "static/css/64edef332664b11e.css",
       "static/chunks/app/layout-9814541837e6a790.js"
-    ],
-    "/api/whatsapp/sendMessage/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/sendMessage/route-d2554338d9203859.js"
     ],
     "/api/marketing/account/route": [
       "static/chunks/webpack-923da62b5a835d14.js",
@@ -105,7 +105,7 @@
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/510-d481cd4eb46a3094.js",
-      "static/chunks/app/page-a0635f87ebffa26c.js"
+      "static/chunks/app/page-0cbb39d80cef2faf.js"
     ]
   }
 }

@@ -15,15 +15,17 @@ interface Form {
   [key: string]: any;
 }
 
-interface Lead {
-  created_time: string;
-  field_data?: Array<{
-    name: string;
-    values: string[];
-  }>;
-  [key: string]: any;
+interface LeadField {
+  name: string;
+  values: string[];
 }
 
+interface Lead {
+  created_time: string;
+  field_data?: LeadField[];
+  id?: string;
+  // otras propiedades conocidas
+}
 export default function Leads() {
   const [pages, setPages] = useState<Page[]>([]);
   const [pageId, setPageId] = useState('');

@@ -18,7 +18,7 @@ export async function DELETE(request: Request) {
     }
 
     return NextResponse.json({ message: 'Mensaje eliminado exitosamente.' });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Error al eliminar el mensaje.' }, { status: 500 });
   }
 }

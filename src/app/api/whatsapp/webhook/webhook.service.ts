@@ -1,7 +1,7 @@
 // src/app/api/whatsapp/webhook/webhook.service.ts
 import WhatsAppClient from '@/lib/whatsapp/whatsapp.client';
-import { parseIncomingMessage } from '@/lib/parsers/message.parser';
-import { saveMessageToDatabase } from '@/lib/database/message-repository';
+import { parseIncomingMessage } from '@/app/middlewares/whatsapp/message.parser';
+import { saveMessageToDatabase } from '@/lib/whatsapp/database/message-repository';
 import { IncomingMessage } from '@/types/whatsapp.d';
 
 export class WebhookService {

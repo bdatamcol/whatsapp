@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useMemo, useState, memo, ChangeEvent } from 'react';
 import WhatsAppChat from '@/app/components/whatsapp/WhatsAppChat';
+import WhatsAppContactList from '@/app/components/whatsapp/WhatsAppContactList';
 import Input from '@/app/components/ui/Input';
 import { Loader2, Search, ArrowLeft, MoreVertical, Frown, Smile, RefreshCw, Settings } from 'lucide-react';
 import { useWhatsApp } from '@/app/providers/WhatsAppProvider';
@@ -17,14 +18,6 @@ interface MessagessProps {
   initialContact?: string;
 }
 
-// 🔍 Diagnóstico de tipos en consola
-console.log('DropdownMenu:', typeof DropdownMenu);
-console.log('DropdownMenuTrigger:', typeof DropdownMenuTrigger);
-console.log('DropdownMenuContent:', typeof DropdownMenuContent);
-console.log('DropdownMenuItem:', typeof DropdownMenuItem);
-console.log('WhatsAppChat:', typeof WhatsAppChat);
-console.log('Input:', typeof Input);
-console.log('Button:', typeof Button);
 
 export default function Messagess({ initialContact }: MessagessProps) {
   const {
@@ -133,7 +126,12 @@ export default function Messagess({ initialContact }: MessagessProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-                  </div>
+          <WhatsAppContactList 
+            contacts={filteredContacts}
+            selectedContact={selectedContact}
+            onSelectContact={handleSelectContact}
+          />
+        </div>
       </div>
 
       <div className={cn(

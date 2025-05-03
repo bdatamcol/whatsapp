@@ -7,7 +7,7 @@ export async function GET() {
     const messages = await db.collection('messages').find().toArray();
 
     return NextResponse.json({ messages });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Error al obtener los mensajes.' }, { status: 500 });
   }
 }

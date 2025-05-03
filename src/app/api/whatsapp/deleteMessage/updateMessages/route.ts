@@ -21,7 +21,7 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ message: 'Mensaje actualizado exitosamente.' });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Error al actualizar el mensaje.' }, { status: 500 });
   }
 }

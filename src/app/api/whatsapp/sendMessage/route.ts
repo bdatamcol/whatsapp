@@ -1,18 +1,26 @@
+// src/app/api/whatsapp/send/route.ts
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/app/utils/mongodb';
-import { errorHandler } from '@/app/middlewares/errorHandler';
-import { logger } from '@/app/utils/logger';
-import { validateMessageData } from '@/app/utils/validator';
 
-export const POST = errorHandler(async (request: Request) => {
-  logger.info('Solicitud recibida para enviar mensaje.');
-  const { db } = await connectToDatabase();
+export async function POST(request: Request) {
+  const { phone, message } = await request.json();
 
-  const data = await request.json();
-  validateMessageData(data);
+  const response = await fetch(
+    `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: phone, // Número destino (ej: "+51987654321")
+        type: "text",
+        text: { body: message },
+      }),
+    }
+  );
 
-  const result = await db.collection('messages').insertOne(data);
-
-  logger.info('Mensaje guardado exitosamente.');
-  return NextResponse.json({ message: 'Mensaje guardado exitosamente.', id: result.insertedId });
-});
+  const data = await response.json();
+  return NextResponse.json(data);
+}

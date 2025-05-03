@@ -1,6 +1,7 @@
-import { WebhookService } from '@/lib/whatsapp/services/webhook.service';
+import { WebhookService } from '@/app/api/whatsapp/webhook/webhook.service';
 
 export async function handleWebhookEvent(payload: any) {
+  const service = new WebhookService();
   console.log('[WEBHOOK] Iniciando procesamiento');
 
   // 1. Validación básica del payload

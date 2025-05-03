@@ -1,7 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
-import passport from './middlewares/passportConfig';
+import passport from '@/app/middlewares/passportConfig';
 import dotenv from 'dotenv';
 
 dotenv.config();

@@ -15,7 +15,11 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.json({ ok: false, error: 'Debes enviar pageId o formId' });
     }
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ ok: false, error: error.message });
+    }
+    return NextResponse.json({ ok: false, error: 'Error desconocido' });
   }
+  
 }

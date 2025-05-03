@@ -1,4 +1,36 @@
 // Tipos base para WhatsApp
+// Tipos extendidos para la base de datos
+export interface DatabaseMessage extends Message {
+  _id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Tipos para el parser
+export interface RawIncomingMessage {
+  id: string;
+  from: string;
+  timestamp: string;
+  type: string;
+  text?: {
+    body: string;
+  };
+  image?: {
+    url: string;
+    caption?: string;
+  };
+  video?: {
+    url: string;
+    caption?: string;
+  };
+  document?: {
+    url: string;
+    caption?: string;
+    filename: string;
+  };
+  // ... otros tipos de media
+}
+
 export interface Contact {
   id: string;
   name: string;
