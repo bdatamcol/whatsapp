@@ -1,7 +1,10 @@
+// app/providers/WhatsAppProvider.tsx
 'use client';
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import WhatsAppClient from '@/lib/whatsapp/whatsapp.client';
 import { Contact, Message } from '@/types/whatsapp.d';
+import io  from 'socket.io-client';
 
 interface WhatsAppState {
   contacts: Contact[];
@@ -18,7 +21,6 @@ interface WhatsAppContextType extends WhatsAppState {
   loadMoreMessages: () => Promise<void>;
 }
 
-
 const WhatsAppContext = createContext<WhatsAppContextType | undefined>(undefined);
 
 export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) => {
@@ -32,7 +34,22 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
 
   const whatsapp = new WhatsAppClient();
 
-  // 1. Carga contactos desde tu API (reemplaza el mock)
+  // Conexión con Socket.io para actualización en tiempo real
+  useEffect(() => {
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
+    
+    socket.on('newMessage', (newMessage) => {
+      setState(prev => ({
+        ...prev,
+        messages: [...prev.messages, newMessage]
+      }));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   const loadContacts = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
@@ -45,15 +62,12 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }, []);
 
-  // 2. Envía mensajes usando WhatsAppClient
   const sendMessage = useCallback(async (message: string) => {
     if (!state.selectedContact || !message.trim()) return;
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      // Usa el cliente para enviar el mensaje
       await whatsapp.sendText(state.selectedContact, message);
       
-      // Actualiza el estado local
       const newMsg: Message = {
         id: Date.now().toString(),
         text: message,
@@ -61,6 +75,7 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
         direction: 'outbound',
         status: 'sent'
       };
+      
       setState(prev => ({
         ...prev,
         messages: [...prev.messages, newMsg],
@@ -71,7 +86,6 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }, [state.selectedContact]);
 
-  // 3. Selecciona un contacto y carga sus mensajes
   const selectContact = useCallback(async (phone: string) => {
     setState(prev => ({ ...prev, selectedContact: phone, loading: true, error: null }));
     try {
@@ -84,7 +98,6 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }, []);
 
-  // 4. Carga más mensajes antiguos (paginación)
   const loadMoreMessages = useCallback(async () => {
     if (!state.selectedContact) return;
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -104,7 +117,6 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }, [state.selectedContact, state.messages]);
 
-  // Carga inicial de contactos
   useEffect(() => {
     loadContacts();
   }, [loadContacts]);

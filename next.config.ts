@@ -11,18 +11,41 @@ const nextConfig: NextConfig = {
   env: {
     WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
     WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
+    NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL
   },
   webpack: (config) => {
-    // Configuración de aliases para resolver los paths correctamente
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, 'src'),
-      '@/lib': path.resolve(__dirname, 'src/lib'),
+      '@/lib': path.resolve(__dirname, 'src/lib')
     };
+    
+    // Configuración necesaria para socket.io-client en el frontend
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      net: false,
+      tls: false,
+      dns: false,
+      fs: false,
+      child_process: false
+    };
+    
     return config;
   },
-  // Opcional: Configuración para transpilar módulos necesarios
-  transpilePackages: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+  // Configuración para API routes
+  async headers() {
+    return [{
+      source: '/api/:path*',
+      headers: [
+        { key: 'Access-Control-Allow-Origin', value: '*' }
+      ]
+    }];
+  },
+  transpilePackages: [
+    '@radix-ui/react-dialog',
+    '@radix-ui/react-dropdown-menu',
+    'socket.io-client'
+  ]
 };
 
 export default nextConfig;
