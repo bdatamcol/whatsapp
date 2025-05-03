@@ -1,0 +1,17 @@
+{
+  "/api/leads/route": "/api/leads",
+  "/api/marketing/ads/route": "/api/marketing/ads",
+  "/api/marketing/insights/route": "/api/marketing/insights",
+  "/api/whatsapp/deleteMessage/route": "/api/whatsapp/deleteMessage",
+  "/api/whatsapp/deleteMessage/updateMessages/route": "/api/whatsapp/deleteMessage/updateMessages",
+  "/api/whatsapp/contacts/route": "/api/whatsapp/contacts",
+  "/api/whatsapp/getMessages/route": "/api/whatsapp/getMessages",
+  "/api/whatsapp/messagess/route": "/api/whatsapp/messagess",
+  "/api/whatsapp/webhook/route": "/api/whatsapp/webhook",
+  "/api/whatsapp/templates/route": "/api/whatsapp/templates",
+  "/_not-found/page": "/_not-found",
+  "/favicon.ico/route": "/favicon.ico",
+  "/api/whatsapp/sendMessage/route": "/api/whatsapp/sendMessage",
+  "/api/marketing/account/route": "/api/marketing/account",
+  "/page": "/"
+}
