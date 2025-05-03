@@ -1,74 +1,36 @@
-// app/api/whatsapp/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
+// Token de verificación (DEBE coincidir con el de Meta)
+const VERIFY_TOKEN = 'MTT0K3N123'; 
 
-
+// GET: Verificación del webhook por Meta
 export async function GET(request: NextRequest) {
-  // 1. Manejo de redirección www -> non-www
   const url = new URL(request.url);
-  if (url.hostname.startsWith('www.')) {
-    const newUrl = url.toString().replace('//www.', '//');
-    return NextResponse.redirect(newUrl, 301);
-  }
+  const token = url.searchParams.get('hub.verify_token');
+  const challenge = url.searchParams.get('hub.challenge');
 
-  // 2. Verificación del token
-  const token = request.nextUrl.searchParams.get('hub.verify_token');
-  const expectedToken = process.env.WHATSAPP_WEBHOOK_TOKEN;
+  // Debug: Registra el token recibido (verifica en logs de Vercel)
+  console.log('Token recibido:', token);
 
-  console.log('[WEBHOOK] Token recibido:', token);
-  console.log('[WEBHOOK] Token esperado:', expectedToken);
-
-  if (token === expectedToken) {
-    const challenge = request.nextUrl.searchParams.get('hub.challenge');
-    console.log('[WEBHOOK] Verificación exitosa, retornando challenge');
+  if (token === VERIFY_TOKEN && challenge) {
     return new Response(challenge, { 
       status: 200,
-      headers: {
-        'Content-Type': 'text/plain',
-        'Cache-Control': 'no-store'
-      }
+      headers: { 'Content-Type': 'text/plain' }, // ¡Meta espera texto plano!
     });
   }
-
-  console.error('[WEBHOOK] Error: Token inválido');
-  return new Response('Token inválido', { 
-    status: 403,
-    headers: {
-      'Content-Type': 'text/plain'
-    }
-  });
+  return new Response('Token inválido', { status: 403 });
 }
 
+// POST: Manejo de mensajes
 export async function POST(request: NextRequest) {
   try {
-    // 1. Manejo de redirección www -> non-www
-    const url = new URL(request.url);
-    if (url.hostname.startsWith('www.')) {
-      const newUrl = url.toString().replace('//www.', '//');
-      return NextResponse.redirect(newUrl, 307);
-    }
-
-    // 2. Procesamiento de mensajes
     const body = await request.json();
-    console.log('[WEBHOOK] Mensaje recibido:', JSON.stringify(body, null, 2));
-
-    // Aquí añade tu lógica para manejar los mensajes
-    // Ejemplo básico:
-    if (body.object === 'whatsapp_business_account') {
-      const entries = body.entry;
-      for (const entry of entries) {
-        // Procesa cada entrada
-      }
-    }
-
-    return NextResponse.json(
-      { success: true },
-      { status: 200, headers: { 'Cache-Control': 'no-store' } }
-    );
+    console.log('Mensaje recibido:', JSON.stringify(body, null, 2)); // Debug
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[WEBHOOK] Error procesando mensaje:', error);
+    console.error('Error en POST:', error);
     return NextResponse.json(
-      { success: false, error: 'Error interno del servidor' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }

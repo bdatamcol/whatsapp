@@ -64,7 +64,7 @@ class WhatsAppClient {
             "TURBOPACK unreachable";
         }
         return {
-            'Authorization': `Bearer ${"TURBOPACK compile-time value", "EAAdmskc6SHwBO8Dxxk1ek4jZCOywRlONyZBy7PIu6T37oyxPSTORi8jahkyuEE1XajpEVLktmD3BLqgMPFlN0lLe3EdI1xHQvltJZCliqkr8ZAXuazbQmqnyYXUvBNslI7ogcGzBcU1Pi9TvYBRUa3yP6MJsuyf8rho5cNL7n3GLXZAuZB3xa13h72sQ2zoZCC9Sv7s7BuxuxgWxaDdKVtna7U5ZAEYZD"}`,
+            'Authorization': `Bearer ${"TURBOPACK compile-time value", "EAAdmskc6SHwBOZBQ9dOFTqAUZCCyIWZCRpImZBAWx9HkZBZAZAMqvAh33jZCqKvfTy3xuGShdvSHjb5IZBEWqZBbD3FBbaX1qXg8GZBNKzkG6P8YZAxjKHcZBKnKvRSeQLNwaQJXvTSsXJZAc4KB1rfojjaL0jRQtWpXw7D1EZCrqNuMPcAq5yNxuOPv2mAqhfRGQXh2Sb5J2JKMcIX13kocYmFFzU5fkmHyRAZD"}`,
             'Content-Type': 'application/json'
         };
     }
