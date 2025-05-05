@@ -1,111 +1,44 @@
 {
   "pages": {
     "/_not-found/page": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/_not-found/page-632b44b9af23891b.js"
-    ],
-    "/api/leads/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/leads/route-d9e2d5d5591dd3da.js"
-    ],
-    "/api/marketing/ads/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/marketing/ads/route-e749cd0bb3637727.js"
-    ],
-    "/api/marketing/insights/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/marketing/insights/route-e31f98c9ae60c9da.js"
-    ],
-    "/api/whatsapp/contacts/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/contacts/route-9b20f8b772e5d275.js"
-    ],
-    "/api/whatsapp/deleteMessage/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/deleteMessage/route-9cb792696dfe3f09.js"
-    ],
-    "/api/whatsapp/deleteMessage/updateMessages/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/deleteMessage/updateMessages/route-e1173c882f0787ea.js"
-    ],
-    "/api/whatsapp/getMessages/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/getMessages/route-1fb436ea7ddb1a77.js"
-    ],
-    "/api/whatsapp/messagess/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/messagess/route-da5901a740aa63df.js"
-    ],
-    "/api/whatsapp/sendMessage/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/sendMessage/route-d2554338d9203859.js"
-    ],
-    "/api/whatsapp/templates/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/templates/route-bd99e58203e27461.js"
-    ],
-    "/api/whatsapp/webhook/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/whatsapp/webhook/route-17a17c2f3164f65e.js"
-    ],
-    "/layout": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/css/64edef332664b11e.css",
-      "static/chunks/app/layout-9814541837e6a790.js"
-    ],
-    "/api/marketing/account/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/marketing/account/route-5ecbae96d4282d90.js"
+      "static/chunks/node_modules_next_dist_1a6ee436._.js",
+      "static/chunks/src_app_favicon_ico_mjs_8a7a8fdc._.js",
+      "static/chunks/[root-of-the-server]__a488fe89._.css",
+      "static/chunks/node_modules_5c8fcbbf._.js",
+      "static/chunks/src_f7dc84c0._.js",
+      "static/chunks/src_app_layout_tsx_c0237562._.js",
+      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_fd44f5a4._.js",
+      "static/chunks/node_modules_next_dist_compiled_2ce9398a._.js",
+      "static/chunks/node_modules_next_dist_client_8f19e6fb._.js",
+      "static/chunks/node_modules_next_dist_2ecbf5fa._.js",
+      "static/chunks/node_modules_@swc_helpers_cjs_00636ac3._.js",
+      "static/chunks/_e69f0d32._.js",
+      "static/chunks/_93808211._.js"
     ],
     "/page": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/510-d481cd4eb46a3094.js",
-      "static/chunks/app/page-0cbb39d80cef2faf.js"
+      "static/chunks/node_modules_next_dist_1a6ee436._.js",
+      "static/chunks/src_app_favicon_ico_mjs_8a7a8fdc._.js",
+      "static/chunks/[root-of-the-server]__a488fe89._.css",
+      "static/chunks/node_modules_5c8fcbbf._.js",
+      "static/chunks/src_f7dc84c0._.js",
+      "static/chunks/src_app_layout_tsx_c0237562._.js",
+      "static/chunks/src_684ed7d5._.js",
+      "static/chunks/node_modules_lodash_20634561._.js",
+      "static/chunks/node_modules_recharts_es6_7bff9f4c._.js",
+      "static/chunks/node_modules_tailwind-merge_dist_bundle-mjs_mjs_b854acb4._.js",
+      "static/chunks/node_modules_framer-motion_dist_es_82de910d._.js",
+      "static/chunks/node_modules_motion-dom_dist_es_eae4c9f6._.js",
+      "static/chunks/node_modules_@radix-ui_43ef25ca._.js",
+      "static/chunks/node_modules_@floating-ui_9ec1fa39._.js",
+      "static/chunks/node_modules_5f149805._.js",
+      "static/chunks/src_app_page_tsx_8e0e7b35._.js",
+      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_fd44f5a4._.js",
+      "static/chunks/node_modules_next_dist_compiled_2ce9398a._.js",
+      "static/chunks/node_modules_next_dist_client_8f19e6fb._.js",
+      "static/chunks/node_modules_next_dist_2ecbf5fa._.js",
+      "static/chunks/node_modules_@swc_helpers_cjs_00636ac3._.js",
+      "static/chunks/_e69f0d32._.js",
+      "static/chunks/_93808211._.js"
     ]
   }
 }
