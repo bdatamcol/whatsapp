@@ -1,43 +1,99 @@
-// src/lib/database/message-repository.ts
-import { MongoClient } from 'mongodb';
-import { DatabaseMessage } from '@/types/whatsapp.d';
-
-// Conexión a MongoDB (usa tus variables de entorno)
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const dbName = process.env.MONGODB_DB || 'whatsapp-business';
+// src/lib/whatsapp/database/message-repository.ts
+import { MongoClient, Db, Collection } from 'mongodb';
+import { Message, DatabaseMessage, Contact } from '@/types/whatsapp.d';
 
 let client: MongoClient;
-let isConnected = false;
+let db: Db;
 
-async function connectToDatabase() {
-  if (!isConnected) {
-    client = new MongoClient(uri);
+async function connectToDatabase(): Promise<Db> {
+  if (!client) {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI no está definido en las variables de entorno');
+    }
+    client = new MongoClient(process.env.MONGODB_URI);
     await client.connect();
-    isConnected = true;
+    db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
   }
-  return client.db(dbName);
+  return db;
 }
 
-// src/lib/database/message-repository.ts
-import { Message } from '@/types/whatsapp.d';
-
-// Mock temporal (implementa conexión real según tu DB)
-export async function saveMessageToDatabase(message: Message) {
-  console.log('[DB] Guardando mensaje:', message.id);
-  // await yourDatabaseClient.insert(message);
-  return { success: true }; // Simulación
-}
-
-export async function getMessagesByContact(contactId: string, limit = 50) {
+export async function saveMessageToDatabase(message: Message): Promise<DatabaseMessage> {
   try {
     const db = await connectToDatabase();
-    return await db.collection('messages')
-      .find({ $or: [{ from: contactId }, { to: contactId }] })
+    const messagesCollection = db.collection<DatabaseMessage>('messages');
+    
+    const messageWithTimestamps: DatabaseMessage = {
+      ...message,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await messagesCollection.insertOne(messageWithTimestamps);
+    console.log(`[DB] Mensaje guardado con ID: ${result.insertedId}`);
+    return { ...messageWithTimestamps, _id: result.insertedId };
+  } catch (error) {
+    console.error('[DB] Error al guardar mensaje:', error);
+    throw error;
+  }
+}
+
+// src/lib/whatsapp/database/message-repository.ts
+export async function getMessagesByContact(contactId: string, limit = 50, before?: string): Promise<Message[]> {
+  try {
+    const db = await connectToDatabase();
+    const query: any = { 
+      $or: [{ from: contactId }, { to: contactId }] 
+    };
+
+    if (before) {
+      query.timestamp = { $lt: before };
+    }
+
+    const messages = await db.collection<Message>('messages')
+      .find(query)
       .sort({ timestamp: -1 })
       .limit(limit)
       .toArray();
+    
+    return messages.map(msg => {
+      const timestamp = msg.timestamp instanceof Date ? msg.timestamp.toISOString() : msg.timestamp;
+      return {
+        ...msg,
+        timestamp,
+        // Asegurarse de incluir todas las propiedades requeridas por Message
+        id: msg.id,
+        text: msg.text,
+        direction: msg.direction,
+        // Incluir propiedades opcionales si existen
+        ...(msg.status && { status: msg.status }),
+        ...(msg.type && { type: msg.type }),
+        ...(msg.media && { media: msg.media })
+      };
+    });
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    throw new Error('Failed to fetch messages');
+    console.error('[DB] Error al obtener mensajes:', error);
+    throw error;
   }
+}
+
+export async function createIndexes() {
+  try {
+    const db = await connectToDatabase();
+    await db.collection('messages').createIndex({ from: 1 });
+    await db.collection('messages').createIndex({ to: 1 });
+    await db.collection('messages').createIndex({ timestamp: -1 });
+    await db.collection('messages').createIndex({ 
+      from: 1, 
+      to: 1, 
+      timestamp: -1 
+    });
+    console.log('[DB] Índices creados correctamente');
+  } catch (error) {
+    console.error('[DB] Error al crear índices:', error);
+  }
+}
+
+// Crear índices al iniciar (opcional)
+if (process.env.NODE_ENV !== 'test') {
+  createIndexes().catch(console.error);
 }

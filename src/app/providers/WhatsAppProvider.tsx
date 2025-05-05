@@ -1,9 +1,13 @@
+// src/app/providers/WhatsAppProvider.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import WhatsAppClient from '@/lib/whatsapp/whatsapp.client';
 import { Contact, Message } from '@/types/whatsapp.d';
-import io from 'socket.io-client';
+import { getMessagesByContact, getLastMessagesForContacts } from '@/lib/whatsapp/database/message-repository';
+
+const io = require('socket.io-client').io;
+
 
 interface WhatsAppState {
   contacts: Contact[];
@@ -34,29 +38,31 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
     unreadCounts: {},
   });
 
+  const [socket, setSocket] = useState<any>(null); // Usamos any temporalmente para Socket
   const whatsapp = new WhatsAppClient();
 
   // Conexión con Socket.io para actualización en tiempo real
   useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+    const newSocket = io(socketUrl, {
       transports: ['websocket'],
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    socket.on('connect', () => {
+    newSocket.on('connect', () => {
       console.log('Conectado al servidor Socket.io');
     });
 
-    socket.on('disconnect', () => {
+    newSocket.on('disconnect', () => {
       console.log('Desconectado del servidor Socket.io');
     });
 
-    socket.on('newMessage', (newMessage: Message) => {
+    newSocket.on('newMessage', (newMessage: Message) => {
       setState(prev => {
         // Actualizar el último mensaje en los contactos
         const updatedContacts = prev.contacts.map(contact => {
-          if (contact.id === newMessage.from) {
+          if (contact.id === newMessage.from || contact.id === newMessage.to) {
             return {
               ...contact,
               lastMessage: newMessage.text,
@@ -68,7 +74,7 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
 
         // Incrementar contador de no leídos si no es el chat activo
         const newUnreadCounts = { ...prev.unreadCounts };
-        if (prev.selectedContact !== newMessage.from) {
+        if (prev.selectedContact !== newMessage.from && newMessage.direction === 'inbound') {
           newUnreadCounts[newMessage.from] = (newUnreadCounts[newMessage.from] || 0) + 1;
         }
 
@@ -88,51 +94,62 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
         return {
           ...prev,
           contacts: updatedContacts,
-          messages: [...prev.messages, newMessage],
+          messages: [newMessage, ...prev.messages],
           unreadCounts: newUnreadCounts,
         };
       });
     });
 
-    socket.on('messageStatus', (update: { id: string; status: string }) => {
-      setState(prev => ({
-        ...prev,
-        messages: prev.messages.map(msg => 
-          msg.id === update.id ? { ...msg, status: update.status } : msg
-        ),
-      }));
-    });
+    setSocket(newSocket);
 
     return () => {
-      socket.disconnect();
+      newSocket.disconnect();
     };
   }, []);
 
   const loadContacts = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      const response = await fetch('/api/whatsapp/contacts');
-      if (!response.ok) throw new Error('Error al cargar contactos');
-      const contacts: Contact[] = await response.json();
+      const contactsResponse = await fetch('/api/whatsapp/contacts');
+      if (!contactsResponse.ok) throw new Error('Error al cargar contactos');
       
-      // Inicializar contadores de no leídos
-      const unreadCounts = contacts.reduce((acc, contact) => ({
-        ...acc,
-        [contact.id]: contact.unread || 0,
-      }), {} as Record<string, number>);
+      const contacts: Contact[] = await contactsResponse.json();
+      
+      // Obtener últimos mensajes solo si hay contactos
+      let lastMessages: Message[] = [];
+      if (contacts.length > 0) {
+        try {
+          lastMessages = await getLastMessagesForContacts();
+        } catch (error) {
+          console.error('Error al obtener últimos mensajes:', error);
+        }
+      }
 
-      setState(prev => ({ 
-        ...prev, 
-        contacts, 
-        unreadCounts,
-        loading: false 
+      // Combinar contactos con sus últimos mensajes
+      const contactsWithLastMessage = contacts.map(contact => {
+        const lastMsg = lastMessages.find(msg => 
+          msg.from === contact.id || msg.to === contact.id
+        );
+        
+        return {
+          ...contact,
+          lastMessage: lastMsg?.text || '',
+          lastMessageTime: lastMsg?.timestamp || new Date().toISOString(),
+          isOnline: Math.random() > 0.5 // Simulación - reemplazar con lógica real
+        };
+      });
+
+      setState(prev => ({
+        ...prev,
+        contacts: contactsWithLastMessage,
+        loading: false
       }));
     } catch (error) {
       console.error('Error loading contacts:', error);
-      setState(prev => ({ 
-        ...prev, 
-        error: 'Error al cargar contactos', 
-        loading: false 
+      setState(prev => ({
+        ...prev,
+        error: 'Error al cargar contactos',
+        loading: false
       }));
     }
   }, []);
@@ -165,13 +182,35 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
       // Actualizar mensaje con ID real y estado
       setState(prev => ({
         ...prev,
-        messages: prev.messages.map(msg => 
-          msg.id === tempId 
-            ? { ...msg, id: response.id, status: 'sent' } 
+        messages: prev.messages.map(msg =>
+          msg.id === tempId
+            ? { ...msg, id: response.id, status: 'sent' }
             : msg
         ),
         loading: false,
       }));
+
+      // Actualizar último mensaje en la lista de contactos
+      setState(prev => ({
+        ...prev,
+        contacts: prev.contacts.map(contact =>
+          contact.id === state.selectedContact
+            ? {
+                ...contact,
+                lastMessage: message,
+                lastMessageTime: new Date().toISOString()
+              }
+            : contact
+        )
+      }));
+
+      if (socket) {
+        socket.emit('newMessage', {
+          ...newMsg,
+          id: response.id,
+          status: 'sent'
+        });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       setState(prev => ({
@@ -181,13 +220,13 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
         loading: false,
       }));
     }
-  }, [state.selectedContact]);
+  }, [state.selectedContact, socket]);
 
   const selectContact = useCallback(async (phone: string) => {
-    setState(prev => ({ 
-      ...prev, 
-      selectedContact: phone, 
-      loading: true, 
+    setState(prev => ({
+      ...prev,
+      selectedContact: phone,
+      loading: true,
       error: null,
       unreadCounts: {
         ...prev.unreadCounts,
@@ -196,11 +235,7 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
     }));
 
     try {
-      const response = await fetch(`/api/whatsapp/messages?contact=${phone}`);
-      if (!response.ok) throw new Error('Error al cargar mensajes');
-      
-      const messages: Message[] = await response.json();
-      
+      const messages = await getMessagesByContact(phone);
       setState(prev => ({
         ...prev,
         messages,
@@ -208,46 +243,65 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
       }));
     } catch (error) {
       console.error('Error loading messages:', error);
-      setState(prev => ({ 
-        ...prev, 
-        error: 'Error al cargar mensajes', 
-        loading: false 
+      setState(prev => ({
+        ...prev,
+        error: 'Error al cargar mensajes',
+        loading: false
       }));
     }
   }, []);
 
   const loadMoreMessages = useCallback(async () => {
-    if (!state.selectedContact || state.messages.length === 0) return;
-    
+    // Validaciones iniciales
+    if (!state.selectedContact || state.messages.length === 0 || state.loading) {
+      return;
+    }
+  
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const oldestMessage = state.messages[0];
-      const response = await fetch(
-        `/api/whatsapp/messages?contact=${state.selectedContact}&before=${oldestMessage.timestamp}`
+      const oldestMessage = state.messages[state.messages.length - 1];
+      
+      // Validación completa del timestamp
+      if (!oldestMessage?.timestamp) {
+        console.warn('No se encontró timestamp en el mensaje más antiguo');
+        return setState(prev => ({ ...prev, loading: false }));
+      }
+  
+      // Conversión segura del timestamp
+      const beforeTimestamp = typeof oldestMessage.timestamp === 'string' 
+        ? oldestMessage.timestamp 
+        : oldestMessage.timestamp instanceof Date 
+          ? oldestMessage.timestamp.toISOString()
+          : new Date().toISOString();
+  
+      const olderMessages = await getMessagesByContact(
+        state.selectedContact,
+        20,
+        beforeTimestamp
       );
-      
-      const olderMessages: Message[] = await response.json();
-      
+  
+      // Actualización condicional del estado
       setState(prev => ({
         ...prev,
-        messages: [...olderMessages, ...prev.messages],
+        messages: olderMessages.length > 0 
+          ? [...prev.messages, ...olderMessages]
+          : prev.messages,
         loading: false,
       }));
     } catch (error) {
-      console.error('Error loading more messages:', error);
-      setState(prev => ({ 
-        ...prev, 
-        error: 'Error al cargar más mensajes', 
-        loading: false 
+      console.error('Error al cargar más mensajes:', error);
+      setState(prev => ({
+        ...prev,
+        error: 'Error al cargar más mensajes',
+        loading: false
       }));
     }
-  }, [state.selectedContact, state.messages]);
-
+  }, [state.selectedContact, state.messages, state.loading]);
   const markAsRead = useCallback((messageId: string) => {
     setState(prev => ({
       ...prev,
-      messages: prev.messages.map(msg => 
+      messages: prev.messages.map(msg =>
         msg.id === messageId ? { ...msg, status: 'read' } : msg
       ),
     }));
