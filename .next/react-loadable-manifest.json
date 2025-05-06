@@ -1,0 +1,43 @@
+{
+  "..\\node_modules\\@aws-sdk\\credential-provider-cognito-identity\\dist-es\\fromCognitoIdentity.js -> ./loadCognitoIdentity": {
+    "id": 69412,
+    "files": [
+      "static/chunks/343.880b26b4a61cb844.js",
+      "static/chunks/412.6ce361e1ae90793f.js"
+    ]
+  },
+  "..\\node_modules\\@aws-sdk\\credential-provider-cognito-identity\\dist-es\\fromCognitoIdentityPool.js -> ./loadCognitoIdentity": {
+    "id": 69412,
+    "files": [
+      "static/chunks/343.880b26b4a61cb844.js",
+      "static/chunks/412.6ce361e1ae90793f.js"
+    ]
+  },
+  "..\\node_modules\\@aws-sdk\\credential-provider-web-identity\\dist-es\\fromWebToken.js -> @aws-sdk/nested-clients/sts": {
+    "id": 6037,
+    "files": [
+      "static/chunks/343.880b26b4a61cb844.js",
+      "static/chunks/37.c0cf160ad0cc1b2c.js"
+    ]
+  },
+  "..\\node_modules\\@aws-sdk\\credential-providers\\dist-es\\fromTemporaryCredentials.base.js -> ./loadSts": {
+    "id": 51417,
+    "files": [
+      "static/chunks/343.880b26b4a61cb844.js",
+      "static/chunks/37.c0cf160ad0cc1b2c.js",
+      "static/chunks/417.e42fb05c6aefb4ff.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": 90472,
+    "files": [
+      "static/chunks/472.2c08b965bd9148e2.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": 99341,
+    "files": [
+      "static/chunks/341.a4c9e4b8dad9832e.js"
+    ]
+  }
+}
