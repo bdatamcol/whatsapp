@@ -14,4 +14,17 @@ const nextConfig: NextConfig = {
   // Otras configuraciones pueden ir aquí
 };
 
+// next.config.js
+module.exports = {
+  webpack: (config) => {
+    config.resolve.fallback = {
+      dns: false,
+      net: false,
+      tls: false,
+      fs: false,
+    };
+    return config;
+  },
+};
+
 export default nextConfig;
