@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/app/api/whatsapp/mongo/mongodb';
-import { Db } from 'mongodb';
+import { MongoClient } from 'mongodb';
 
 export async function POST(request: NextRequest) {
   console.log(JSON.stringify({
@@ -9,17 +8,30 @@ export async function POST(request: NextRequest) {
     details: 'Iniciando procesamiento de webhook'
   }));
 
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error('MONGODB_URI no está definido');
+    return NextResponse.json(
+      { error: 'Configuración incorrecta del servidor' },
+      { status: 500 }
+    );
+  }
+
   let client;
-  let db: Db;
+  let db;
 
   try {
-    // Conexión a MongoDB
-    client = await clientPromise;
-    if (!client) throw new Error('Client no inicializado');
-
+    // Conexión directa sin pool (mejor para serverless)
+    client = new MongoClient(uri, {
+      connectTimeoutMS: 5000,
+      socketTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 5000
+    });
+    
+    await client.connect();
     db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
 
-    // Ping para confirmar conexión
+    // Verificación de conexión
     await db.command({ ping: 1 });
     console.log(JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -27,26 +39,28 @@ export async function POST(request: NextRequest) {
       dbName: db.databaseName
     }));
 
-    // Lectura del cuerpo del request
+    // Procesamiento del mensaje
     const body = await request.json();
     const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
-    if (message) {
-      const result = await db.collection('messages').insertOne({
-        ...message,
-        processedAt: new Date()
-      });
-
-      console.log(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        type: 'MESSAGE_SAVED',
-        messageId: result.insertedId
-      }));
-
-      return NextResponse.json({ success: true });
+    if (!message) {
+      return NextResponse.json({ error: 'No message found' }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'No message found' }, { status: 400 });
+    // Guardar mensaje
+    const result = await db.collection('messages').insertOne({
+      ...message,
+      processedAt: new Date(),
+      direction: 'inbound'
+    });
+
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      type: 'MESSAGE_SAVED',
+      messageId: result.insertedId
+    }));
+
+    return NextResponse.json({ success: true });
 
   } catch (error: any) {
     console.error(JSON.stringify({
@@ -59,11 +73,7 @@ export async function POST(request: NextRequest) {
       },
       connectionStatus: {
         hasClient: !!client,
-        hasDb: !!db,
-        env: {
-          MONGODB_URI: process.env.MONGODB_URI ? 'SET' : 'MISSING',
-          MONGODB_DB: process.env.MONGODB_DB || 'default (whatsapp-business)'
-        }
+        hasDb: !!db
       }
     }));
 
@@ -71,5 +81,10 @@ export async function POST(request: NextRequest) {
       { error: 'Error interno del servidor' },
       { status: 500 }
     );
+  } finally {
+    // Cierra la conexión siempre
+    if (client) {
+      setTimeout(() => client.close(), 2000); // Cierre asíncrono
+    }
   }
 }
