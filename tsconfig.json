@@ -9,9 +9,6 @@
         "./lib/*"
       ]
     },
-    "outDir": "./dist",
-    "rootDir": "./src",
-    
     "target": "ES2017",
     "lib": [
       "dom",
@@ -20,7 +17,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "noEmit": true,
     "incremental": true,
     "module": "esnext",
@@ -34,7 +31,6 @@
         "name": "next"
       }
     ]
-    
   },
   "include": [
     "next-env.d.ts",

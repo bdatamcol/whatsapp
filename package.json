@@ -40,7 +40,7 @@
     "@types/express": "^5.0.1",
     "@types/express-session": "^1.18.1",
     "@types/mongodb": "^4.0.7",
-    "@types/node": "^20.17.37",
+    "@types/node": "^20.17.41",
     "@types/passport": "^1.0.17",
     "@types/passport-facebook": "^3.0.3",
     "@types/react": "^19",

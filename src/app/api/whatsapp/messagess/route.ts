@@ -1,27 +1,52 @@
-// app/api/messages/route.ts
-import { NextApiRequest, NextApiResponse } from 'next';
+// src/app/api/whatsapp/messages/route.ts
+import { NextResponse } from 'next/server';
+import { getMessagesByContact, saveMessageToDatabase } from '@/lib/whatsapp/database/message-repository';
+import { Message } from '@/types/whatsapp.d';
 
-// Store en memoria para los mensajes (simulación de base de datos)
-let messagesStore: any[] = [];
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const contactId = searchParams.get('contact');
+  const before = searchParams.get('before');
+  
+  if (!contactId) {
+    return NextResponse.json(
+      { error: 'Se requiere el parámetro contact' },
+      { status: 400 }
+    );
+  }
 
-// Función para agregar un mensaje al store
-export const addMessageToStore = (message: any) => {
-  messagesStore.push(message);
-};
-
-// Manejador para las solicitudes GET y POST
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    // Si es una solicitud POST, agregamos el mensaje al store
-    const newMessage = req.body;
-    console.log('Nuevo mensaje recibido:', newMessage); // Depuración
-    addMessageToStore(newMessage);
-    return res.status(200).json({ message: 'Mensaje recibido y guardado' });
-  } else if (req.method === 'GET') {
-    // Si es una solicitud GET, devolvemos los mensajes almacenados
-    return res.status(200).json(messagesStore);
-  } else {
-    // Respuesta por defecto para otros métodos HTTP
-    res.status(405).json({ message: 'Método no permitido' });
+  try {
+    const messages = await getMessagesByContact(contactId, 50, before || undefined);
+    return NextResponse.json(messages);
+  } catch (error) {
+    console.error('Error en GET /api/whatsapp/messages:', error);
+    return NextResponse.json(
+      { error: 'Error al obtener mensajes' },
+      { status: 500 }
+    );
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const message: Message = await request.json();
+    
+    if (!message.from || !message.timestamp) {
+      return NextResponse.json(
+        { error: 'Datos del mensaje incompletos' },
+        { status: 400 }
+      );
+    }
+
+    const savedMessage = await saveMessageToDatabase(message);
+    return NextResponse.json(savedMessage);
+  } catch (error) {
+    console.error('Error en POST /api/whatsapp/messages:', error);
+    return NextResponse.json(
+      { error: 'Error al guardar mensaje' },
+      { status: 500 }
+    );
+  }
+}
+
+export const dynamic = 'force-dynamic'; // Asegura que la ruta sea dinámica

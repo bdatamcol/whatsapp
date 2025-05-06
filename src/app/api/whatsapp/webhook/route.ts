@@ -3,27 +3,23 @@ import clientPromise from '@/lib/mongodb';
 import { Db } from 'mongodb';
 
 export async function POST(request: NextRequest) {
-  // 1. Log inicial
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
     type: 'WEBHOOK_INIT',
     details: 'Iniciando procesamiento de webhook'
   }));
 
-  // 2. Conexión a DB con manejo de errores mejorado
   let client;
   let db: Db;
 
   try {
+    // Conexión a MongoDB
     client = await clientPromise;
-    
-    if (!client) {
-      throw new Error('Client no inicializado');
-    }
+    if (!client) throw new Error('Client no inicializado');
 
     db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
-    
-    // 3. Verificación explícita
+
+    // Ping para confirmar conexión
     await db.command({ ping: 1 });
     console.log(JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -31,10 +27,10 @@ export async function POST(request: NextRequest) {
       dbName: db.databaseName
     }));
 
-    // 4. Procesar el mensaje (ejemplo)
+    // Lectura del cuerpo del request
     const body = await request.json();
     const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-    
+
     if (message) {
       const result = await db.collection('messages').insertOne({
         ...message,
@@ -52,8 +48,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'No message found' }, { status: 400 });
 
-  } catch (error) {
-    // 5. Log de error detallado
+  } catch (error: any) {
     console.error(JSON.stringify({
       timestamp: new Date().toISOString(),
       type: 'FATAL_ERROR',

@@ -1,18 +1,34 @@
 'use client';
-import { useCallback, useMemo, useState, memo, ChangeEvent, useEffect } from 'react';
+
+import {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  ChangeEvent,
+} from 'react';
+import {
+  Loader2,
+  Search,
+  ArrowLeft,
+  MoreVertical,
+  Frown,
+  Smile,
+  RefreshCw,
+  Settings,
+} from 'lucide-react';
+import { useWhatsApp } from '@/app/providers/WhatsAppProvider';
 import WhatsAppChat from '@/app/components/whatsapp/WhatsAppChat';
 import WhatsAppContactList from '@/app/components/whatsapp/WhatsAppContactList';
 import Input from '@/app/components/ui/Input';
-import { Loader2, Search, ArrowLeft, MoreVertical, Frown, Smile, RefreshCw, Settings } from 'lucide-react';
-import { useWhatsApp } from '@/app/providers/WhatsAppProvider';
-import { cn } from '@/lib/utils';
 import Button from '@/app/components/ui/Button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface MessagessProps {
   initialContact?: string;
@@ -28,6 +44,7 @@ export default function Messagess({ initialContact }: MessagessProps) {
     selectContact,
     sendMessage,
     refreshContacts,
+    loadMoreMessages,
   } = useWhatsApp();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,15 +52,18 @@ export default function Messagess({ initialContact }: MessagessProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [localLoading, setLocalLoading] = useState(false);
 
-  // Debug: Ver mensajes recibidos
+  // Cargar contacto inicial
   useEffect(() => {
-    console.log("Mensajes actualizados:", messages);
-  }, [messages]);
+    if (initialContact && contacts.length > 0) {
+      const exists = contacts.some(c => c.id === initialContact);
+      if (exists) handleSelectContact(initialContact);
+    }
+  }, [initialContact, contacts]);
 
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase())
+    return contacts.filter(c =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [contacts, searchTerm]);
 
@@ -66,8 +86,8 @@ export default function Messagess({ initialContact }: MessagessProps) {
   }, []);
 
   const handleLoadMoreMessages = useCallback(() => {
-    console.log('Cargando más mensajes...');
-  }, []);
+    loadMoreMessages();
+  }, [loadMoreMessages]);
 
   const handleRefresh = useCallback(async () => {
     try {
@@ -77,6 +97,15 @@ export default function Messagess({ initialContact }: MessagessProps) {
       setLocalLoading(false);
     }
   }, [refreshContacts]);
+
+  const handleSendMessage = useCallback(async (text: string) => {
+    try {
+      setLocalLoading(true);
+      await sendMessage(text);
+    } finally {
+      setLocalLoading(false);
+    }
+  }, [sendMessage]);
 
   if (loading) {
     return (
@@ -144,13 +173,11 @@ export default function Messagess({ initialContact }: MessagessProps) {
             />
           </div>
         </div>
-
         <div className="flex-1 overflow-y-auto">
-          <WhatsAppContactList 
+          <WhatsAppContactList
             contacts={filteredContacts}
             selectedContact={selectedContact}
             onSelectContact={handleSelectContact}
-            
           />
         </div>
       </div>
@@ -164,7 +191,7 @@ export default function Messagess({ initialContact }: MessagessProps) {
           <>
             <div className="p-3 border-b bg-white sticky top-0 z-10 flex items-center justify-between">
               <div className="flex items-center">
-                <button 
+                <button
                   onClick={() => setIsMobileChatOpen(false)}
                   className="md:hidden mr-2 p-1 rounded-full hover:bg-gray-100"
                   aria-label="Volver"
@@ -175,8 +202,8 @@ export default function Messagess({ initialContact }: MessagessProps) {
                   <div className="relative">
                     <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                       {currentContact?.avatar ? (
-                        <img 
-                          src={currentContact.avatar} 
+                        <img
+                          src={currentContact.avatar}
                           alt={currentContact.name}
                           className="w-full h-full object-cover"
                         />
@@ -193,7 +220,12 @@ export default function Messagess({ initialContact }: MessagessProps) {
                   <div>
                     <h3 className="font-medium">{currentContact?.name}</h3>
                     <p className="text-xs text-gray-500">
-                      {currentContact?.isOnline ? 'En línea' : `Últ. vez ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      {currentContact?.isOnline
+                        ? 'En línea'
+                        : `Últ. vez ${new Date().toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}`}
                     </p>
                   </div>
                 </div>
@@ -202,16 +234,15 @@ export default function Messagess({ initialContact }: MessagessProps) {
                 <MoreVertical className="h-5 w-5" />
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto p-4">
               {localLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="animate-spin h-8 w-8 text-gray-400" />
                 </div>
               ) : (
-                <WhatsAppChat 
+                <WhatsAppChat
                   messages={messages}
-                  onSendMessage={sendMessage}
+                  onSendMessage={handleSendMessage}
                   onLoadMore={handleLoadMoreMessages}
                   selectedContact={currentContact}
                 />
@@ -219,34 +250,14 @@ export default function Messagess({ initialContact }: MessagessProps) {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-            <div className="max-w-md">
-              <Smile className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-xl font-medium text-gray-500 mb-2">
-                {isMobileChatOpen ? 'Volver a conversaciones' : 'Selecciona una conversación'}
-              </h3>
-              <p className="text-gray-400 mb-6">
-                {isMobileChatOpen ? '' : 'Elige un contacto para comenzar a chatear'}
-              </p>
-              {messages.length === 0 && (
-                <p className="text-sm text-gray-400 mb-4">
-                  No hay mensajes disponibles
-                </p>
-              )}
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={handleRefresh}
-                disabled={localLoading}
-              >
-                {localLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                Actualizar lista
-              </Button>
-            </div>
+          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            <Smile className="h-12 w-12 mb-4 text-gray-400" />
+            <h3 className="text-lg text-gray-500 font-medium mb-2">
+              {isMobileChatOpen ? 'Volver a conversaciones' : 'Selecciona una conversación'}
+            </h3>
+            {!isMobileChatOpen && (
+              <p className="text-sm text-gray-400">Elige un contacto para comenzar a chatear</p>
+            )}
           </div>
         )}
       </div>
