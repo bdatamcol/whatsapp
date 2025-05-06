@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/app/api/mongo/mongodb';
+import clientPromise from '@/app/api/whatsapp/mongo/mongodb';
 import { Db } from 'mongodb';
 
 export async function POST(request: NextRequest) {

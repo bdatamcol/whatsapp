@@ -1,5 +1,5 @@
 import { WebhookService } from '@/app/api/whatsapp/webhook/webhook.service';
-import { getMongoClient } from '@/app/api/mongo/mongo'; // Asumiendo que tienes esta función
+import { getMongoClient } from '@/app/api/whatsapp/mongo/mongo'; // Asumiendo que tienes esta función
 
 export async function handleWebhookEvent(payload: any) {
   console.log('[WEBHOOK] Iniciando procesamiento');

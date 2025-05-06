@@ -1,4 +1,4 @@
-import { testConnection } from './src/app/api/mongo/mongodb';
+import { testConnection } from './src/app/api/whatsapp/mongo/mongodb';
 
 testConnection()
   .then(result => {
