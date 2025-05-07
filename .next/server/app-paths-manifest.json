@@ -1,8 +1,8 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/api/leads/route": "app/api/leads/route.js",
-  "/api/marketing/insights/route": "app/api/marketing/insights/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/api/marketing/ads/route": "app/api/marketing/ads/route.js",
+  "/api/marketing/insights/route": "app/api/marketing/insights/route.js",
   "/api/whatsapp/contacts/route": "app/api/whatsapp/contacts/route.js",
   "/api/whatsapp/sendMessage/route": "app/api/whatsapp/sendMessage/route.js",
   "/api/whatsapp/templates/route": "app/api/whatsapp/templates/route.js",

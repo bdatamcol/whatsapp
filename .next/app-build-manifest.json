@@ -1,96 +1,98 @@
 {
   "pages": {
     "/_not-found/page": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/_not-found/page-632b44b9af23891b.js"
     ],
-    "/layout": [
-      "static/chunks/webpack-923da62b5a835d14.js",
-      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
-      "static/chunks/684-ec48f98a8f9dc675.js",
-      "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/css/56f6e283fd4c75fe.css",
-      "static/chunks/343fbbf6-426caa80341b7ac2.js",
-      "static/chunks/aaea2bcf-01730812b4156087.js",
-      "static/chunks/174-3203a69e770eaa93.js",
-      "static/chunks/app/layout-cfe4334000a747b9.js"
-    ],
     "/api/leads/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/leads/route-f02a0b535f0c5ea2.js"
     ],
-    "/api/marketing/insights/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+    "/layout": [
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
-      "static/chunks/app/api/marketing/insights/route-d8bb45f0e1a9e6aa.js"
+      "static/css/db115d177fff0677.css",
+      "static/chunks/343fbbf6-426caa80341b7ac2.js",
+      "static/chunks/aaea2bcf-01730812b4156087.js",
+      "static/chunks/99bd8449-843ec6a36ec7421c.js",
+      "static/chunks/851-631e47b438c0a138.js",
+      "static/chunks/app/layout-47455549b094be5c.js"
     ],
     "/api/marketing/ads/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/marketing/ads/route-629d19d014e709bf.js"
     ],
+    "/api/marketing/insights/route": [
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
+      "static/chunks/4bd1b696-73bb04c8c177abe5.js",
+      "static/chunks/684-ec48f98a8f9dc675.js",
+      "static/chunks/main-app-ae11710d9e5e429c.js",
+      "static/chunks/app/api/marketing/insights/route-d8bb45f0e1a9e6aa.js"
+    ],
     "/api/whatsapp/contacts/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/contacts/route-5914bb24b7887edd.js"
     ],
     "/api/whatsapp/sendMessage/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/sendMessage/route-c7039bd49b995da4.js"
     ],
     "/api/whatsapp/templates/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/templates/route-90a7ad2cdd04d481.js"
     ],
     "/api/whatsapp/webhook/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/webhook/route-287189d7307ab871.js"
     ],
     "/api/marketing/account/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/marketing/account/route-c10030025a4c9918.js"
     ],
     "/api/whatsapp/messagess/route": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/app/api/whatsapp/messagess/route-2af2981e3e927bbb.js"
     ],
     "/page": [
-      "static/chunks/webpack-923da62b5a835d14.js",
+      "static/chunks/webpack-de0f75e8f10b8f2e.js",
       "static/chunks/4bd1b696-73bb04c8c177abe5.js",
       "static/chunks/684-ec48f98a8f9dc675.js",
       "static/chunks/main-app-ae11710d9e5e429c.js",
       "static/chunks/343fbbf6-426caa80341b7ac2.js",
       "static/chunks/aaea2bcf-01730812b4156087.js",
-      "static/chunks/174-3203a69e770eaa93.js",
-      "static/chunks/510-03d95f6c4e9a0e6c.js",
-      "static/chunks/app/page-0a2e0c840e948061.js"
+      "static/chunks/99bd8449-843ec6a36ec7421c.js",
+      "static/chunks/851-631e47b438c0a138.js",
+      "static/chunks/884-a82f19e391ae4cc5.js",
+      "static/chunks/app/page-715107e5342b6f8a.js"
     ]
   }
 }
