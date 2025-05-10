@@ -1,4 +1,6 @@
-/** @type {import('next').NextConfig} */
+// next.config.ts
+import type { NextConfig } from 'next';
+// next.config.js
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -6,25 +8,35 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      net: false,
-      tls: false,
-      dns: false,
-      fs: false,
-      child_process: false,
-      'mongodb-client-encryption': false,
-      kerberos: false,
-      snappy: false,
-      '@mongodb-js/zstd': false
-    };
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        dns: false,
+        fs: false,
+        child_process: false,
+        mongodb: false,
+      };
+
+      config.plugins.push(
+        new config.webpack.IgnorePlugin({
+          resourceRegExp: /^(zstd|kerberos|mongocrypt|snappy)\.node$/,
+          contextRegExp: /node_modules/,
+        }),
+        new config.webpack.IgnorePlugin({
+          resourceRegExp: /^mongodb$/,
+          contextRegExp: /node_modules/,
+        })
+      );
+    }
     return config;
   },
-  env: {
-    WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
-    WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
-  }
+  experimental: {
+    serverComponentsExternalPackages: ['mongodb'],
+    serverActions: true,
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
