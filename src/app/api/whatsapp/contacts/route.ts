@@ -1,37 +1,78 @@
 // src/app/api/whatsapp/contacts/route.ts
 import { NextResponse } from 'next/server';
-import WhatsAppClient from '@/lib/whatsapp/whatsapp.client';
-import { Contact } from '@/types/whatsapp.d';
+import { MongoClient } from 'mongodb';
 
-// GET: Obtener contactos
+// Configuración de conexión directa (solo para rutas API)
+const uri = process.env.MONGODB_URI;
+if (!uri) throw new Error('MONGODB_URI is not defined');
+
+const client = new MongoClient(uri);
+const dbName = process.env.MONGODB_DB || 'whatsapp-business';
+
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
-  const client = new WhatsAppClient();
+  let client;
+  
   try {
-    // Mock para pruebas (reemplázalo con tu lógica real)
-    const mockContacts: Contact[] = [
+    client = await MongoClient.connect(uri);
+    const db = client.db(dbName);
+
+    // Pipeline optimizado para obtener últimos mensajes
+    const pipeline = [
       {
-        id: "1234567890",
-        name: "Cliente Ejemplo",
-        lastMessage: "Hola, ¿cómo estás?",
-        unread: 2,
-        lastMessageTime: new Date().toISOString()
+        $sort: { timestamp: -1 }
+      },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $eq: ["$direction", "outbound"] },
+              "$to",
+              "$from"
+            ]
+          },
+          lastMessage: { $first: "$$ROOT" },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              "$lastMessage",
+              { unreadCount: "$count" }
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          id: "$_id",
+          name: 1,
+          lastMessage: "$text",
+          lastMessageTime: "$timestamp",
+          unread: "$unreadCount",
+          avatar: 1,
+          isOnline: 1
+        }
       }
     ];
-    return NextResponse.json(mockContacts);
 
-    // Para producción, usa esto:
-    // const contacts = await client.getContacts();
-    // return NextResponse.json(contacts);
+    const contacts = await db.collection('messages')
+      .aggregate(pipeline)
+      .toArray();
+
+    return NextResponse.json(contacts);
+
   } catch (error) {
+    console.error('Database error:', error);
     return NextResponse.json(
-      { error: 'Error al obtener contactos' },
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
+  } finally {
+    if (client) await client.close();
   }
-}
-
-// POST: Crear un nuevo contacto (opcional)
-export async function POST(request: Request) {
-  // Implementa según tus necesidades
-  return NextResponse.json({ error: 'Método no implementado' }, { status: 501 });
 }
