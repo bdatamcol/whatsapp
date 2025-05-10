@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/app/api/whatsapp/mongo/mongodb';
+import clientPromise from '@/lib/whatsapp/database/mongodb';
 import { Db } from 'mongodb';
+
+// En cualquier archivo que use MongoDB directamente
+if (typeof window !== 'undefined') {
+  throw new Error('Este módulo solo puede usarse en el servidor');
+}
 
 export async function POST(request: NextRequest) {
   console.log(JSON.stringify({

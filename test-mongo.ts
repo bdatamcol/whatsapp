@@ -1,38 +1,23 @@
-// test-mongodb.ts
-import { MongoClient } from 'mongodb';
+// src/test-mongo.ts
+import { connectToDatabase } from '@/lib/whatsapp/database/mongodb';
 
-async function testConnection() {
-  console.log('🔍 Verificando conexión MongoDB...');
-  
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error('MONGODB_URI no está definido en .env');
-  }
-
-  console.log('🔌 URI de conexión:', uri.replace(/:\/\/.*@/, '://****:****@'));
-
-  const client = new MongoClient(uri, {
-    connectTimeoutMS: 5000,
-    serverSelectionTimeoutMS: 5000
-  });
-
-  try {
-    await client.connect();
-    const db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
-    await db.command({ ping: 1 });
-    console.log('🟢 Ping exitoso a MongoDB');
-    
-    const collections = await db.listCollections().toArray();
-    console.log('📚 Colecciones disponibles:', collections.map(c => c.name));
-  } finally {
-    await client.close();
-  }
+// Verificación de entorno servidor
+if (typeof window !== 'undefined') {
+  throw new Error('Este módulo solo puede usarse en el servidor');
 }
 
-testConnection()
-  .then(() => console.log('✅ Prueba completada con éxito'))
-  .catch(err => {
-    console.error('❌ Error en la prueba:');
-    console.error(err);
-    process.exit(1);
-  });
+(async () => {
+  try {
+    const { client, db } = await connectToDatabase();
+    console.log('Conexión exitosa a la base de datos:', db.databaseName);
+    
+    // Verifica la conexión con un ping
+    await db.command({ ping: 1 });
+    console.log('Ping exitoso a MongoDB');
+    
+    // Cierra la conexión cuando termines
+    await client.close();
+  } catch (error) {
+    console.error('Error al conectar con la base de datos:', error);
+  }
+})();

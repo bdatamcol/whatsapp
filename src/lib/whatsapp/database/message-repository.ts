@@ -1,7 +1,11 @@
 // src/lib/whatsapp/database/message-repository.ts
 import { MongoClient, Db, Collection } from 'mongodb';
 import { Message, DatabaseMessage } from '@/types/whatsapp.d';
+// Añade al inicio del archivo
+import { ensureServerOnly } from '@/lib/server-only';
+ensureServerOnly();
 
+// El resto de tu código...
 // Singleton para la conexión MongoDB
 let client: MongoClient;
 let db: Db;

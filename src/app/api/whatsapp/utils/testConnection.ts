@@ -1,4 +1,9 @@
-import { connectToDatabase } from '@/app/utils/mongodb';
+import { connectToDatabase } from '@/lib/whatsapp/database/mongodb';
+
+// En cualquier archivo que use MongoDB directamente
+if (typeof window !== 'undefined') {
+  throw new Error('Este módulo solo puede usarse en el servidor');
+}
 
 (async () => {
   try {
