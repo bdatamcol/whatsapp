@@ -1,30 +1,30 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // Ignora errores de ESLint durante el build
+    ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // Ignora errores de TypeScript durante el build
+    ignoreBuildErrors: true,
+  },
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      net: false,
+      tls: false,
+      dns: false,
+      fs: false,
+      child_process: false,
+      'mongodb-client-encryption': false,
+      kerberos: false,
+      snappy: false,
+      '@mongodb-js/zstd': false
+    };
+    return config;
   },
   env: {
     WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
     WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
   }
-  // Otras configuraciones pueden ir aquí
 };
 
-// next.config.js
-module.exports = {
-  webpack: (config) => {
-    config.resolve.fallback = {
-      dns: false,
-      net: false,
-      tls: false,
-      fs: false,
-    };
-    return config;
-  },
-};
-
-export default nextConfig;
+module.exports = nextConfig;
