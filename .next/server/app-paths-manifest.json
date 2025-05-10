@@ -1,14 +1,4 @@
 {
-  "/api/leads/route": "app/api/leads/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/marketing/ads/route": "app/api/marketing/ads/route.js",
-  "/api/marketing/insights/route": "app/api/marketing/insights/route.js",
-  "/api/whatsapp/contacts/route": "app/api/whatsapp/contacts/route.js",
-  "/api/whatsapp/sendMessage/route": "app/api/whatsapp/sendMessage/route.js",
-  "/api/whatsapp/templates/route": "app/api/whatsapp/templates/route.js",
-  "/api/whatsapp/webhook/route": "app/api/whatsapp/webhook/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/api/marketing/account/route": "app/api/marketing/account/route.js",
-  "/api/whatsapp/messagess/route": "app/api/whatsapp/messagess/route.js",
   "/page": "app/page.js"
 }
