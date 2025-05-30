@@ -34,7 +34,7 @@ const MetricsDashboard: React.FC = () => {
             }
       
             const data = await response.json();
-            console.log('Datos recibidos:', data);
+            // console.log('Datos recibidos:', data);
       
             // ✅ Accede a la propiedad `data` que es el array de métricas
             setMetrics(data.data);

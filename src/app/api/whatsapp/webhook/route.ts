@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/whatsapp/database/mongodb';
 import { Db } from 'mongodb';
 
 // En cualquier archivo que use MongoDB directamente
@@ -19,10 +18,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // Conexión a MongoDB
-    client = await clientPromise;
-    if (!client) throw new Error('Client no inicializado');
-
-    db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
+ db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
 
     // Ping para confirmar conexión
     await db.command({ ping: 1 });

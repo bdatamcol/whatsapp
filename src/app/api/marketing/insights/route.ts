@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    console.log('Datos recibidos:', data);
+    // console.log('Datos recibidos:', data);
 
     const formattedData: Metric[] = data.data.map((entry: any) => ({
       dateStart: entry.date_start || 'N/A',

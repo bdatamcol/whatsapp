@@ -1,7 +1,7 @@
 // src/app/api/whatsapp/services/whatsappService.ts
 
 import axios from 'axios';
-import { env } from '@/app/api/utils/env';
+import { env } from '@/app/api/whatsapp/utils/env';
 
 const BASE_URL = `https://graph.facebook.com/${env.API_VERSION}/${env.BUSINESS_PHONE}/messages`;
 const HEADERS = {

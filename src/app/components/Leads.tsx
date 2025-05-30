@@ -55,6 +55,7 @@ export default function Leads() {
 
         // Filtrar páginas que tienen access_token
         const pagesWithToken = json.pages?.filter((page: Page) => page.access_token) || [];
+        console.log( pagesWithToken );
         setPages(pagesWithToken);
 
         if (pagesWithToken.length === 0) {
@@ -79,7 +80,7 @@ export default function Leads() {
       setLoading(prev => ({ ...prev, forms: true }));
       setError('');
       try {
-        const res = await fetch('/api/leads', {
+        const res = await fetch('api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pageId, pageAccessToken }),
@@ -89,9 +90,11 @@ export default function Leads() {
         if (!res.ok || json.error) {
           throw new Error(json.error || 'Error al cargar formularios');
         }
+        console.log( json.data );
+        const { id } = json.data;
         
         setForms(json.data || []);
-        setFormId('');
+        setFormId(id);
         setLeads([]);
       } catch (err: any) {
         setError(err.message || 'Error al cargar formularios');

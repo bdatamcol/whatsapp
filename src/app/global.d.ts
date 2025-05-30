@@ -1,7 +1,9 @@
 import { MongoClient } from 'mongodb';
 
 declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined; // var permitido para global
+  namespace NodeJS {
+    interface Global {
+      _mongoClientPromise?: Promise<MongoClient>;
+    }
+  }
 }
-
-export {};

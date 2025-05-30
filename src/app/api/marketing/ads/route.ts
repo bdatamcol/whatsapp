@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   try {
-    const url = `https://graph.facebook.com/${version}/act_${adAccountId}/campaigns?fields=id,name,status,objective,daily_budget,start_time,stop_time&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/${version}/${adAccountId}/campaigns?fields=id,name,status,objective,daily_budget,start_time,stop_time&access_token=${accessToken}`;
     const res = await fetch(url);
     const data = await res.json();
 
