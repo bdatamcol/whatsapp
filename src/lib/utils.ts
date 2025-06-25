@@ -15,10 +15,10 @@ export const isServer = typeof window === "undefined";
 export const isClient = !isServer;
 
 // Función segura para conexión a MongoDB
-export async function safeMongoConnect() {
-  if (!isServer) {
-    throw new Error("MongoDB operations are only allowed on server side");
-  }
-  const { MongoClient } = await import("mongodb");
-  return MongoClient.connect(process.env.MONGODB_URI!);
-}
+// export async function safeMongoConnect() {
+//   if (!isServer) {
+//     throw new Error("MongoDB operations are only allowed on server side");
+//   }
+//   const { MongoClient } = await import("mongodb");
+//   return MongoClient.connect(process.env.MONGODB_URI!);
+// }

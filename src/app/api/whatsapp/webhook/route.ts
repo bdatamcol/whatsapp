@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Db } from 'mongodb';
-
-// En cualquier archivo que use MongoDB directamente
-if (typeof window !== 'undefined') {
-  throw new Error('Este módulo solo puede usarse en el servidor');
-}
+import clientPromise from '../../lib/mongodb';
+import { Client } from 'socket.io/dist/client';
 
 export async function POST(request: NextRequest) {
   console.log(JSON.stringify({
@@ -13,12 +10,9 @@ export async function POST(request: NextRequest) {
     details: 'Iniciando procesamiento de webhook'
   }));
 
-  let client;
-  let db: Db;
-
   try {
-    // Conexión a MongoDB
- db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
 
     // Ping para confirmar conexión
     await db.command({ ping: 1 });
@@ -59,8 +53,8 @@ export async function POST(request: NextRequest) {
         stack: error.stack
       },
       connectionStatus: {
-        hasClient: !!client,
-        hasDb: !!db,
+        hasClient: !!Client,
+        hasDb: !!Db,
         env: {
           MONGODB_URI: process.env.MONGODB_URI ? 'SET' : 'MISSING',
           MONGODB_DB: process.env.MONGODB_DB || 'default (whatsapp-business)'

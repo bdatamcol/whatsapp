@@ -1,14 +1,20 @@
 // src/app/api/whatsapp/services/messageHandler.ts
 
 import { Db } from 'mongodb';
+import clientPromise from '../../lib/mongodb';
 import { openAiService } from './openAiService';
 import { whatsappService } from './whatsappService';
 
 export class WebhookService {
   private db: Db;
 
-  constructor(db: Db) {
-    this.db = db;
+  constructor() {
+    this.initializeDb();
+  }
+
+  private async initializeDb() {
+    const client = await clientPromise;
+    this.db = client.db(process.env.MONGODB_DB || 'whatsapp-business');
   }
 
   async processMessage(rawMessage: any): Promise<{ success: boolean; messageId?: string; error?: string }> {
