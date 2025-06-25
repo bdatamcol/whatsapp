@@ -22,7 +22,7 @@ export async function GET() {
     // Obtener lista de páginas asociadas
     // Modificar el fetch de páginas para incluir force_token
     const pagesRes = await fetch(
-      `${baseUrl}/${version}/me/accounts?fields=id,name,category,username,access_token&access_token=${accessToken}&force_token=page`
+      `${baseUrl}/${version}/me/accounts?fields=id,name,category,username,access_token,picture{url}&access_token=${accessToken}&force_token=page`
     );
     const pagesList = await pagesRes.json();
 
@@ -69,7 +69,8 @@ export async function GET() {
         category: page.category,
         username: page.username,
         fan_count: page.fan_count,
-        access_token: page.access_token // Asegurarnos que se incluye
+        access_token: page.access_token,
+        picture: page.picture // Incluir la imagen de la página
       }))
     });
 
@@ -80,6 +81,11 @@ export async function GET() {
       username?: string;
       access_token?: string;
       fan_count?: number;
+      picture?: {
+        data: {
+          url: string;
+        };
+      };
     };
 
   } catch (error) {

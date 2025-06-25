@@ -1,6 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Loader2, Download } from 'lucide-react';
+import { exportToCSV } from '@/lib/utils/csv';
+import Button from './ui/Button';
+import Card, { CardContent } from './ui/card';
 
 interface Page {
   id: string;
@@ -12,7 +16,8 @@ interface Page {
 interface Form {
   id: string;
   name: string;
-  [key: string]: any;
+  status: string;
+  created_time: string;
 }
 
 interface LeadField {
@@ -22,10 +27,10 @@ interface LeadField {
 
 interface Lead {
   created_time: string;
-  field_data?: LeadField[];
-  id?: string;
-  // otras propiedades conocidas
+  field_data: LeadField[];
+  id: string;
 }
+
 export default function Leads() {
   const [pages, setPages] = useState<Page[]>([]);
   const [pageId, setPageId] = useState('');
@@ -53,9 +58,7 @@ export default function Leads() {
           throw new Error(json.error || 'Error al obtener páginas');
         }
 
-        // Filtrar páginas que tienen access_token
         const pagesWithToken = json.pages?.filter((page: Page) => page.access_token) || [];
-        console.log( pagesWithToken );
         setPages(pagesWithToken);
 
         if (pagesWithToken.length === 0) {
@@ -80,7 +83,7 @@ export default function Leads() {
       setLoading(prev => ({ ...prev, forms: true }));
       setError('');
       try {
-        const res = await fetch('api/leads', {
+        const res = await fetch('/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pageId, pageAccessToken }),
@@ -90,11 +93,9 @@ export default function Leads() {
         if (!res.ok || json.error) {
           throw new Error(json.error || 'Error al cargar formularios');
         }
-        console.log( json.data );
-        const { id } = json.data;
-        
+
         setForms(json.data || []);
-        setFormId(id);
+        setFormId('');
         setLeads([]);
       } catch (err: any) {
         setError(err.message || 'Error al cargar formularios');
@@ -118,7 +119,7 @@ export default function Leads() {
         const res = await fetch('/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formId, pageAccessToken }),
+          body: JSON.stringify({ formId, pageId, pageAccessToken }),
         });
 
         const json = await res.json();
@@ -138,7 +139,6 @@ export default function Leads() {
     fetchLeads();
   }, [formId, pageAccessToken]);
 
-  // Manejar cambio de página
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     const selected = pages.find(p => p.id === id);
@@ -158,98 +158,165 @@ export default function Leads() {
     setError('');
   };
 
+  const handleExportCSV = () => {
+    if (!leads.length) return;
+
+    const formattedLeads = leads.map(lead => {
+      const formattedLead: Record<string, string> = {
+        ID: lead.id,
+        'Fecha de creación': new Date(lead.created_time).toLocaleString()
+      };
+
+      lead.field_data.forEach(field => {
+        formattedLead[field.name] = field.values.join(', ');
+      });
+
+      return formattedLead;
+    });
+
+    exportToCSV(formattedLeads, {
+      filename: `leads_${formId}`,
+      includeTimestamp: true
+    });
+  };
+
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">📋 Leads recibidos</h1>
+    <div className="p-4 space-y-4">
+      <Card>
+        <CardContent className="pt-6">
+          <h1 className="text-2xl font-bold mb-4">📋 Gestión de Leads</h1>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Selector de páginas */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Selecciona una página:
-        </label>
-        <select
-          value={pageId}
-          onChange={handlePageChange}
-          disabled={loading.pages}
-          className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">-- Selecciona --</option>
-          {pages.map((page) => (
-            <option key={page.id} value={page.id}>
-              {page.name} {!page.access_token && "(sin permisos)"}
-            </option>
-          ))}
-        </select>
-        {loading.pages && <p className="text-sm text-gray-500 mt-1">Cargando páginas...</p>}
-      </div>
-
-      {/* Selector de formularios */}
-      {pageId && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Selecciona un formulario:
-          </label>
-          <select
-            value={formId}
-            onChange={(e) => setFormId(e.target.value)}
-            disabled={loading.forms || forms.length === 0}
-            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">-- Selecciona --</option>
-            {forms.map((form) => (
-              <option key={form.id} value={form.id}>
-                {form.name}
-              </option>
-            ))}
-          </select>
-          {loading.forms && <p className="text-sm text-gray-500 mt-1">Cargando formularios...</p>}
-          {!loading.forms && forms.length === 0 && (
-            <p className="text-sm text-gray-500 mt-1">No se encontraron formularios para esta página</p>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Tabla de leads */}
-      {loading.leads && <p className="text-sm text-gray-500">Cargando leads...</p>}
-      
-      {leads.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">🧑 Nombre</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">📧 Correo</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">📞 Teléfono</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">📆 Fecha</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {leads.map((lead, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 whitespace-nowrap">
-                    {lead.field_data?.find(f => f.name === 'full_name')?.values?.[0] || '—'}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap">
-                    {lead.field_data?.find(f => f.name === 'email')?.values?.[0] || '—'}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap">
-                    {lead.field_data?.find(f => f.name === 'phone_number')?.values?.[0] || '—'}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap">
-                    {new Date(lead.created_time).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+          <div className="space-y-4">
+            {/* Selector de páginas */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Página de Facebook:
+              </label>
+              <select
+                value={pageId}
+                onChange={handlePageChange}
+                disabled={loading.pages}
+                className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Selecciona una página</option>
+                {pages.map((page) => (
+                  <option key={page.id} value={page.id}>
+                    {page.name}
+                  </option>
+                ))}
+              </select>
+              {loading.pages && (
+                <div className="flex items-center mt-2 text-sm text-gray-500">
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  Cargando páginas...
+                </div>
+              )}
+            </div>
+
+            {/* Selector de formularios */}
+            {pageId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Formulario:
+                </label>
+                <select
+                  value={formId}
+                  onChange={(e) => setFormId(e.target.value)}
+                  disabled={loading.forms}
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Selecciona un formulario</option>
+                  {forms.map((form) => (
+                    <option key={form.id} value={form.id}>
+                      {form.name} ({form.status})
+                    </option>
+                  ))}
+                </select>
+                {loading.forms && (
+                  <div className="flex items-center mt-2 text-sm text-gray-500">
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    Cargando formularios...
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Lista de leads */}
+            {formId && (
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold">Leads recibidos</h2>
+                  {leads.length > 0 && (
+                    <Button
+                      onClick={handleExportCSV}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Exportar CSV
+                    </Button>
+                  )}
+                </div>
+
+                {loading.leads ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="animate-spin mr-2 h-6 w-6" />
+                    Cargando leads...
+                  </div>
+                ) : leads.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fecha
+                          </th>
+                          {leads[0].field_data.map((field) => (
+                            <th
+                              key={field.name}
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            >
+                              {field.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {leads.map((lead) => (
+                          <tr key={lead.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(lead.created_time).toLocaleString()}
+                            </td>
+                            {lead.field_data.map((field) => (
+                              <td
+                                key={field.name}
+                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                              >
+                                {field.values.join(', ')}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    No se encontraron leads para este formulario
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
