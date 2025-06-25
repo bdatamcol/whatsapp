@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Db } from 'mongodb';
 import clientPromise from '../../lib/mongodb';
-import { Client } from 'socket.io/dist/client';
 
 export async function POST(request: NextRequest) {
   console.log(JSON.stringify({
@@ -52,13 +50,9 @@ export async function POST(request: NextRequest) {
         message: error.message,
         stack: error.stack
       },
-      connectionStatus: {
-        hasClient: !!Client,
-        hasDb: !!Db,
-        env: {
-          MONGODB_URI: process.env.MONGODB_URI ? 'SET' : 'MISSING',
-          MONGODB_DB: process.env.MONGODB_DB || 'default (whatsapp-business)'
-        }
+      env: {
+        MONGODB_URI: process.env.MONGODB_URI ? 'SET' : 'MISSING',
+        MONGODB_DB: process.env.MONGODB_DB || 'default (whatsapp-business)'
       }
     }));
 
