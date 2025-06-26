@@ -95,7 +95,7 @@ export const WhatsAppProvider = ({ children }: { children: React.ReactNode }) =>
 
   // Conexión con Socket.io
   useEffect(() => {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
     const newSocket = io(socketUrl, {
       transports: ['websocket'],
       reconnectionAttempts: 5,
