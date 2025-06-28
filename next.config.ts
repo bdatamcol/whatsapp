@@ -21,8 +21,6 @@ const nextConfig = {
 
       config.externals = [
         ...(config.externals || []),
-        'mongodb',
-        'mongodb-client-encryption',
         'kerberos',
         'supports-color',
         'snappy',
@@ -32,10 +30,8 @@ const nextConfig = {
     return config;
   },
   experimental: {
-    // serverComponentsExternalPackages: ['mongodb'],
     serverActions: {},
   },
-  serverExternalPackages: ['mongodb'],
 };
 
 export default nextConfig;

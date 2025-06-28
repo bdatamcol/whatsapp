@@ -33,16 +33,12 @@ export async function GET(request: Request) {
 
     const response = await fetch(url, { method: 'GET' });
 
-    console.log('Status Code:', response.status);
-
     if (!response.ok) {
       const errorMessage = await response.json();
-      console.log('Error Message:', errorMessage);
       return NextResponse.json({ error: errorMessage.error.message }, { status: 500 });
     }
 
     const data = await response.json();
-    // console.log('Datos recibidos:', data);
 
     const formattedData: Metric[] = data.data.map((entry: any) => ({
       dateStart: entry.date_start || 'N/A',

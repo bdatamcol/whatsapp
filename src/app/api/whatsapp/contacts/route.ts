@@ -1,13 +1,6 @@
 // src/app/api/whatsapp/contacts/route.ts
 import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
 
-// Configuración de conexión directa (solo para rutas API)
-const uri = process.env.MONGODB_URI;
-if (!uri) throw new Error('MONGODB_URI is not defined');
-
-const client = new MongoClient(uri);
-const dbName = process.env.MONGODB_DB || 'whatsapp-business';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +8,6 @@ export async function GET() {
   let client;
   
   try {
-    client = await MongoClient.connect(uri);
-    const db = client.db(dbName);
 
     // Pipeline optimizado para obtener últimos mensajes
     const pipeline = [
@@ -60,11 +51,11 @@ export async function GET() {
       }
     ];
 
-    const contacts = await db.collection('messages')
-      .aggregate(pipeline)
-      .toArray();
+    // const contacts = await db.collection('messages')
+    //   .aggregate(pipeline)
+    //   .toArray();
 
-    return NextResponse.json(contacts);
+    return NextResponse.json('contacts');
 
   } catch (error) {
     console.error('Database error:', error);

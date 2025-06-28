@@ -2,12 +2,12 @@
 
 # WhatsApp Clean
 
-Una aplicación de chat estilo WhatsApp construida con Next.js, Socket.IO y MongoDB. También incluye integración con Meta, Facebook y OpenAI.
+Una aplicación de chat estilo WhatsApp construida con Next.js, Socket.IO y SUPABASE. También incluye integración con Meta, Facebook y OpenAI.
 
 ## Requisitos Previos
 
 - Node.js (versión 18 o superior)
-- MongoDB instalado y ejecutándose localmente, o una URI de MongoDB Atlas
+- SUPABASE instalado y ejecutándose localmente, o una URI de SUPABASE Atlas
 - Variables de entorno configuradas (ver sección de configuración)
 
 ## Configuración
@@ -17,8 +17,8 @@ Una aplicación de chat estilo WhatsApp construida con Next.js, Socket.IO y Mong
 
 ```env
 WHATSAPP_TOKEN=
-MONGODB_DB=
-MONGODB_URI=
+SUPABASE_DB=
+SUPABASE_URI=
 META_API_VERSION=
 META_APP_ID=
 META_APP_SECRET=
@@ -40,3 +40,15 @@ OPENAI_API_KEY=
 - ´src/app/providers´ - Proveedores de contexto
 - ´src/lib´ - Funciones y utilidades
 - ´src/types´ - Tipos de TypeScript
+
+
+## Generacion de token para verificacion contra webhooks
+
+Comando con Ruby instalado
+```
+ruby -rsecurerandom -e 'puts SecureRandom.hex(20)'
+```
+
+Ejemplo: __No usar en producción__
+
+4510c8cf2fe423f8be5afccbdd30c678677e172b

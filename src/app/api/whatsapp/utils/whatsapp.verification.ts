@@ -17,14 +17,6 @@ export function verifyWebhook(request: NextRequest): {
   const receivedToken = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  // 3. Debug
-  console.log('[WEBHOOK] Parámetros recibidos:', {
-    mode,
-    receivedToken,
-    expectedToken: token,
-    challenge
-  });
-
   // 4. Validación estricta
   return {
     valid: mode === 'subscribe' && receivedToken === token,
