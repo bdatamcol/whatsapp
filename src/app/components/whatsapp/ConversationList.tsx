@@ -60,10 +60,13 @@ export default function ConversationList({ onSelectAction }: Props) {
                 >
                     <div className="font-bold text-sm text-gray-800">{phone}</div>
                     <div className="text-gray-600 text-sm">
-                        {lastMessage?.content.slice(0, 100)+'...' || 'Sin mensajes aún'}
+                        {lastMessage?.content ? lastMessage?.content.slice(0, 100)+'...'  : 'No hay mensajes'}
                     </div>
                     <div className="text-xs text-gray-400">
                         {new Date(updated_at).toLocaleTimeString([], {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: '2-digit',
                             hour: '2-digit',
                             minute: '2-digit',
                         })}

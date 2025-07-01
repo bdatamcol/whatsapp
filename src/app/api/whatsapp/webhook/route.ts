@@ -33,6 +33,12 @@ export async function POST(request: NextRequest) {
 
   const hasMessage = change?.value?.messages?.[0];
 
+  //TODO: validar que el mensaje sea de texto y que no sea un mensaje vacio
+
+  if (!hasMessage || !hasMessage.text?.body || hasMessage.text.body.trim() === '') {
+    return NextResponse.json({ error: 'No message found' }, { status: 400 });
+  }
+
   if (!hasMessage ) {
     return NextResponse.json({ error: 'No message found' }, { status: 400 });
   }
@@ -74,6 +80,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error) {
-
+    console.error('Error al enviar el mensaje:', error);
+    return NextResponse.json({ error: 'Error al enviar el mensaje' }, { status: 500 });
   }
 }

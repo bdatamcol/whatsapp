@@ -64,10 +64,20 @@ export default function ChatView({ contactId }: Props) {
     }, [contactId]);
 
     const handleSendMessage = async () => {
-        if(!inputValue.trim()) return;
+        if (!inputValue.trim()) return;
+
+        const newMessage: Message = {
+            id: crypto.randomUUID(),//ID TEMPORAL
+            role: 'assistant',
+            content: inputValue,
+            timestamp: new Date().toISOString(),
+        };
+
+        setMessages((prev) => [...prev, newMessage]);
+        setInputValue(''); // Limpiar input inmediatamente
 
         try {
-            await fetch('/api/whatsapp/sendMessage', {
+            const response = await fetch('/api/whatsapp/sendMessage', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -77,7 +87,12 @@ export default function ChatView({ contactId }: Props) {
                     message: inputValue,
                 }),
             });
-            setInputValue('');
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Error desconocido');
+            }
+
         } catch (error) {
             console.error('Error al enviar el mensaje:', error);
         }
@@ -95,11 +110,11 @@ export default function ChatView({ contactId }: Props) {
                 {messages.map((msg, i) => (
                     <div
                         key={i}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'
+                        className={`flex ${msg.role === 'assistant' ? 'justify-end' : 'justify-start'
                             }`}
                     >
                         <div
-                            className={`p-3 rounded-lg max-w-xs ${msg.role === 'user'
+                            className={`p-3 rounded-lg max-w-xs ${msg.role === 'assistant'
                                 ? 'bg-blue-500 text-white'
                                 : 'bg-white border'
                                 }`}
@@ -114,9 +129,10 @@ export default function ChatView({ contactId }: Props) {
             <div className="p-4 border-t bg-white">
                 <div className="flex gap-2 items-center">
                     <Input
+                        value={inputValue}
                         placeholder="Escribe un mensaje..."
                         className="flex-1"
-                        onChange={(e) => setInputValue(e.target.value) }
+                        onChange={(e) => setInputValue(e.target.value)}
                     />
                     <Button
                         variant="default"
