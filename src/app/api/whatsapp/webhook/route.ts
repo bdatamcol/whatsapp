@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import IAService from '@/lib/ia/IAService';
 import { getConversation, updateConversation } from '@/lib/ia/memory';
+import { upsertContact } from '@/lib/whatsapp/contacts';
+import { supabase } from '@/lib/supabase/server.supabase';
 
 const token_meta = process.env.WHATSAPP_API_TOKEN;
 const mySecretToken = process.env.VERYFY_WEBHOOK_SECRET;
@@ -26,36 +28,56 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
 
   const data = await request.json();
-  // para imprimir en consola el json
+  // console.log(JSON.stringify(data, null, 2));// para imprimir en consola el json
 
   const entry = data.entry?.[0];
   const change = entry?.changes?.[0];
+  const value = change?.value;
 
+  //Manejo del evento del estado: enviado, leido, entregado
+  const statusEvent = value?.statuses?.[0];
+  if (statusEvent) {
+    const messageId = statusEvent.id;
+    const recipient = statusEvent.recipient_id;
+    const status = statusEvent.status;
+    if (status === 'read') {
+      //Llamar a una función de supabase si guardas estado
+      await supabase.rpc('mark_message_as_read', {
+        phone_input: recipient,
+        message_id: messageId
+      });
+
+      return NextResponse.json({ status: 'Estado leído registrado' });
+    }
+    return NextResponse.json({ status: `Evento de estado ignorado: ${status}` });
+  }
+
+  //Validar que el mensaje sea de texto y que no sea un mensaje vacio
   const hasMessage = change?.value?.messages?.[0];
-
-  //TODO: validar que el mensaje sea de texto y que no sea un mensaje vacio
-
   if (!hasMessage || !hasMessage.text?.body || hasMessage.text.body.trim() === '') {
     return NextResponse.json({ error: 'No message found' }, { status: 400 });
   }
 
-  if (!hasMessage ) {
-    return NextResponse.json({ error: 'No message found' }, { status: 400 });
-  }
   const message = hasMessage;
   const from = message.from;// numero de telefono de quien escribe
   const text = message.text?.body || '';// mensaje que envia
   const phoneNumberId = change.value.metadata.phone_number_id;
+  const name = change.value.contacts?.[0]?.profile?.name || 'Desconocido';
+  const timestamp = message.timestamp ? new Date(message.timestamp * 1000).toISOString() : new Date().toISOString();
+
+  await upsertContact({
+    phone: from,
+    name,
+    avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+  });
 
   const history = await getConversation(from);
-
-  const updatedMessages = [...history, { role: 'user', content: text }];
-
-  // const aiResponse = await askOpenRouterWithHistory(updatedMessages);
+  const updatedMessages = [
+    ...history,
+    { id: message.id, role: 'user', content: text, timestamp }
+  ];
+  
   const iaResponse = await IAService.askSmart(from, text);
-
-  updatedMessages.push({ role: 'assistant', content: iaResponse });
-  await updateConversation(from, updatedMessages);
 
   //enviamos la respuesta por whatsapp
   try {
@@ -74,8 +96,17 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
+    if (!response.ok) throw new Error(JSON.stringify(data));
 
-    if(!response.ok) throw new Error(JSON.stringify(data));
+    const messageId = data?.messages?.[0]?.id || crypto.randomUUID();
+    updatedMessages.push({
+      id: messageId,
+      role: 'assistant',
+      content: iaResponse,
+      timestamp: new Date().toISOString(),
+      status: 'sent'
+    });
+    await updateConversation(from, updatedMessages);
 
     return NextResponse.json({ success: true });
 

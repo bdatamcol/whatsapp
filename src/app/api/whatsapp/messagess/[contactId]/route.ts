@@ -17,6 +17,7 @@ export async function GET(request: Request, context: { params: { contactId: stri
     id: `${contactId}-${i}`,
     role: msg.role,
     content: msg.content,
+    status: msg.status,
     timestamp: msg.timestamp || new Date().toISOString(),
   })) || [];
 

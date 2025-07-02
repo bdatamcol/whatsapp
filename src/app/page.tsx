@@ -15,8 +15,8 @@ export default function Home() {
       case 'Panelcontrol': return <Panel />;
       case 'Mensajes': return <WhatsAppPanel/>;
       case 'Leads': return <Leads />;
-      case 'Ajustes': return <Settings />;
       case 'Marketing': return <Marketing />;
+      case 'Ajustes': return <Settings />;
       default: return <Panel />;
     }
   };
@@ -31,8 +31,8 @@ export default function Home() {
             { name: 'Panelcontrol', label: 'Panel de control' },
             { name: 'Mensajes', label: 'Mensajes' },
             { name: 'Leads', label: 'Leads' },
+            { name: 'Marketing', label: 'Marketing' },
             { name: 'Ajustes', label: 'Ajustes' },
-            { name: 'Marketing', label: 'Marketing' }
           ].map((item) => (
             <button
               key={item.name}

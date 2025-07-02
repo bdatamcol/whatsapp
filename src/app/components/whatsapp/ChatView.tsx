@@ -12,6 +12,7 @@ interface Message {
     role: 'user' | 'assistant';
     content: string;
     timestamp?: string;
+    status?: 'read' | 'sent';
 }
 
 interface Props {
@@ -120,6 +121,23 @@ export default function ChatView({ contactId }: Props) {
                                 }`}
                         >
                             <p>{msg.content}</p>
+                            {msg.role === 'assistant' && (
+                                <p className="text-xs mt-1 text-gray-400 text-right">
+                                    {msg.timestamp && new Date(msg.timestamp).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })} · {msg.status === 'read' ? '✓✓ Leído' : '✓ Enviado'}
+                                </p>
+                            )}
+                            {msg.role === 'user' && (
+                                <p className="text-xs mt-1 text-gray-400 text-left">
+                                    {msg.timestamp && new Date(msg.timestamp).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </p>
+                            )}
+
                         </div>
                     </div>
                 ))}

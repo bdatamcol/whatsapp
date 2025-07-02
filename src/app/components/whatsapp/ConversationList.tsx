@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 
 interface Conversation {
     phone: string;
+    name: string;
+    avatar_url: string;
     lastMessage: { role: string; content: string } | null;
     updated_at: string;
 }
@@ -24,7 +26,12 @@ export default function ConversationList({ onSelectAction }: Props) {
     const fetchConversations = async () => {
         const res = await fetch('/api/whatsapp/conversations');
         const data = await res.json();
-        setConversations(data);
+        if (Array.isArray(data)) {
+            setConversations(data);
+        } else {
+            console.warn('Respuesta inesperada del servidor:', data);
+            setConversations([]);
+        }
     };
 
     // Escuchar cambios en la tabla
@@ -52,27 +59,48 @@ export default function ConversationList({ onSelectAction }: Props) {
     return (
         <div className="space-y-4 p-4">
             <h2 className="text-xl font-semibold mb-4">Chats</h2>
-            {conversations.map(({ phone, lastMessage, updated_at }) => (
+            {conversations.length === 0 && (
+                <p className="text-gray-500">No hay chats disponibles.</p>
+            )}
+            {conversations.map(({ phone, name, avatar_url, lastMessage, updated_at }) => (
                 <div
                     key={phone}
                     onClick={() => onSelectAction(phone)}
-                    className="bg-white p-3 rounded shadow hover:bg-gray-100 transition cursor-pointer"
+                    className="flex items-center gap-3 bg-white p-3 rounded-lg shadow hover:bg-gray-100 transition cursor-pointer"
                 >
-                    <div className="font-bold text-sm text-gray-800">{phone}</div>
-                    <div className="text-gray-600 text-sm">
-                        {lastMessage?.content ? lastMessage?.content.slice(0, 100)+'...'  : 'No hay mensajes'}
+                    {/* Avatar */}
+                    <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                        {avatar_url ? (
+                            <img
+                                src={avatar_url}
+                                alt={name}
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <span className="text-gray-600 font-bold text-lg">
+                                {name.charAt(0).toUpperCase()}
+                            </span>
+                        )}
                     </div>
-                    <div className="text-xs text-gray-400">
-                        {new Date(updated_at).toLocaleTimeString([], {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                        })}
+
+                    {/* Información del chat */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-semibold text-sm text-gray-900 truncate">{name}</h3>
+                            <span className="text-xs text-gray-400">
+                                {new Date(updated_at).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
+                            </span>
+                        </div>
+                        <p className="text-gray-600 text-sm truncate">
+                            {lastMessage?.content ? lastMessage.content.slice(0, 80) + '…' : 'No hay mensajes'}
+                        </p>
                     </div>
                 </div>
             ))}
         </div>
     );
+
 }

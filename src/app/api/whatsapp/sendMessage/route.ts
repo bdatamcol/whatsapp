@@ -30,6 +30,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Error enviando mensaje...' }, { status: 400 });
   }
 
+  const messageId = resp.messages?.[0]?.id || crypto.randomUUID();
+
   // Recuperar mensajes actuales
   const { data: existing, error: fetchError } = await supabase
     .from('conversations')
@@ -38,15 +40,17 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (fetchError) {
-    console.error('❌ Error consultando historial:', fetchError);
+    console.error('Error consultando historial:', fetchError);
     return NextResponse.json({ error: 'Error consultando historial' }, { status: 500 });
   }
 
   // Armar nuevo mensaje
   const newMessage = {
+    id: messageId,
     role: 'assistant', // O 'admin' si quieres distinguir
     content: message,
     timestamp: new Date().toISOString(),
+    status: 'sent',
   };
 
   // Actualizar array
