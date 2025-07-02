@@ -3,6 +3,8 @@ import IAService from '@/lib/ia/IAService';
 import { getConversation, updateConversation } from '@/lib/ia/memory';
 import { upsertContact } from '@/lib/whatsapp/contacts';
 import { supabase } from '@/lib/supabase/server.supabase';
+import { findCityIdInText } from '@/lib/utils/cityMatcher';
+import { getAllCitiesCached } from '@/lib/utils/cityCache';
 
 const token_meta = process.env.WHATSAPP_API_TOKEN;
 const mySecretToken = process.env.VERYFY_WEBHOOK_SECRET;
@@ -65,6 +67,16 @@ export async function POST(request: NextRequest) {
   const name = change.value.contacts?.[0]?.profile?.name || 'Desconocido';
   const timestamp = message.timestamp ? new Date(message.timestamp * 1000).toISOString() : new Date().toISOString();
 
+
+  const cities = await getAllCitiesCached();
+  const cityId = await findCityIdInText(text, cities);
+  if (cityId) {
+    await supabase
+      .from('contacts')
+      .update({ city_id: cityId })
+      .eq('phone', from);
+  }
+
   await upsertContact({
     phone: from,
     name,
@@ -76,7 +88,7 @@ export async function POST(request: NextRequest) {
     ...history,
     { id: message.id, role: 'user', content: text, timestamp }
   ];
-  
+
   const iaResponse = await IAService.askSmart(from, text);
 
   //enviamos la respuesta por whatsapp
