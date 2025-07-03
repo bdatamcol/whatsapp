@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
 import Button from './ui/Button';
 import Card, { CardContent } from './ui/card';
@@ -44,6 +44,16 @@ export default function Leads() {
     forms: false,
     leads: false
   });
+
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const leadsPerPage = 10;
+
+  // Calcular leads para la página actual
+  const indexOfLastLead = currentPage * leadsPerPage;
+  const indexOfFirstLead = indexOfLastLead - leadsPerPage;
+  const currentLeads = leads.slice(indexOfFirstLead, indexOfLastLead);
+  const totalPages = Math.ceil(leads.length / leadsPerPage);
 
   // Obtener páginas de Facebook al iniciar
   useEffect(() => {
@@ -97,6 +107,7 @@ export default function Leads() {
         setForms(json.data || []);
         setFormId('');
         setLeads([]);
+        setCurrentPage(1); // Resetear paginación
       } catch (err: any) {
         setError(err.message || 'Error al cargar formularios');
         console.error('Error fetching forms:', err);
@@ -128,6 +139,7 @@ export default function Leads() {
         }
         
         setLeads(json.data || []);
+        setCurrentPage(1); // Resetear paginación
       } catch (err: any) {
         setError(err.message || 'Error al obtener leads');
         console.error('Error fetching leads:', err);
@@ -178,6 +190,19 @@ export default function Leads() {
       filename: `leads_${formId}`,
       includeTimestamp: true
     });
+  };
+
+  // Funciones de paginación
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
 
   return (
@@ -251,7 +276,14 @@ export default function Leads() {
             {formId && (
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold">Leads recibidos</h2>
+                  <div>
+                    <h2 className="text-lg font-semibold">Leads recibidos</h2>
+                    {leads.length > 0 && (
+                      <p className="text-sm text-gray-500">
+                        Mostrando {indexOfFirstLead + 1}-{Math.min(indexOfLastLead, leads.length)} de {leads.length} leads
+                      </p>
+                    )}
+                  </div>
                   {leads.length > 0 && (
                     <Button
                       onClick={handleExportCSV}
@@ -271,42 +303,91 @@ export default function Leads() {
                     Cargando leads...
                   </div>
                 ) : leads.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Fecha
-                          </th>
-                          {leads[0].field_data.map((field) => (
-                            <th
-                              key={field.name}
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              {field.name}
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Fecha
                             </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {leads.map((lead) => (
-                          <tr key={lead.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(lead.created_time).toLocaleString()}
-                            </td>
-                            {lead.field_data.map((field) => (
-                              <td
+                            {leads[0].field_data.map((field) => (
+                              <th
                                 key={field.name}
-                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                               >
-                                {field.values.join(', ')}
-                              </td>
+                                {field.name}
+                              </th>
                             ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {currentLeads.map((lead) => (
+                            <tr key={lead.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {new Date(lead.created_time).toLocaleString()}
+                              </td>
+                              {lead.field_data.map((field) => (
+                                <td
+                                  key={field.name}
+                                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                                >
+                                  {field.values.join(', ')}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Controles de paginación */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            onClick={goToPreviousPage}
+                            disabled={currentPage === 1}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Anterior
+                          </Button>
+                          
+                          <div className="flex items-center space-x-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                              <Button
+                                key={page}
+                                onClick={() => goToPage(page)}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="min-w-[2.5rem]"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            onClick={goToNextPage}
+                            disabled={currentPage === totalPages}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                          >
+                            Siguiente
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="text-sm text-gray-500">
+                          Página {currentPage} de {totalPages}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-4 text-gray-500">
                     No se encontraron leads para este formulario
