@@ -21,7 +21,7 @@ const Settings = () => {
             onClick={() => setSelected(index)}
             className={`flex items-center p-4 rounded-xl shadow-md transition-all cursor-pointer 
               ${selected === index ? 'bg-blue-100 border border-blue-500 shadow-lg' : 'bg-white'} 
-              hover:bg-blue-50 hover:shadow-lg hover:scale-105`}
+              hover:bg-blue-50 hover:shadow-lg hover:scale-101`}
           >
             <div className="mr-4 text-blue-600">
               {option.icon}

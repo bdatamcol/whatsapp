@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Panel from '@/app/components/Panel';
 import Leads from '@/app/components/Leads';
 import Settings from '@/app/components/Settings';
-import Messagess from '@/app/components/Messagess';
 import Marketing from '@/app/components/MarketingDashboard';
+import WhatsAppPanel from './components/whatsapp/WhatsAppPanel';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Panelcontrol');
@@ -13,10 +13,10 @@ export default function Home() {
   const renderContent = () => {
     switch (activeTab) {
       case 'Panelcontrol': return <Panel />;
-      case 'Mensajes': return <Messagess />;
+      case 'Mensajes': return <WhatsAppPanel/>;
       case 'Leads': return <Leads />;
-      case 'Ajustes': return <Settings />;
       case 'Marketing': return <Marketing />;
+      case 'Ajustes': return <Settings />;
       default: return <Panel />;
     }
   };
@@ -31,8 +31,8 @@ export default function Home() {
             { name: 'Panelcontrol', label: 'Panel de control' },
             { name: 'Mensajes', label: 'Mensajes' },
             { name: 'Leads', label: 'Leads' },
+            { name: 'Marketing', label: 'Marketing' },
             { name: 'Ajustes', label: 'Ajustes' },
-            { name: 'Marketing', label: 'Marketing' }
           ].map((item) => (
             <button
               key={item.name}

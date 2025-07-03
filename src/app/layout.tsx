@@ -1,7 +1,6 @@
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import type { Metadata } from 'next';
-import { Providers } from '@/app/providers/Providers';   
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -25,9 +24,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.variable} ${robotoMono.variable}`}>
-        <Providers>
-          {children}
-        </Providers>
+        {children}
       </body>
     </html>
   );

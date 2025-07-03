@@ -17,25 +17,20 @@ const nextConfig = {
         dns: false,
         fs: false,
         child_process: false,
-        mongodb: false,
       };
 
-      config.plugins.push(
-        new config.webpack.IgnorePlugin({
-          resourceRegExp: /^(zstd|kerberos|mongocrypt|snappy)\.node$/,
-          contextRegExp: /node_modules/,
-        }),
-        new config.webpack.IgnorePlugin({
-          resourceRegExp: /^mongodb$/,
-          contextRegExp: /node_modules/,
-        })
-      );
+      config.externals = [
+        ...(config.externals || []),
+        'kerberos',
+        'supports-color',
+        'snappy',
+        'aws4'
+      ];
     }
     return config;
   },
   experimental: {
-    serverComponentsExternalPackages: ['mongodb'],
-    serverActions: true,
+    serverActions: {},
   },
 };
 
