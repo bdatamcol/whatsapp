@@ -43,7 +43,6 @@ export async function POST(request: Request) {
         });
 
     } catch (error: any) {
-        console.error('Error en la API de leads:', error);
         return NextResponse.json(
             { error: error.message || 'Error al procesar la solicitud de leads' },
             { status: 500 }

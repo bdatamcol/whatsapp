@@ -90,3 +90,13 @@ ruby -rsecurerandom -e 'puts SecureRandom.hex(20)'
 Ejemplo: __No usar en producción__
 
 ```4510c8cf2fe423f8be5afccbdd30c678677e172b```
+
+### Llenar de la base de datos
+Usamos la seed de Supabase, que se encuenta en el endpoint:
+```
+URL_ADDRESS:3000/api/dev/seed   
+```
+Tenemos que pasar el token de seed en el header de la peticion:
+```
+SEED_SECRET: your_seed_secret
+```
