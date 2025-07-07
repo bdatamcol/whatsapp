@@ -25,12 +25,11 @@ export default function AdsManager() {
     const fetchCampaigns = async () => {
       try {
         const res = await fetch('/api/marketing/ads');
-        const data = await res.json();
-
+        const campaigns = await res.json();
         if (!res.ok) {
-          setError(data.error || 'Error al cargar campañas');
+          setError(campaigns.error || 'Error al cargar campañas');
         } else {
-          setCampaigns(data.campaigns);
+          setCampaigns(campaigns);
         }
       } catch (err) {
         console.error(err);
