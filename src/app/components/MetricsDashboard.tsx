@@ -1,4 +1,4 @@
-import{ useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollArea } from '@radix-ui/react-scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -14,8 +14,8 @@ interface Metric {
     frequency?: number;
     dateStart: string;
     dateStop: string;
-  }
-  
+}
+
 
 const MetricsDashboard: React.FC = () => {
     const [metrics, setMetrics] = useState<any[]>([]);
@@ -24,30 +24,30 @@ const MetricsDashboard: React.FC = () => {
 
     useEffect(() => {
         const fetchMetrics = async () => {
-          try {
-            const response = await fetch('/api/marketing/insights');
-      
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error('Error en la solicitud:', errorText || 'Respuesta vacía');
-              return;
+            try {
+                const response = await fetch('/api/marketing/insights');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error en la solicitud:', errorText || 'Respuesta vacía');
+                    return;
+                }
+
+                const data = await response.json();
+                //Accede a la propiedad `data` que es el array de métricas
+                setMetrics(data.data);
+                setFilteredMetrics(data.data); // También inicializa las métricas filtradas
+
+            } catch (error) {
+                console.error('Error al obtener los datos:', error);
             }
-      
-            const data = await response.json();
-            //Accede a la propiedad `data` que es el array de métricas
-            setMetrics(data.data);
-            setFilteredMetrics(data.data); // También inicializa las métricas filtradas
-      
-          } catch (error) {
-            console.error('Error al obtener los datos:', error);
-          }
         };
-      
+
         fetchMetrics();
-      }, []);
-      
-      
-  
+    }, []);
+
+
+
     const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const selected = event.target.value;
         setSelectedCampaign(selected);
@@ -121,8 +121,8 @@ const MetricsDashboard: React.FC = () => {
                                         <td className="px-6 py-4">{metric.campaignName}</td>
                                         <td className="px-6 py-4">{metric.dateStart}</td>
                                         <td className="px-6 py-4">{metric.dateStop}</td>
-                                        <td className="px-6 py-4">{metric.spend}</td>
-                                        <td className="px-6 py-4">{metric.impressions}</td>
+                                        <td>{metric.spend.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</td>
+                                        <td>{metric.impressions.toLocaleString()}</td>
                                         <td className="px-6 py-4">{metric.reach}</td>
                                         <td className="px-6 py-4">{metric.clicks}</td>
                                         <td className="px-6 py-4">{metric.cpc}</td>

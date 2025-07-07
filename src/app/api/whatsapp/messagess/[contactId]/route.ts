@@ -1,25 +1,19 @@
-import { supabase } from '@/lib/supabase/server.supabase';
+import { getMessagesForContact } from '@/lib/whatsapp/services/conversation';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request, context: { params: { contactId: string } }) {
-  const { contactId } = await context.params;
-  const { data, error } = await supabase
-    .from('conversations')
-    .select('messages')
-    .eq('phone', contactId)
-    .maybeSingle();
+  
+  try {
+    const { contactId } = await context.params;
+    const messages = await getMessagesForContact(contactId);
+    return NextResponse.json(messages);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error en endpoint GET /messages/[contactId]:', error);
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 500 }
+    );
   }
 
-  const messages = data?.messages?.map((msg: any, i: number) => ({
-    id: `${contactId}-${i}`,
-    role: msg.role,
-    content: msg.content,
-    status: msg.status,
-    timestamp: msg.timestamp || new Date().toISOString(),
-  })) || [];
-
-  return NextResponse.json(messages);
 }

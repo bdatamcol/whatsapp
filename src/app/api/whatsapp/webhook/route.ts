@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleStatusEvent } from '@/lib/whatsapp/services/handleStatusEvent';
-import { handleIncomingMessage } from '@/lib/whatsapp/services/handleIncomingMessage';
+import { processWebhookRequest } from '@/lib/whatsapp/services/webhookDispatcher';
 
 
 const mySecretToken = process.env.VERYFY_WEBHOOK_SECRET;
@@ -23,35 +22,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-
   try {
-    const data = await request.json();
-    // console.log(JSON.stringify(data, null, 2));// para imprimir en consola el json
-    const entry = data.entry?.[0];
-    const change = entry?.changes?.[0];
-    const value = change?.value;
-
-    //Manejo del evento del estado: enviado, leido, entregado
-    const statusEvent = value?.statuses?.[0];
-    if (statusEvent) {
-      const result = await handleStatusEvent(statusEvent);
-      if (result) return result;
-    }
-
-    //Validar que el mensaje sea de texto y que no sea un mensaje vacio
-    const hasMessage = change?.value?.messages?.[0];
-    // console.log('Mensaje recibido del cliente:', JSON.stringify(hasMessage, null, 2));
-    // Acepta solo tipos válidos
-    const allowedTypes = ['text', 'button'];
-    if (!allowedTypes.includes(hasMessage.type)) {
-      return NextResponse.json({ error: `Unsupported message type: ${hasMessage.type}` }, { status: 200 });
-    }
-    //Manejo del mensaje de texto
-    await handleIncomingMessage(hasMessage, value);
-    return NextResponse.json({ success: true });
-
+    return await processWebhookRequest(request);
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-
 }

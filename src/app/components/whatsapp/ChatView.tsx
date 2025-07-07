@@ -78,7 +78,7 @@ export default function ChatView({ contactId }: Props) {
         setInputValue(''); // Limpiar input inmediatamente
 
         try {
-            const response = await fetch('/api/whatsapp/sendMessage', {
+            const response = await fetch('/api/whatsapp/messagess/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
