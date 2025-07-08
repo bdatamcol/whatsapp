@@ -61,7 +61,7 @@ OPENROUTER_MODEL=your_model_name # Format: provider/model-name
 ## Supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key # Format: JWT token
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url # Format: https://{project}.supabase.co
-NEXT_PUBLIC_SUPABASE_ROLE_KEY=your_role_key # Format: JWT token
+SUPABASE_ROLE_KEY=your_role_key # Format: JWT token
 
 ## SEED SECRET
 SEED_SECRET=your_seed_secret # Format: alphanumeric string
