@@ -8,6 +8,7 @@ import Leads from '@/app/components/Leads';
 import Settings from '@/app/components/Settings';
 import Marketing from '@/app/components/MarketingDashboard';
 import WhatsAppPanel from './components/whatsapp/WhatsAppPanel';
+import ContactList from './components/ContactList';
 
 export default function Home() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function Home() {
   const renderContent = () => {
     switch (activeTab) {
       case 'Panelcontrol': return <Panel />;
+      case 'Contactos': return <ContactList />;
       case 'Mensajes': return <WhatsAppPanel/>;
       case 'Leads': return <Leads />;
       case 'Marketing': return <Marketing />;
@@ -50,6 +52,7 @@ export default function Home() {
         <nav className="flex-1 space-y-2">
           {[
             { name: 'Panelcontrol', label: 'Panel de control' },
+            { name: 'Contactos', label: 'Contactos' },
             { name: 'Mensajes', label: 'Mensajes' },
             { name: 'Leads', label: 'Leads' },
             { name: 'Marketing', label: 'Marketing' },

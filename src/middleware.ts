@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client.supabase';
+import { supabase } from '@/lib/supabase/server.supabase';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
     const publicRoutes = [
         '/login',
         '/_next/static',
-        '/api/auth',
+        '/api/',
         '/favicon.ico',
         '/_next/image',  // Agregamos esta ruta para imágenes
         '/_next/webpack-hmr'  // Agregamos esta ruta para desarrollo
@@ -36,17 +36,19 @@ export async function middleware(request: NextRequest) {
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (error || !user) {
-            // Si hay error o no hay usuario, redirigir al login
-            const redirectUrl = new URL('/login', request.url);
-            return NextResponse.redirect(redirectUrl);
+            // Si hay error o no hay usuario, eliminar la cookie y redirigir al login
+            const response = NextResponse.redirect(new URL('/login', request.url));
+            response.cookies.delete('sb-access-token');
+            return response;
         }
 
         // Token válido, permitir el acceso
         return NextResponse.next();
     } catch (error) {
-        // En caso de error, redirigir al login
-        const redirectUrl = new URL('/login', request.url);
-        return NextResponse.redirect(redirectUrl);
+        // En caso de error, eliminar la cookie y redirigir al login
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('sb-access-token');
+        return response;
     }
 }
 
