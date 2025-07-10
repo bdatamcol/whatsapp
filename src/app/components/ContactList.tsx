@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { useEffect, useState, useRef } from 'react';
 import { Pencil, Loader2, Check, X, Search, MapPin, Activity, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import Input from './ui/Input';
-import { number } from 'framer-motion';
 
 interface Contact {
   name: string;
@@ -14,7 +13,7 @@ interface Contact {
   tags: [] | null;
   status: string;
   needs_human: boolean;
-  cities: Cities;
+  cities: Cities | null;
 }
 
 interface Cities {
@@ -37,6 +36,8 @@ export default function ContactList() {
 
   const [regions, setRegions] = useState<{ id: number; name: string }[]>([]);
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
+
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchContacts();
@@ -71,6 +72,19 @@ export default function ContactList() {
     }, 300); // Espera 300ms después de que el usuario deje de escribir
     return () => clearTimeout(timeout); // Limpia si el usuario sigue escribiendo
   }, [filters.phone]);
+
+  const clearFilters = () => {
+    setFilters({
+      phone: '',
+      city: '',
+      regionId: '',
+      status: '',
+      human: ''
+    });
+    setCities([]);
+    fetchContacts();
+    phoneInputRef.current?.focus();
+  };
 
   const fetchContacts = async () => {
     setLoading(true);
@@ -146,6 +160,10 @@ export default function ContactList() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
+                name='phone'
+                autoComplete='off'
+                ref={phoneInputRef}
+                autoFocus
                 placeholder="Buscar por teléfono"
                 className="pl-9"
                 value={filters.phone}
@@ -156,6 +174,7 @@ export default function ContactList() {
             <div className="relative">
               <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <select
+                name='regionId'
                 className="flex h-10 w-full rounded-md border border-input bg-background px-9 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={filters.regionId || ''}
                 onChange={(e) => setFilters(prev => ({
@@ -176,6 +195,7 @@ export default function ContactList() {
             <div className="relative">
               <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <select
+                name='city'
                 className="flex h-10 w-full rounded-md border border-input bg-background px-9 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={filters.city}
                 onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
@@ -188,6 +208,7 @@ export default function ContactList() {
             <div className="relative">
               <Activity className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <select
+                name='status'
                 className="flex h-10 w-full rounded-md border border-input bg-background px-9 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={filters.status}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
@@ -203,6 +224,7 @@ export default function ContactList() {
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <select
+                name='human'
                 className="flex h-10 w-full rounded-md border border-input bg-background px-9 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={filters.human}
                 onChange={(e) => setFilters(prev => ({ ...prev, human: e.target.value }))}
@@ -214,13 +236,7 @@ export default function ContactList() {
             </div>
             <div className="relative">
               <button
-                onClick={() => setFilters({
-                  phone: '',
-                  city: '',
-                  regionId: '',
-                  status: '',
-                  human: ''
-                })}
+                onClick={ clearFilters }
                 className="flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
               >
                 Limpiar filtros
@@ -241,7 +257,7 @@ export default function ContactList() {
                 </tr>
               </thead>
               <tbody>
-                {contacts.map((contact) => (
+                {contacts?.map((contact) => (
                   <tr key={contact.phone} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4">
                       {editingContact === contact.phone ? (
@@ -278,7 +294,7 @@ export default function ContactList() {
                       )}
                     </td>
                     <td className="px-6 py-4">{contact.phone}</td>
-                    <td className="px-6 py-4">{contact.cities.name}</td>
+                    <td className="px-6 py-4">{contact.cities?.name}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${contact.status === 'active'
                         ? 'bg-green-100 text-green-800'

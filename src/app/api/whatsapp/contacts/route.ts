@@ -12,7 +12,6 @@ export async function GET(request: Request) {
     };
 
     try {
-        console.log({ filters });
         const contacts = await getContacts(filters);
         return NextResponse.json(contacts);
     } catch (error) {
