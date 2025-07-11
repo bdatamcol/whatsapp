@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client.supabase';
-import Panel from '@/app/components/Panel';
+import Panel from '@/app/(admin)/dashboard/home/Panel';
 import Leads from '@/app/components/Leads';
 import Settings from '@/app/components/Settings';
 import Marketing from '@/app/components/MarketingDashboard';
-import WhatsAppPanel from './components/whatsapp/WhatsAppPanel';
-import ContactList from './components/ContactList';
+import ContactList from '@/app/components/ContactList';
+import WhatsAppPanel from '@/app/components/whatsapp/WhatsAppPanel';
 
 export default function Home() {
   const router = useRouter();

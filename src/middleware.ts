@@ -35,6 +35,25 @@ export async function middleware(request: NextRequest) {
         // Verificar el token con Supabase
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
+        // Token válido, redirigir a dashboard si está en `/`
+        if (request.nextUrl.pathname === '/') {
+            // Traer el perfil del usuario
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            const redirectPath =
+                profile?.role === 'admin'
+                    ? '/(admin)/dashboard'
+                    : profile?.role === 'assistant'
+                        ? '/(assistant)/dashboard'
+                        : '/login';
+
+            return NextResponse.redirect(new URL(redirectPath, request.url));
+        }
+
         if (error || !user) {
             // Si hay error o no hay usuario, eliminar la cookie y redirigir al login
             const response = NextResponse.redirect(new URL('/login', request.url));

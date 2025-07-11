@@ -20,20 +20,39 @@ export default function LoginForm() {
         setLoading(true);
 
         try {
+            // 1. Iniciar sesión
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-            
+            if (error || !data.session) throw error || new Error('No se pudo iniciar sesión');
+
+            // 2. Obtener el perfil usando el id del usuario autenticado
+            const user = data.session.user;
+
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (profileError || !profile?.role) throw new Error("Perfil no encontrado");
             // Guardar el token en una cookie
             document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 días
-            
-            router.replace('/');
-            router.refresh();
-        } catch (error) {
+
+            // 3. Redirigir según el rol
+            if (profile.role === 'admin') {
+                router.replace('/dashboard');
+            } else if (profile.role === 'assistant') {
+                router.replace('/assistant/dashboard');
+            } else {
+                throw new Error('Rol desconocido');
+            }
+
+        } catch (error: any) {
             setError(error.message);
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
