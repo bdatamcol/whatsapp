@@ -1,4 +1,5 @@
 import { Inter, Roboto_Mono } from "next/font/google";
+import { Toaster } from '@/components/ui/sonner'
 import "./globals.css";
 import type { Metadata } from 'next';
 const inter = Inter({
@@ -25,6 +26,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${inter.variable} ${robotoMono.variable}`}>
         {children}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

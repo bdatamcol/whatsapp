@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/server.supabase';
 
-export async function appendMessageToConversation(phone: string, message: string, messageId: string) {
+export async function appendMessageToConversation(phone: string, message: string, messageId: string, role: string = 'assistant') {
     const { data: existing, error: fetchError } = await supabase
         .from('conversations')
         .select('messages')
@@ -11,7 +11,7 @@ export async function appendMessageToConversation(phone: string, message: string
 
     const newMessage = {
         id: messageId,
-        role: 'assistant',
+        role,
         content: message,
         timestamp: new Date().toISOString(),
         status: 'sent',
@@ -30,7 +30,7 @@ export async function appendMessageToConversation(phone: string, message: string
     if (upsertError) throw new Error('Error guardando mensaje');
 }
 
-export type Role = 'user' | 'assistant';
+export type Role = 'user' | 'assistant' | 'assistant_humano';
 export async function getMessagesForContact(phone: string): Promise<
     { id: string; role: Role; content: string; status: string; timestamp: string }[]
 > {

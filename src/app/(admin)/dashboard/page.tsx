@@ -1,21 +1,46 @@
 'use client';
 
-import { useState } from 'react';
-import Panel from '@/app/components/Panel';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client.supabase';
+import Panel from '@/app/(admin)/dashboard/home/Panel';
 import Leads from '@/app/components/Leads';
 import Settings from '@/app/components/Settings';
 import Marketing from '@/app/components/MarketingDashboard';
-import WhatsAppPanel from './components/whatsapp/WhatsAppPanel';
+import ContactList from '@/app/components/ContactList';
+import WhatsAppPanel from '@/app/components/whatsapp/WhatsAppPanel';
+import AssignmentsPage from './assignments/page';
 
 export default function Home() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('Panelcontrol');
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // Eliminar la cookie del token
+    document.cookie = `sb-access-token=; max-age=0`;
+    router.replace('/login');
+  };
   
   const renderContent = () => {
     switch (activeTab) {
       case 'Panelcontrol': return <Panel />;
+      case 'Contactos': return <ContactList />;
       case 'Mensajes': return <WhatsAppPanel/>;
       case 'Leads': return <Leads />;
       case 'Marketing': return <Marketing />;
+      case 'Asingar Asesor': return <AssignmentsPage/>;
       case 'Ajustes': return <Settings />;
       default: return <Panel />;
     }
@@ -29,9 +54,11 @@ export default function Home() {
         <nav className="flex-1 space-y-2">
           {[
             { name: 'Panelcontrol', label: 'Panel de control' },
+            { name: 'Contactos', label: 'Contactos' },
             { name: 'Mensajes', label: 'Mensajes' },
             { name: 'Leads', label: 'Leads' },
             { name: 'Marketing', label: 'Marketing' },
+            { name: 'Asingar Asesor', label: 'Asingar Asesor' },
             { name: 'Ajustes', label: 'Ajustes' },
           ].map((item) => (
             <button
@@ -45,6 +72,14 @@ export default function Home() {
             </button>
           ))}
         </nav>
+        
+        {/* Botón de cierre de sesión */}
+        <button
+          onClick={handleLogout}
+          className="mt-auto p-3 w-full text-left rounded-lg transition-colors text-red-400 hover:bg-red-500 hover:text-white"
+        >
+          Cerrar Sesión
+        </button>
       </div>
 
       {/* Área de contenido principal */}

@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { MessageCircle, BarChart, Zap } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { supabase } from '@/lib/supabase/client.supabase';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const [summary, setSummary] = useState({
@@ -16,7 +18,6 @@ export default function Dashboard() {
     recentInsights: [],
     recentConversations: [],
   });
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,6 +66,27 @@ export default function Dashboard() {
     }
 
     loadData();
+    // Subscribirse a cambios en tiempo real
+    const subscription = supabase
+      .channel('contacts:needs_human')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'contacts',
+          filter: 'needs_human=eq.true',
+        },
+        (payload) => {
+          toast.info('Hay nuevos contactos que necesitan atención humana.') // Activar la alerta visual
+        }
+      )
+      .subscribe();
+
+    // Limpiar suscripción cuando se desmonta
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   if (loading) return <p className="text-gray-500 text-sm">Cargando panel...</p>;

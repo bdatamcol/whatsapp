@@ -5,14 +5,14 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
 
   try {
-    const { phone, message } = await request.json();
+    const { phone, message, role } = await request.json();
 
     if (!phone || !message) {
       return NextResponse.json({ error: 'Faltan Datos' }, { status: 400 });
     }
 
     const messageId = await sendTextMessageToWhatsApp(phone, message);
-    await appendMessageToConversation(phone, message, messageId);
+    await appendMessageToConversation(phone, message, messageId, role);
 
     return NextResponse.json({ success: true }, { status: 200 });
 
