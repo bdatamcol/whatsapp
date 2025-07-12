@@ -3,11 +3,16 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client.supabase';
 import { getCurrentUserClient } from '@/lib/auth/services/getUserFromRequest';
+import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { SelectValue } from '@radix-ui/react-select';
+import { toast } from 'sonner';
 
 type Contact = {
     phone: string;
     name: string;
     status: string;
+    assignments: any[];
 };
 
 type Assistant = {
@@ -27,26 +32,23 @@ export default function AssignmentsPage() {
             const userData = await getCurrentUserClient();
             setUser(userData);
 
-            const { data: contactsData } = await supabase
+            const { data: contactsData, error } = await supabase
                 .from('contacts')
-                .select('phone, name, status')
+                .select(`phone, name, status, assignments:assistants_assignments!left(id, assigned_to, active, profile:assigned_to (email))`)
                 .eq('needs_human', true);
 
             const { data: assistantsData } = await supabase
                 .from('profiles')
                 .select('id, email')
                 .eq('role', 'assistant');
-                
-                setContacts(contactsData || []);
-                setAssistants(assistantsData || []);
-                setLoading(false);
-                console.log({assistantsData});
-            };
-            loadData();
+
+            setContacts(contactsData || []);
+            setAssistants(assistantsData || []);
+            setLoading(false);
+        };
+        loadData();
     }, []);
     const handleAssign = async (phone: string, assistantId: string) => {
-        console.log({phone, assistantId});
-        console.log(user.id);
         const res = await fetch('/api/admin/assign-contact', {
             method: 'POST',
             body: JSON.stringify({
@@ -57,61 +59,82 @@ export default function AssignmentsPage() {
         });
 
         if (res.ok) {
-            alert('Asignado correctamente');
-            setContacts(prev => prev.filter(c => c.phone !== phone)); // remover de la lista
+            const assignedAssistant = assistants.find(a => a.id === assistantId);
+            setContacts(prev =>
+                prev.map(c =>
+                    c.phone === phone
+                        ? {
+                            ...c,
+                            assignments: [
+                                {
+                                    assigned_to: assistantId,
+                                    profile: { email: assignedAssistant?.email || 'desconocido' },
+                                },
+                            ],
+                        }
+                        : c
+                )
+            );
+            toast.success('Asignación exitosa');
         } else {
             const data = await res.json();
-            alert('Error: ' + data.error);
+            toast.error(data.message);
         }
     };
 
-    if (loading) return <p className="p-4">Cargando...</p>;
+    if (loading) return (
+        <div className="flex items-center justify-center h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+    )
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">Asignación de clientes a asistentes</h1>
+        <div className="container mx-auto py-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-2xl">Asignación de clientes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {contacts.map(contact => {
+                        const assigned = contact.assignments?.find(a => a.active);
+                        const alreadyAssigned = !!assigned;
 
-            {contacts.length === 0 ? (
-                <p>No hay contactos esperando atención humana.</p>
-            ) : (
-                <table className="w-full border border-gray-300">
-                    <thead>
-                        <tr className="bg-gray-100">
-                            <th className="p-2 border">Nombre</th>
-                            <th className="p-2 border">Teléfono</th>
-                            <th className="p-2 border">Asignar a</th>
-                            <th className="p-2 border">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {contacts.map(contact => (
-                            <tr key={contact.phone}>
-                                <td className="p-2 border">{contact.name}</td>
-                                <td className="p-2 border">{contact.phone}</td>
-                                <td className="p-2 border">
-                                    <select
-                                        onChange={e => handleAssign(contact.phone, e.target.value)}
-                                        defaultValue=""
-                                        className="border p-1"
-                                    >
-                                        <option value="" disabled>
-                                            Seleccionar...
-                                        </option>
-                                        {assistants.map(a => (
-                                            <option key={a.id} value={a.id}>
-                                                {a.email}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td className="p-2 border text-center">
-                                    {/* Acción se ejecuta al seleccionar opción */}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
+                        return (
+                            <div key={contact.phone} className="flex items-center justify-between p-4 border rounded-lg">
+                                <div>
+                                    <p className="font-medium">{contact.name}</p>
+                                    <p className="text-sm text-muted-foreground">{contact.phone}</p>
+
+                                    {alreadyAssigned && (
+                                        <p className="text-xs text-green-600 mt-1">
+                                            Ya asignado a: {assigned.profile.email}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    {alreadyAssigned ? (
+                                        <span className="text-sm text-muted-foreground">Asignado</span>
+                                    ) : (
+                                        <Select onValueChange={(value) => handleAssign(contact.phone, value)}>
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue placeholder="Asignar a..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {assistants.map(a => (
+                                                    <SelectItem key={a.id} value={a.id}>
+                                                        {a.email}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </CardContent>
+            </Card>
         </div>
     );
 }

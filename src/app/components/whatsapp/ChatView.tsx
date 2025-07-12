@@ -9,7 +9,7 @@ import Button from '../ui/Button';
 
 interface Message {
     id: string;
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'assistant_humano';
     content: string;
     timestamp?: string;
     status?: 'read' | 'sent';
@@ -17,9 +17,10 @@ interface Message {
 
 interface Props {
     contactId: string;
+    role?: 'assistant' | 'assistant_humano'; // nuevo
 }
 
-export default function ChatView({ contactId }: Props) {
+export default function ChatView({ contactId, role = 'assistant' }: Props) {
     const [messages, setMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const [inputValue, setInputValue] = useState('');
@@ -69,7 +70,7 @@ export default function ChatView({ contactId }: Props) {
 
         const newMessage: Message = {
             id: crypto.randomUUID(),//ID TEMPORAL
-            role: 'assistant',
+            role: role || 'assistant',
             content: inputValue,
             timestamp: new Date().toISOString(),
         };
@@ -86,6 +87,7 @@ export default function ChatView({ contactId }: Props) {
                 body: JSON.stringify({
                     phone: contactId,
                     message: inputValue,
+                    role
                 }),
             });
 
@@ -108,39 +110,51 @@ export default function ChatView({ contactId }: Props) {
 
             {/* Mensajes */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {messages.map((msg, i) => (
-                    <div
-                        key={i}
-                        className={`flex ${msg.role === 'assistant' ? 'justify-end' : 'justify-start'
-                            }`}
-                    >
-                        <div
-                            className={`p-3 rounded-lg max-w-xs ${msg.role === 'assistant'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white border'
-                                }`}
-                        >
-                            <p>{msg.content}</p>
-                            {msg.role === 'assistant' && (
-                                <p className="text-xs mt-1 text-gray-400 text-right">
-                                    {msg.timestamp && new Date(msg.timestamp).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                    })} · {msg.status === 'read' ? '✓✓ Leído' : '✓ Enviado'}
-                                </p>
-                            )}
-                            {msg.role === 'user' && (
-                                <p className="text-xs mt-1 text-gray-400 text-left">
-                                    {msg.timestamp && new Date(msg.timestamp).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                    })}
-                                </p>
-                            )}
+                {messages.map((msg, i) => {
+                    const isAssistant = msg.role === 'assistant';
+                    const isHumanAssistant = msg.role === 'assistant_humano';
+                    const isUser = msg.role === 'user';
 
+                    return (
+                        <div
+                            key={i}
+                            className={`flex ${isAssistant || isHumanAssistant ? 'justify-end' : 'justify-start'}`}
+                        >
+                            <div
+                                className={`p-3 rounded-lg max-w-xs relative ${isAssistant
+                                        ? 'bg-blue-500 text-white'
+                                        : isHumanAssistant
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-white border'
+                                    }`}
+                            >
+                                <p>{msg.content}</p>
+
+                                {/* Etiqueta de rol si es humano */}
+                                {isHumanAssistant && (
+                                    <div className="absolute -top-5 right-0 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+                                        Asistente humano 👤
+                                    </div>
+                                )}
+
+                                {/* Timestamp */}
+                                <p
+                                    className={`text-xs mt-1 ${isUser ? 'text-gray-400 text-left' : 'text-gray-200 text-right'
+                                        }`}
+                                >
+                                    {msg.timestamp &&
+                                        new Date(msg.timestamp).toLocaleTimeString([], {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    {isAssistant || isHumanAssistant ? (
+                                        <> · {msg.status === 'read' ? '✓✓ Leído' : '✓ Enviado'}</>
+                                    ) : null}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
                 <div ref={messagesEndRef} />
             </div>
             {/* Input para enviar mensajes */}

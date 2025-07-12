@@ -9,6 +9,7 @@ import Settings from '@/app/components/Settings';
 import Marketing from '@/app/components/MarketingDashboard';
 import ContactList from '@/app/components/ContactList';
 import WhatsAppPanel from '@/app/components/whatsapp/WhatsAppPanel';
+import AssignmentsPage from './assignments/page';
 
 export default function Home() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function Home() {
       case 'Mensajes': return <WhatsAppPanel/>;
       case 'Leads': return <Leads />;
       case 'Marketing': return <Marketing />;
+      case 'Asingar Asesor': return <AssignmentsPage/>;
       case 'Ajustes': return <Settings />;
       default: return <Panel />;
     }
@@ -56,6 +58,7 @@ export default function Home() {
             { name: 'Mensajes', label: 'Mensajes' },
             { name: 'Leads', label: 'Leads' },
             { name: 'Marketing', label: 'Marketing' },
+            { name: 'Asingar Asesor', label: 'Asingar Asesor' },
             { name: 'Ajustes', label: 'Ajustes' },
           ].map((item) => (
             <button

@@ -163,8 +163,32 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
     }
 
     // Estaba esperando respuesta → lo marcamos en progreso
-    if (contactStatus === 'awaiting_response') {
-        await supabase.from('contacts').update({ status: 'in_progress' }).eq('phone', from);
+    // if (contactStatus === 'awaiting_response') {
+    //     await supabase.from('contacts').update({ status: 'in_progress' }).eq('phone', from);
+    // }
+    // Verificamos si el contacto ya fue escalado a humano
+    const { data: contact } = await supabase
+        .from('contacts')
+        .select('needs_human')
+        .eq('phone', from)
+        .maybeSingle();
+
+    if (contact?.needs_human) {
+        console.log(`[IA BLOQUEADA] Contacto ${from} fue escalado a humano. La IA no responderá.`);
+
+        // Solo guardamos el nuevo mensaje del usuario
+        const history = await getConversation(from);
+        const updatedMessages = [
+            ...history,
+            {
+                id: message.id,
+                role: 'user',
+                content: userInput,
+                timestamp,
+            },
+        ];
+        await updateConversation(from, updatedMessages);
+        return;
     }
 
     const history = await getConversation(from);
