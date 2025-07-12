@@ -12,6 +12,7 @@ type Contact = {
     phone: string;
     name: string;
     status: string;
+    needs_human: boolean;
     assignments: any[];
 };
 
@@ -27,14 +28,17 @@ export default function AssignmentsPage() {
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
+        let contactsChannel: ReturnType<typeof supabase.channel> | null = null;
+        let assignmentsChannel: ReturnType<typeof supabase.channel> | null = null;
+
         const loadData = async () => {
             setLoading(true);
             const userData = await getCurrentUserClient();
             setUser(userData);
 
-            const { data: contactsData, error } = await supabase
+            const { data: contactsData } = await supabase
                 .from('contacts')
-                .select(`phone, name, status, assignments:assistants_assignments!left(id, assigned_to, active, profile:assigned_to (email))`)
+                .select(`phone, name, status, needs_human, assignments:assistants_assignments!left(id, assigned_to, active, profile:assigned_to (email))`)
                 .eq('needs_human', true);
 
             const { data: assistantsData } = await supabase
@@ -42,12 +46,53 @@ export default function AssignmentsPage() {
                 .select('id, email')
                 .eq('role', 'assistant');
 
-            setContacts(contactsData || []);
+            setContacts((contactsData || []).filter(c => c.needs_human));
             setAssistants(assistantsData || []);
             setLoading(false);
         };
+
         loadData();
+
+        // 📡 Escuchar cambios en contacts.needs_human
+        contactsChannel = supabase
+            .channel('realtime-contacts')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'contacts',
+                },
+                async (payload) => {
+                    console.log('[Realtime] Contact updated:', payload);
+                    loadData(); // vuelve a cargar
+                }
+            )
+            .subscribe();
+
+        // 📡 Escuchar inserciones en assistants_assignments
+        assignmentsChannel = supabase
+            .channel('realtime-assignments')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'assistants_assignments',
+                },
+                async (payload) => {
+                    console.log('[Realtime] Nueva asignación:', payload);
+                    loadData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            if (contactsChannel) supabase.removeChannel(contactsChannel);
+            if (assignmentsChannel) supabase.removeChannel(assignmentsChannel);
+        };
     }, []);
+
     const handleAssign = async (phone: string, assistantId: string) => {
         const res = await fetch('/api/admin/assign-contact', {
             method: 'POST',
@@ -86,53 +131,58 @@ export default function AssignmentsPage() {
         <div className="flex items-center justify-center h-screen">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
-    )
+    );
 
     return (
         <div className="container mx-auto py-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-2xl">Asignación de clientes</CardTitle>
+            <Card className="border-0 shadow-sm">
+                <CardHeader className="border-b">
+                    <CardTitle className="text-xl font-semibold">Asignación de contactos</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    {contacts.map(contact => {
-                        const assigned = contact.assignments?.find(a => a.active);
-                        const alreadyAssigned = !!assigned;
+                <CardContent className="p-0">
+                    {contacts.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">
+                            No hay contactos esperando atención
+                        </div>
+                    ) : (
+                        <div className="divide-y">
+                            {contacts.map(contact => {
+                                const assigned = contact.assignments?.find(a => a.active);
+                                const alreadyAssigned = !!assigned;
 
-                        return (
-                            <div key={contact.phone} className="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <p className="font-medium">{contact.name}</p>
-                                    <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                                return (
+                                    <div key={contact.phone} className="p-4 flex items-center justify-between hover:bg-accent/50 transition-colors">
+                                        <div>
+                                            <p className="font-medium">{contact.name}</p>
+                                            <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                                            {alreadyAssigned && (
+                                                <p className="text-xs text-green-600 mt-1">
+                                                    Asignado a: {assigned.profile.email}
+                                                </p>
+                                            )}
+                                        </div>
 
-                                    {alreadyAssigned && (
-                                        <p className="text-xs text-green-600 mt-1">
-                                            Ya asignado a: {assigned.profile.email}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center space-x-2">
-                                    {alreadyAssigned ? (
-                                        <span className="text-sm text-muted-foreground">Asignado</span>
-                                    ) : (
-                                        <Select onValueChange={(value) => handleAssign(contact.phone, value)}>
-                                            <SelectTrigger className="w-[180px]">
-                                                <SelectValue placeholder="Asignar a..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {assistants.map(a => (
-                                                    <SelectItem key={a.id} value={a.id}>
-                                                        {a.email}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
+                                        {alreadyAssigned ? (
+                                            <span className="text-sm text-muted-foreground">Asignado</span>
+                                        ) : (
+                                            <Select onValueChange={(value) => handleAssign(contact.phone, value)}>
+                                                <SelectTrigger className="w-[200px]">
+                                                    <SelectValue placeholder="Asignar a..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {assistants.map(a => (
+                                                        <SelectItem key={a.id} value={a.id}>
+                                                            {a.email}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
