@@ -6,9 +6,27 @@ import AccountManager from '@/app/components/AccountManager';
 import AdsManage from '@/app/components/AdsManage';
 
 const sections = [
-  { name: 'Accounts', description: 'Gestión de cuentas publicitarias', icon: <UserCheck size={40} />, component: 'AccountManager' },
-  { name: 'Ads', description: 'Gestión de anuncios publicitarios', icon: <BarChart size={40} />, component: 'AdsManage' },
-  { name: 'Insights', description: 'Estadísticas y métricas', icon: <PieChart size={40} />, component: 'MetricsDashboard' },
+  {
+    name: 'Accounts',
+    description: 'Gestión de cuentas publicitarias',
+    icon: <UserCheck size={24} />,
+    component: 'AccountManager',
+    color: 'bg-blue-100 text-blue-800'
+  },
+  {
+    name: 'Ads',
+    description: 'Gestión de anuncios publicitarios',
+    icon: <BarChart size={24} />,
+    component: 'AdsManage',
+    color: 'bg-green-100 text-green-800'
+  },
+  {
+    name: 'Insights',
+    description: 'Estadísticas y métricas',
+    icon: <PieChart size={24} />,
+    component: 'MetricsDashboard',
+    color: 'bg-purple-100 text-purple-800'
+  },
 ];
 
 const MarketingDashboard = () => {
@@ -25,36 +43,41 @@ const MarketingDashboard = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-4">Marketing</h1>
-      
+      <h1 className="text-3xl font-bold mb-8">Marketing Dashboard</h1>
+
       {!activeComponent ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3">
           {sections.map((section) => (
             <motion.div
               key={section.name}
-              whileHover={{ scale: 1.03 }}
+              whileHover={{ y: -5 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setActiveComponent(section.component)}
-              className="cursor-pointer rounded-xl bg-white p-4 shadow-md transition-all hover:shadow-lg"
+              className={`cursor-pointer rounded-xl p-6 shadow-sm transition-all hover:shadow-md ${section.color}`}
             >
-              <div className="text-center mb-4">
-                {section.icon}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 rounded-lg bg-white bg-opacity-50">
+                  {section.icon}
+                </div>
+                <h2 className="text-xl font-bold">{section.name}</h2>
               </div>
-              <h2 className="text-xl font-bold mb-2">{section.name}</h2>
-              <p className="text-sm text-gray-600">{section.description}</p>
+              <p className="text-sm">{section.description}</p>
+              <div className="mt-4 text-xs font-medium opacity-70">
+                Click para acceder →
+              </div>
             </motion.div>
           ))}
         </div>
       ) : (
-        <div className="space-y-4">
-          <button 
+        <div className="space-y-6">
+          <button
             onClick={() => setActiveComponent(null)}
-            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft size={18} />
             Volver al Dashboard
           </button>
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-xl shadow-sm p-6">
             {renderComponent()}
           </div>
         </div>
