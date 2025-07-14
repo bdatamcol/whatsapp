@@ -175,11 +175,33 @@ export default function Dashboard() {
             <LineChart data={summary.recentInsights}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="campaignName" />
-              <YAxis />
+
+              {/* Eje Y para el gasto */}
+              <YAxis yAxisId="left" orientation="left" />
+
+              {/* Eje Y para los clics */}
+              <YAxis yAxisId="right" orientation="right" />
+
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="spend" stroke="#4f46e5" name="Gasto" />
-              <Line type="monotone" dataKey="clicks" stroke="#22c55e" name="Clics" />
+
+              {/* Línea de gasto en el eje izquierdo */}
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="spend"
+                stroke="#4f46e5"
+                name="Gasto"
+              />
+
+              {/* Línea de clics en el eje derecho */}
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="clicks"
+                stroke="#22c55e"
+                name="Clics"
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
