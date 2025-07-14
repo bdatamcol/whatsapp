@@ -17,9 +17,9 @@ import { supabase } from '@/lib/supabase/client.supabase';
 
 const sidebarItems = [
     { href: '/assistant/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/assistant/chat', label: 'Chats', icon: MessageSquare },
+    // { href: '/assistant/chat', label: 'Chats', icon: MessageSquare },
     { href: '/assistant/history', label: 'Historial', icon: SquareStack},
-    { href: '/assistant/settings', label: 'Configuración', icon: SettingsIcon },
+    // { href: '/assistant/settings', label: 'Configuración', icon: SettingsIcon },
 ];
 
 export default function AssistantLayout({ children }: { children: React.ReactNode }) {
