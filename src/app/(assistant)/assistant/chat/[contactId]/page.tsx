@@ -1,6 +1,6 @@
 'use client'
 
-import { redirect, useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import ChatView from '@/app/components/whatsapp/ChatView';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ export default function ChatPage() {
     const params = useParams();
     const contactId = params.contactId as string;
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const handleReturnToIA = async () => {
         setLoading(true);
@@ -25,7 +26,7 @@ export default function ChatPage() {
 
             if (res.ok) {
                 toast.success('IA reactivada para este contacto');
-                redirect('/assistant/dashboard');
+                router.push('/assistant/dashboard');
             } else {
                 throw new Error(result.error || 'Error desconocido');
             }

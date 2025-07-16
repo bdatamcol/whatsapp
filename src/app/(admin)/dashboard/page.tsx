@@ -10,10 +10,23 @@ import Marketing from '@/app/components/MarketingDashboard';
 import ContactList from '@/app/components/ContactList';
 import WhatsAppPanel from '@/app/components/whatsapp/WhatsAppPanel';
 import AssignmentsPage from './assignments/page';
+import { usePendingContactsCount } from '@/hooks/usePendingContactsCount';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Panelcontrol');
+  const pendingCount = usePendingContactsCount();
+  const navItems = [
+    { name: 'Panelcontrol', label: 'Panel de control' },
+    { name: 'Contactos', label: 'Contactos' },
+    { name: 'Mensajes', label: 'Mensajes' },
+    { name: 'Leads', label: 'Leads' },
+    { name: 'Marketing', label: 'Marketing' },
+    { name: 'Asingar Asesor', label: 'Asignar Asesor' },
+    { name: 'Ajustes', label: 'Ajustes' },
+  ];
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -32,15 +45,15 @@ export default function Home() {
     document.cookie = `sb-access-token=; max-age=0`;
     router.replace('/login');
   };
-  
+
   const renderContent = () => {
     switch (activeTab) {
       case 'Panelcontrol': return <Panel />;
       case 'Contactos': return <ContactList />;
-      case 'Mensajes': return <WhatsAppPanel/>;
+      case 'Mensajes': return <WhatsAppPanel />;
       case 'Leads': return <Leads />;
       case 'Marketing': return <Marketing />;
-      case 'Asingar Asesor': return <AssignmentsPage/>;
+      case 'Asingar Asesor': return <AssignmentsPage />;
       case 'Ajustes': return <Settings />;
       default: return <Panel />;
     }
@@ -48,32 +61,41 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Menú lateral fijo */}
       <div className="w-64 bg-gray-800 text-white p-4 flex flex-col">
         <div className="text-2xl font-bold mb-6 p-2">📊 Bdatam CRM</div>
         <nav className="flex-1 space-y-2">
-          {[
-            { name: 'Panelcontrol', label: 'Panel de control' },
-            { name: 'Contactos', label: 'Contactos' },
-            { name: 'Mensajes', label: 'Mensajes' },
-            { name: 'Leads', label: 'Leads' },
-            { name: 'Marketing', label: 'Marketing' },
-            { name: 'Asingar Asesor', label: 'Asingar Asesor' },
-            { name: 'Ajustes', label: 'Ajustes' },
-          ].map((item) => (
-            <button
-              key={item.name}
-              onClick={() => setActiveTab(item.name)}
-              className={`w-full text-left p-3 rounded-lg transition-colors ${
-                activeTab === item.name ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const isActive = activeTab === item.name;
+            const showBadge = item.name === 'Asingar Asesor' && pendingCount > 0;
+
+            return (
+              <TooltipProvider key={item.name}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setActiveTab(item.name)}
+                      className={`w-full flex items-center justify-between text-left p-3 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                        }`}
+                    >
+                      <span>{item.label}</span>
+                      {showBadge && (
+                        <Badge className="bg-red-600 text-white text-xs">
+                          {pendingCount}
+                        </Badge>
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  {showBadge && (
+                    <TooltipContent side="right">
+                      <span>Tienes {pendingCount} contacto(s) sin asignar</span>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            );
+          })}
         </nav>
-        
-        {/* Botón de cierre de sesión */}
+
         <button
           onClick={handleLogout}
           className="mt-auto p-3 w-full text-left rounded-lg transition-colors text-red-400 hover:bg-red-500 hover:text-white"
@@ -82,7 +104,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Área de contenido principal */}
       <main className="flex-1 overflow-auto bg-gray-50">
         {renderContent()}
       </main>

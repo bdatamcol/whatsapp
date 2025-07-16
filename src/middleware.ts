@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
 
             const redirectPath =
                 profile?.role === 'admin'
-                    ? '/admin/dashboard'
+                    ? '/dashboard'
                     : profile?.role === 'assistant'
                         ? '/assistant/dashboard'
                         : '/login';
