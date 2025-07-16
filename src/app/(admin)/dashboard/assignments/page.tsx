@@ -4,32 +4,29 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client.supabase';
 import { getCurrentUserClient } from '@/lib/auth/services/getUserFromRequest';
 import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { SelectValue } from '@radix-ui/react-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
-type Contact = {
-    phone: string;
-    name: string;
-    status: string;
-    needs_human: boolean;
-    assignments: any[];
-};
-
-type Assistant = {
-    id: string;
-    email: string;
-};
+function timeAgo(timestamp) {
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'justo ahora';
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ${minutes % 60}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
+}
 
 export default function AssignmentsPage() {
-    const [contacts, setContacts] = useState<Contact[]>([]);
-    const [assistants, setAssistants] = useState<Assistant[]>([]);
+    const [contacts, setContacts] = useState([]);
+    const [assistants, setAssistants] = useState([]);
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        let contactsChannel: ReturnType<typeof supabase.channel> | null = null;
-        let assignmentsChannel: ReturnType<typeof supabase.channel> | null = null;
+        let contactsChannel = null;
+        let assignmentsChannel = null;
 
         const loadData = async () => {
             setLoading(true);
@@ -38,7 +35,7 @@ export default function AssignmentsPage() {
 
             const { data: contactsData } = await supabase
                 .from('contacts')
-                .select(`phone, name, status, needs_human, assignments:assistants_assignments!left(id, assigned_to, active, profile:assigned_to (email))`)
+                .select(`phone, name, created_at, last_interaction_at, needs_human, assignments:assistants_assignments!left(id, assigned_to, assigned_at, active, profile:assigned_to (email))`)
                 .eq('needs_human', true);
 
             const { data: assistantsData } = await supabase
@@ -46,45 +43,21 @@ export default function AssignmentsPage() {
                 .select('id, email')
                 .eq('role', 'assistant');
 
-            setContacts((contactsData || []).filter(c => c.needs_human));
+            setContacts(contactsData || []);
             setAssistants(assistantsData || []);
             setLoading(false);
         };
 
         loadData();
 
-        // 📡 Escuchar cambios en contacts.needs_human
         contactsChannel = supabase
             .channel('realtime-contacts')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'contacts',
-                },
-                async (payload) => {
-                    console.log('[Realtime] Contact updated:', payload);
-                    loadData(); // vuelve a cargar
-                }
-            )
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts' }, loadData)
             .subscribe();
 
-        // 📡 Escuchar inserciones en assistants_assignments
         assignmentsChannel = supabase
             .channel('realtime-assignments')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'assistants_assignments',
-                },
-                async (payload) => {
-                    console.log('[Realtime] Nueva asignación:', payload);
-                    loadData();
-                }
-            )
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'assistants_assignments' }, loadData)
             .subscribe();
 
         return () => {
@@ -93,33 +66,13 @@ export default function AssignmentsPage() {
         };
     }, []);
 
-    const handleAssign = async (phone: string, assistantId: string) => {
+    const handleAssign = async (phone, assistantId) => {
         const res = await fetch('/api/admin/assign-contact', {
             method: 'POST',
-            body: JSON.stringify({
-                phone,
-                assistantId,
-                adminId: user.id,
-            }),
+            body: JSON.stringify({ phone, assistantId, adminId: user.id }),
         });
 
         if (res.ok) {
-            const assignedAssistant = assistants.find(a => a.id === assistantId);
-            setContacts(prev =>
-                prev.map(c =>
-                    c.phone === phone
-                        ? {
-                            ...c,
-                            assignments: [
-                                {
-                                    assigned_to: assistantId,
-                                    profile: { email: assignedAssistant?.email || 'desconocido' },
-                                },
-                            ],
-                        }
-                        : c
-                )
-            );
             toast.success('Asignación exitosa');
         } else {
             const data = await res.json();
@@ -127,61 +80,85 @@ export default function AssignmentsPage() {
         }
     };
 
-    if (loading) return (
-        <div className="flex items-center justify-center h-screen">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-    );
+    const unassigned = contacts.filter(c => !c.assignments?.some(a => a.active));
+    const assigned = contacts.filter(c => c.assignments?.some(a => a.active));
+
+    if (loading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>;
 
     return (
-        <div className="container mx-auto py-8">
-            <Card className="border-0 shadow-sm">
-                <CardHeader className="border-b">
-                    <CardTitle className="text-xl font-semibold">Asignación de contactos</CardTitle>
-                </CardHeader>
+        <div className="container mx-auto py-8 space-y-6">
+            {/* Contactos por asignar */}
+            <Card>
+                <CardHeader><CardTitle>Contactos por asignar</CardTitle></CardHeader>
                 <CardContent className="p-0">
-                    {contacts.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                            No hay contactos esperando atención
-                        </div>
+                    {unassigned.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">No hay contactos esperando atención</div>
                     ) : (
-                        <div className="divide-y">
-                            {contacts.map(contact => {
-                                const assigned = contact.assignments?.find(a => a.active);
-                                const alreadyAssigned = !!assigned;
-
-                                return (
-                                    <div key={contact.phone} className="p-4 flex items-center justify-between hover:bg-accent/50 transition-colors">
-                                        <div>
-                                            <p className="font-medium">{contact.name}</p>
-                                            <p className="text-sm text-muted-foreground">{contact.phone}</p>
-                                            {alreadyAssigned && (
-                                                <p className="text-xs text-green-600 mt-1">
-                                                    Asignado a: {assigned.profile.email}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {alreadyAssigned ? (
-                                            <span className="text-sm text-muted-foreground">Asignado</span>
-                                        ) : (
-                                            <Select onValueChange={(value) => handleAssign(contact.phone, value)}>
-                                                <SelectTrigger className="w-[200px]">
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-100 text-gray-600">
+                                <tr>
+                                    <th className="text-left p-2">Nombre</th>
+                                    <th className="text-left p-2">Teléfono</th>
+                                    <th className="text-left p-2">Espera</th>
+                                    <th className="text-left p-2">Asignar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {unassigned.map(c => (
+                                    <tr key={c.phone} className="border-b hover:bg-accent/30">
+                                        <td className="p-2">{c.name || 'Sin nombre'}</td>
+                                        <td className="p-2">{c.phone}</td>
+                                        <td className="p-2 text-muted-foreground">{timeAgo(c.last_interaction_at || c.created_at)}</td>
+                                        <td className="p-2">
+                                            <Select onValueChange={(value) => handleAssign(c.phone, value)}>
+                                                <SelectTrigger className="w-[180px]">
                                                     <SelectValue placeholder="Asignar a..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {assistants.map(a => (
-                                                        <SelectItem key={a.id} value={a.id}>
-                                                            {a.email}
-                                                        </SelectItem>
+                                                        <SelectItem key={a.id} value={a.id}>{a.email}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Contactos asignados */}
+            <Card>
+                <CardHeader><CardTitle>Contactos asignados</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                    {assigned.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">No hay contactos asignados actualmente</div>
+                    ) : (
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-100 text-gray-600">
+                                <tr>
+                                    <th className="text-left p-2">Nombre</th>
+                                    <th className="text-left p-2">Teléfono</th>
+                                    <th className="text-left p-2">Asignado a</th>
+                                    <th className="text-left p-2">Desde</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {assigned.map(c => {
+                                    const a = c.assignments.find(a => a.active);
+                                    return (
+                                        <tr key={c.phone} className="border-b hover:bg-accent/30">
+                                            <td className="p-2">{c.name || 'Sin nombre'}</td>
+                                            <td className="p-2">{c.phone}</td>
+                                            <td className="p-2">{a?.profile?.email || 'Desconocido'}</td>
+                                            <td className="p-2 text-muted-foreground">{timeAgo(a?.assigned_at)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     )}
                 </CardContent>
             </Card>

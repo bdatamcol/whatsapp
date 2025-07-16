@@ -152,7 +152,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         await updateConversation(from, [
             {
                 id: `template-${Date.now()}`,
-                role: 'system',
+                role: 'system-template',
                 type: 'template',
                 content: '[Se envió la plantilla: menu_inicial]',
                 timestamp: new Date().toISOString(),

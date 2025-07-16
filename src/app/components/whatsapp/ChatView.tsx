@@ -122,10 +122,10 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
                         >
                             <div
                                 className={`p-3 rounded-lg max-w-xs relative ${isAssistant
-                                        ? 'bg-blue-500 text-white'
-                                        : isHumanAssistant
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-white border'
+                                    ? 'bg-blue-500 text-white'
+                                    : isHumanAssistant
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-white border'
                                     }`}
                             >
                                 <p>{msg.content}</p>
@@ -165,6 +165,12 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
                         placeholder="Escribe un mensaje..."
                         className="flex-1"
                         onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSendMessage();
+                            }
+                        }}
                     />
                     <Button
                         variant="default"
