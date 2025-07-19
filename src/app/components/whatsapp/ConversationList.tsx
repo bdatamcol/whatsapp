@@ -12,10 +12,11 @@ interface Conversation {
 }
 
 interface Props {
-    onSelectAction: (phone: string) => void;
+    companyId: string; // 👈 nuevo
+    onSelectAction: (data: { phone: string; companyId: string }) => void;
 }
 
-export default function ConversationList({ onSelectAction }: Props) {
+export default function ConversationList({ companyId, onSelectAction }: Props) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
 
     // Cargar inicialmente
@@ -24,10 +25,11 @@ export default function ConversationList({ onSelectAction }: Props) {
     }, []);
 
     const fetchConversations = async () => {
-        const res = await fetch('/api/whatsapp/conversations');
+        const res = await fetch(`/api/whatsapp/conversations?companyId=${companyId}`);
         const data = await res.json();
+
         if (Array.isArray(data)) {
-            setConversations(data);
+            setConversations(data); // ya vendrán filtradas del backend
         } else {
             console.warn('Respuesta inesperada del servidor:', data);
             setConversations([]);
@@ -65,7 +67,7 @@ export default function ConversationList({ onSelectAction }: Props) {
             {conversations.map(({ phone, name, avatar_url, lastMessage, updated_at }) => (
                 <div
                     key={phone}
-                    onClick={() => onSelectAction(phone)}
+                    onClick={() => onSelectAction({ phone, companyId })}
                     className="flex items-center gap-3 bg-white p-3 rounded-lg shadow hover:bg-gray-100 transition cursor-pointer"
                 >
                     {/* Avatar */}

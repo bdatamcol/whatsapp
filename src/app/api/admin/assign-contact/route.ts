@@ -1,22 +1,33 @@
+// src/app/api/admin/assign-contact/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { assignContactToAssistant } from '@/lib/admin/contactAssigner';
+import { getUserProfile } from '@/lib/auth/services/getUserProfile';
 
 export async function POST(req: NextRequest) {
-    const body = await req.json();
-    const { phone, assistantId, adminId } = body;
-
     try {
-        if (!adminId || !assistantId || !phone) {
+        const { phone, assistantId } = await req.json();
+
+        // Validar parámetros básicos
+        if (!phone || !assistantId) {
             return NextResponse.json({ error: 'Parámetros incompletos' }, { status: 400 });
         }
-        const { error } = await assignContactToAssistant(phone, assistantId, adminId);
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
+
+        // Obtener perfil del usuario autenticado
+        const admin = await getUserProfile();
+        if (!admin?.id) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
+
+        // Ejecutar asignación
+        await assignContactToAssistant(phone, assistantId, admin.id);
         return NextResponse.json({ success: true });
 
     } catch (error) {
-        NextResponse.json({ error: 'Ocurrio un error al asignar' }, { status: 500 })
+        console.error('Error en asignación:', error);
+        return NextResponse.json(
+            { error: (error as Error).message || 'Error inesperado' },
+            { status: 500 }
+        );
     }
 }
 

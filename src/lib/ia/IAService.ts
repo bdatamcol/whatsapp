@@ -1,6 +1,7 @@
-import { askOpenAI } from './providers/openai';
+import { askOpenAIWithHistory } from './providers/openai';
 import { askOpenRouterWithHistory } from './providers/openrouter';
 import { getConversation, updateConversation } from './memory';
+import { getPromptByEmpresaId } from './promptConfig';
 
 type Provider = 'openai' | 'openrouter';
 
@@ -14,42 +15,62 @@ class IAService {
   public static async ask(message: string): Promise<string> {
     switch (this.provider) {
       case 'openai':
-        return await askOpenAI(message);
+        return await askOpenAIWithHistory([{ role: 'user', content: message }]);
       case 'openrouter':
       default:
         return await askOpenRouterWithHistory([{ role: 'user', content: message }]);
     }
   }
 
-  public static async askSmart(phone: string, message: string): Promise<string> {
-    const history = await getConversation(phone);
+  /**
+   * Procesa el mensaje con historial e IA.
+   * @param phone Número de teléfono del contacto
+   * @param message Mensaje del usuario
+   * @param company Objeto con el id de la copañia
+   */
+  public static async askSmart(phone: string, message: string, company:{ id: string }): Promise<string> {
+    const now = new Date().toISOString();
 
-    // Filtramos los últimos 2 pares útiles (user + assistant) con contenido real
+    const systemPrompt = await getPromptByEmpresaId(company.id);
+    const history = await getConversation(phone);
+    const hasSystemPrompt = history.some(m => m.role === 'system');
+
     const filtered = history
       .filter(m => m.role === 'user' || m.role === 'assistant')
-      .slice(-4);// 2 pares de usuario y asistente
+      .slice(-4); // últimas 2 rondas
 
     const inputMessages = [
+      ...(hasSystemPrompt ? [] : [{ role: 'system', content: systemPrompt }]),
       ...filtered,
-      { role: 'user', content: message }
+      { role: 'user', content: message },
     ];
 
-    let response: string;
+    const response = await askOpenAIWithHistory(inputMessages);
 
-    switch (this.provider) {
-      case 'openai':
-        response = await askOpenAI(message);
-        break;
-      case 'openrouter':
-      default:
-        response = await askOpenRouterWithHistory(inputMessages);
-        break;
-    }
+    const updated = [
+      ...history,
+      ...(hasSystemPrompt ? [] : [{
+        id: `system-${Date.now()}`,
+        role: 'system',
+        content: systemPrompt,
+        timestamp: now,
+      }]),
+      {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: message,
+        timestamp: now,
+      },
+      {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: response,
+        timestamp: now,
+        status: 'sent',
+      },
+    ];
 
-    // Guardar nuevo par
-    const updated = [...history, { role: 'user', content: message }, { role: 'assistant', content: response }];
-    await updateConversation(phone, updated);
-
+    await updateConversation(phone, updated, company);
     return response;
   }
 }
