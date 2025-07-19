@@ -17,10 +17,11 @@ interface Message {
 
 interface Props {
     contactId: string;
-    role?: 'assistant' | 'assistant_humano'; // nuevo
+    role?: 'assistant' | 'assistant_humano';
+    companyId: string; // <--- Lo recibes directamente
 }
 
-export default function ChatView({ contactId, role = 'assistant' }: Props) {
+export default function ChatView({ contactId, role = 'assistant', companyId }: Props) {
     const [messages, setMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const [inputValue, setInputValue] = useState('');
@@ -31,17 +32,14 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
         setMessages(data);
     };
 
-    // Cargar los mensajes al abrir el chat
     useEffect(() => {
         fetchMessages();
     }, [contactId]);
 
-    // Scroll automático al final
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Escuchar cambios en tiempo real solo para esta conversación
     useEffect(() => {
         const channel = supabase
             .channel(`chat-${contactId}`)
@@ -51,10 +49,9 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
                     event: 'UPDATE',
                     schema: 'public',
                     table: 'conversations',
-                    filter: `phone=eq.${contactId}`, //solo para este contacto
+                    filter: `phone=eq.${contactId}`,
                 },
-                (payload) => {
-                    // console.log('Mensajes actualizados para', contactId);
+                () => {
                     fetchMessages();
                 }
             )
@@ -69,14 +66,14 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
         if (!inputValue.trim()) return;
 
         const newMessage: Message = {
-            id: crypto.randomUUID(),//ID TEMPORAL
-            role: role || 'assistant',
+            id: crypto.randomUUID(),
+            role: role,
             content: inputValue,
             timestamp: new Date().toISOString(),
         };
 
         setMessages((prev) => [...prev, newMessage]);
-        setInputValue(''); // Limpiar input inmediatamente
+        setInputValue('');
 
         try {
             const response = await fetch('/api/whatsapp/messagess/send', {
@@ -87,7 +84,8 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
                 body: JSON.stringify({
                     phone: contactId,
                     message: inputValue,
-                    role
+                    role,
+                    companyId, // <--- Aquí se envía correctamente
                 }),
             });
 
@@ -95,20 +93,17 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
             if (!response.ok) {
                 throw new Error(result.error || 'Error desconocido');
             }
-
         } catch (error) {
             console.error('Error al enviar el mensaje:', error);
         }
-    }
+    };
 
     return (
         <div className="h-screen flex flex-col bg-gray-50">
-            {/* Encabezado básico */}
             <div className="p-4 border-b bg-white shadow">
                 <h2 className="font-semibold text-lg">{contactId}</h2>
             </div>
 
-            {/* Mensajes */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.map((msg, i) => {
                     const isAssistant = msg.role === 'assistant';
@@ -116,28 +111,23 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
                     const isUser = msg.role === 'user';
 
                     return (
-                        <div
-                            key={i}
-                            className={`flex ${isAssistant || isHumanAssistant ? 'justify-end' : 'justify-start'}`}
-                        >
+                        <div key={i} className={`flex ${isAssistant || isHumanAssistant ? 'justify-end' : 'justify-start'}`}>
                             <div
                                 className={`p-3 rounded-lg max-w-xs relative ${isAssistant
-                                    ? 'bg-blue-500 text-white'
-                                    : isHumanAssistant
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-white border'
+                                        ? 'bg-blue-500 text-white'
+                                        : isHumanAssistant
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-white border'
                                     }`}
                             >
                                 <p>{msg.content}</p>
 
-                                {/* Etiqueta de rol si es humano */}
                                 {isHumanAssistant && (
                                     <div className="absolute -top-5 right-0 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-full">
                                         Asistente humano 👤
                                     </div>
                                 )}
 
-                                {/* Timestamp */}
                                 <p
                                     className={`text-xs mt-1 ${isUser ? 'text-gray-400 text-left' : 'text-gray-200 text-right'
                                         }`}
@@ -157,7 +147,7 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
                 })}
                 <div ref={messagesEndRef} />
             </div>
-            {/* Input para enviar mensajes */}
+
             <div className="p-4 border-t bg-white">
                 <div className="flex gap-2 items-center">
                     <Input
@@ -172,17 +162,11 @@ export default function ChatView({ contactId, role = 'assistant' }: Props) {
                             }
                         }}
                     />
-                    <Button
-                        variant="default"
-                        size="default"
-                        onClick={handleSendMessage}
-                        disabled={!inputValue.trim()}
-                    >
+                    <Button variant="default" size="default" onClick={handleSendMessage} disabled={!inputValue.trim()}>
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
-
         </div>
     );
 }

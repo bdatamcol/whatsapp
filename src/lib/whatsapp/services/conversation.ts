@@ -73,20 +73,20 @@ type ConversationSummary = {
     } | null;
 };
 
-export async function getAllConversationsSummary(): Promise<ConversationSummary[]> {
+export async function getAllConversationsSummary(companyId: string): Promise<ConversationSummary[]> {
     const { data, error } = await supabase
         .from('conversations')
-        .select(
-            `
+        .select(`
       phone,
       messages,
       updated_at,
+      company_id,
       contacts (
         name,
         avatar_url
       )
-    `
-        )
+    `)
+        .eq('company_id', companyId)
         .order('updated_at', { ascending: false });
 
     if (error || !data) {
@@ -104,6 +104,7 @@ export async function getAllConversationsSummary(): Promise<ConversationSummary[
             updated_at: conv.updated_at,
             name: contact?.name || conv.phone,
             avatar_url: contact?.avatar_url || null,
+            company_id: conv.company_id, // 👈 asegúrate de devolverlo
         };
     });
 }

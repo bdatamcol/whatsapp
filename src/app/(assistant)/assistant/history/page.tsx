@@ -35,6 +35,7 @@ export default function HistoryPage() {
             contacts ( phone, name, status, last_interaction_at )`
                 )
                 .eq('assigned_to', user.id)
+                .eq('company_id', user.company_id)
                 .order('assigned_at', { ascending: false });
 
             if (error) {

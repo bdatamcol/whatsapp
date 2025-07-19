@@ -1,11 +1,21 @@
-export async function sendTemplateMessage(to: string, phoneNumberId: string, templateName = 'menu_inicial') {
-    const version = process.env.META_API_VERSION;
-    const token = process.env.WHATSAPP_API_TOKEN;
+export async function sendTemplateMessage({
+    to,
+    company,
+    templateName = 'menu_inicial',
+}: {
+    to: string;
+    company: {
+        phone_number_id: string;
+        whatsapp_access_token: string;
+    };
+    templateName?: string;
+}) {
+    const version = process.env.META_API_VERSION || 'v18.0';
 
-    const response = await fetch(`https://graph.facebook.com/${version}/${phoneNumberId}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/${version}/${company.phone_number_id}/messages`, {
         method: 'POST',
         headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${company.whatsapp_access_token}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -14,7 +24,7 @@ export async function sendTemplateMessage(to: string, phoneNumberId: string, tem
             type: 'template',
             template: {
                 name: templateName,
-                language: { code: 'en' },
+                language: { code: 'en' }, // puedes hacerlo dinámico si quieres después
             },
         }),
     });
@@ -26,3 +36,4 @@ export async function sendTemplateMessage(to: string, phoneNumberId: string, tem
 
     return data;
 }
+

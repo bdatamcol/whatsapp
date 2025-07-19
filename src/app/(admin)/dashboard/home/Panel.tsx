@@ -22,11 +22,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadData() {
+      const user = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.data.user?.id)
+        .maybeSingle();
+
+      const companyId = profile?.company_id;
+
       try {
         const [adsRes, insightsRes, conversationsRes] = await Promise.all([
           fetch('/api/marketing/ads'),
           fetch('/api/marketing/insights?limit=5'),
-          fetch('/api/whatsapp/conversations'),
+          fetch(`/api/whatsapp/conversations?companyId=${companyId}`),
         ]);
 
         const [ads, insights, conversations] = await Promise.all([

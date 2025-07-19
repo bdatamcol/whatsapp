@@ -1,16 +1,14 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '../supabase/server.supabase';
+import { supabase } from '@/lib/supabase/server.supabase';
 
-
-export async function getAssistantList(user: any) {
-
+export async function getAssistantList(user: { id: string }) {
     const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', user.id)
         .maybeSingle();
+
     if (!profile?.company_id) {
-        return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 400 });
+        throw new Error('Empresa no encontrada');
     }
 
     const { data, error } = await supabase
@@ -18,10 +16,10 @@ export async function getAssistantList(user: any) {
         .select('id, email')
         .eq('role', 'assistant')
         .eq('company_id', profile.company_id);
+
     if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        throw new Error(error.message);
     }
 
     return data;
-
 }

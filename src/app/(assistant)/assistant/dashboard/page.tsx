@@ -9,7 +9,6 @@ import Link from 'next/link';
 import Card from '@/app/components/ui/card';
 
 type Contact = {
-  id: number;
   name: string;
   phone: string;
 };
@@ -31,14 +30,13 @@ export default function AssistantDashboard() {
 
       // Obtener contactos asignados al cargar
       const { data: existing, error } = await supabase
-        .from('assistants_assignments')
-        .select('contact:contact_phone(name, phone)')
+        .from('assigned_contacts_view')
+        .select('phone, name')
         .eq('assigned_to', user.id)
-        .eq('active', true);
+        .eq('company_id', user.company_id);
 
       if (!error && existing) {
-        const mapped = existing.map((a: any) => a.contact);
-        setContacts(mapped);
+        setContacts(existing);
       }
 
       // Realtime: escuchar nuevas asignaciones

@@ -1,4 +1,5 @@
 import { supabase } from "../supabase/server.supabase";
+import { getCompanyByPhoneNumberId } from "../whatsapp/helpers/getCompanyByPhoneNumberId";
 
 
 /* 
@@ -25,14 +26,20 @@ export async function getConversation(phone: string) {
     return data.messages || [];
 }
 
-export async function updateConversation(phone: string, messages: any[]) {
-    // 1. Actualizar mensajes de una conversación
+export async function updateConversation(
+    phone: string,
+    messages: any[],
+    company: { id: string }
+) {
+    // console.log(`📭 Actualizando historial para ${phone}`);
+
     const { error } = await supabase
         .from('conversations')
         .upsert(
             {
                 phone,
                 messages,
+                company_id: company.id,
                 updated_at: new Date().toISOString(),
             },
             { onConflict: 'phone' }

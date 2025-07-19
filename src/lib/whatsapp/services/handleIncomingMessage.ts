@@ -1,15 +1,13 @@
 import { supabase } from '@/lib/supabase/server.supabase';
 import { getAllCitiesCached } from '@/lib/utils/cityCache';
 import { findCityIdInText } from '@/lib/utils/cityMatcher';
-import { upsertContact } from '../contacts';
 import { getConversation, updateConversation } from '@/lib/ia/memory';
 import IAService from '@/lib/ia/IAService';
 import { sendTemplateMessage } from './sendTemplateMessage';
 import { needsHumanAgent } from '@/lib/utils/humanDetector';
-
-const token_meta = process.env.WHATSAPP_API_TOKEN!;
-const version = process.env.META_API_VERSION!;
-const baseUrl = 'https://graph.facebook.com';
+import { upsertContact } from './contacts';
+import { sendMessageToWhatsApp } from './send';
+import { getCompanyByPhoneNumberId } from '../helpers/getCompanyByPhoneNumberId';
 
 // --- Tipos ---
 type IncomingMetadata = {
@@ -51,38 +49,17 @@ async function getContactStatus(phone: string): Promise<'new' | 'in_progress' | 
     return contact?.status ?? null;
 }
 
-async function sendMessageToWhatsApp(phone: string, phoneNumberId: string, message: string) {
-    const response = await fetch(`${baseUrl}/${version}/${phoneNumberId}/messages`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token_meta}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: phone,
-            type: 'text',
-            text: { body: message },
-        }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(JSON.stringify(data));
-
-    return data?.messages?.[0]?.id || crypto.randomUUID();
-}
-
 // --- Función principal ---
 export const handleIncomingMessage = async (message: any, metadata: IncomingMetadata) => {
     const type = message.type;
     const from = message.from;
     const text = message.text?.body || '';
     const phoneNumberId = metadata.metadata.phone_number_id;
+    const company = await getCompanyByPhoneNumberId(phoneNumberId);
     const name = metadata.contacts?.[0]?.profile?.name || 'Desconocido';
     const timestamp = message.timestamp ? new Date(message.timestamp * 1000).toISOString() : new Date().toISOString();
 
     const userInput = type === 'button' ? message.button?.payload || '' : text;
-
     await updateCityFromText(text, from);
 
     //detectar si necesita humano
@@ -95,6 +72,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
                     phone: from,
                     message: userInput,
                     matched_keyword: detection.keyword,
+                    company_id: company.id,
                 }),
             supabase
                 .from('contacts')
@@ -123,8 +101,12 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         ];
 
         // Actualizar conversación y responder al cliente
-        await updateConversation(from, updatedMessages);
-        await sendMessageToWhatsApp(from, phoneNumberId, 'Gracias por tu mensaje. En breve un asesor humano se pondrá en contacto contigo.');
+        await updateConversation(from, updatedMessages,company);
+        await sendMessageToWhatsApp({
+            to: from,
+            message: 'Gracias por tu mensaje. En breve un asesor humano se pondrá en contacto contigo.',
+            company,
+        });
         return;
     }
 
@@ -138,6 +120,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
             avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
             status: 'in_progress',
             last_interaction_at: new Date().toISOString(),
+            phone_number_id: phoneNumberId
         });
 
         // Guardar primer mensaje del usuario en la conversación
@@ -147,8 +130,12 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
             content: userInput,
             timestamp,
         };
-        await updateConversation(from, [initialMessage]);
-        await sendTemplateMessage(from, phoneNumberId);
+        await updateConversation(from, [initialMessage], company);
+        await sendTemplateMessage({
+            to: from,
+            templateName: 'menu_inicial',
+            company,
+        });
         await updateConversation(from, [
             {
                 id: `template-${Date.now()}`,
@@ -158,14 +145,10 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
                 timestamp: new Date().toISOString(),
                 status: 'sent',
             }
-        ]);
+        ], company);
         return;
     }
 
-    // Estaba esperando respuesta → lo marcamos en progreso
-    // if (contactStatus === 'awaiting_response') {
-    //     await supabase.from('contacts').update({ status: 'in_progress' }).eq('phone', from);
-    // }
     // Verificamos si el contacto ya fue escalado a humano
     const { data: contact } = await supabase
         .from('contacts')
@@ -174,7 +157,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         .maybeSingle();
 
     if (contact?.needs_human) {
-        console.log(`[IA BLOQUEADA] Contacto ${from} fue escalado a humano. La IA no responderá.`);
+        // console.log(`[IA BLOQUEADA] Contacto ${from} fue escalado a humano. La IA no responderá.`);
 
         // Solo guardamos el nuevo mensaje del usuario
         const history = await getConversation(from);
@@ -187,7 +170,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
                 timestamp,
             },
         ];
-        await updateConversation(from, updatedMessages);
+        await updateConversation(from, updatedMessages, company);
         return;
     }
 
@@ -199,8 +182,15 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         { id: message.id, role: 'user', content: enrichedPrompt, timestamp },
     ];
 
-    const iaResponse = await IAService.askSmart(from, enrichedPrompt);
-    const messageId = await sendMessageToWhatsApp(from, phoneNumberId, iaResponse);
+    const iaResponse = await IAService.askSmart(from, enrichedPrompt, company);
+    // const messageId = await sendMessageToWhatsApp(from, phoneNumberId, iaResponse);
+    const messageId = await sendMessageToWhatsApp(
+        {
+            to: from,
+            message: iaResponse,
+            company
+        }
+    );
 
     updatedMessages.push({
         id: messageId,
@@ -210,5 +200,5 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         status: 'sent',
     });
 
-    await updateConversation(from, updatedMessages);
+    await updateConversation(from, updatedMessages, company);
 };

@@ -12,12 +12,13 @@ export function useAssignedContactsCount() {
 
         const fetchCount = async () => {
             const user = await getCurrentUserClient();
-            if (!user?.id) return;
+            if (!user?.id || !user?.company_id) return;
 
             const { count, error } = await supabase
                 .from('assistants_assignments')
                 .select('*', { count: 'exact', head: true })
                 .eq('assigned_to', user.id)
+                .eq('company_id', user.company_id)
                 .eq('active', true);
 
             if (!error && typeof count === 'number') {
@@ -33,7 +34,7 @@ export function useAssignedContactsCount() {
                         event: '*',
                         schema: 'public',
                         table: 'assistants_assignments',
-                        filter: `assigned_to=eq.${user.id}`,
+                        filter: `assigned_to=eq.${user.id},company_id=eq.${user.company_id}`,
                     },
                     fetchCount
                 )

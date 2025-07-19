@@ -36,12 +36,14 @@ export default function AssignmentsPage() {
             const { data: contactsData } = await supabase
                 .from('contacts')
                 .select(`phone, name, created_at, last_interaction_at, needs_human, assignments:assistants_assignments!left(id, assigned_to, assigned_at, active, profile:assigned_to (email))`)
-                .eq('needs_human', true);
+                .eq('needs_human', true)
+                .eq('company_id', userData.company_id);
 
             const { data: assistantsData } = await supabase
                 .from('profiles')
                 .select('id, email')
-                .eq('role', 'assistant');
+                .eq('role', 'assistant')
+                .eq('company_id', userData.company_id);
 
             setContacts(contactsData || []);
             setAssistants(assistantsData || []);

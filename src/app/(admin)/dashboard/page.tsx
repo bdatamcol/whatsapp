@@ -13,19 +13,30 @@ import AssignmentsPage from './assignments/page';
 import { usePendingContactsCount } from '@/hooks/usePendingContactsCount';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import {
+  LayoutDashboard,
+  Users,
+  MessageSquare,
+  Target,
+  Megaphone,
+  UserCheck,
+  Settings as SettingsIcon,
+  LogOut,
+} from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Panelcontrol');
+  const [companyName, setCompanyName] = useState('');
   const pendingCount = usePendingContactsCount();
   const navItems = [
-    { name: 'Panelcontrol', label: 'Panel de control' },
-    { name: 'Contactos', label: 'Contactos' },
-    { name: 'Mensajes', label: 'Mensajes' },
-    { name: 'Leads', label: 'Leads' },
-    { name: 'Marketing', label: 'Marketing' },
-    { name: 'Asingar Asesor', label: 'Asignar Asesor' },
-    { name: 'Ajustes', label: 'Ajustes' },
+    { name: 'Panelcontrol', label: 'Panel de control', icon: LayoutDashboard },
+    { name: 'Contactos', label: 'Contactos', icon: Users },
+    { name: 'Mensajes', label: 'Mensajes', icon: MessageSquare },
+    { name: 'Leads', label: 'Leads', icon: Target },
+    { name: 'Marketing', label: 'Marketing', icon: Megaphone },
+    { name: 'Asingar Asesor', label: 'Asignar Asesor', icon: UserCheck },
+    { name: 'Ajustes', label: 'Ajustes', icon: SettingsIcon },
   ];
 
   useEffect(() => {
@@ -33,9 +44,27 @@ export default function Home() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.replace('/login');
+        return;
+      }
+      // Fetch profile and company name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (profile?.company_id) {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('name')
+          .eq('id', profile.company_id)
+          .maybeSingle();
+
+        if (company?.name) {
+          setCompanyName(company.name);
+        }
       }
     };
-
     checkAuth();
   }, [router]);
 
@@ -58,15 +87,21 @@ export default function Home() {
       default: return <Panel />;
     }
   };
-
   return (
     <div className="flex min-h-screen">
-      <div className="w-64 bg-gray-800 text-white p-4 flex flex-col">
-        <div className="text-2xl font-bold mb-6 p-2">📊 Bdatam CRM</div>
+      <div className="w-64 bg-gray-900 text-white p-6 flex flex-col shadow-lg">
+        <div className="flex items-center gap-2 mb-2">
+          <LayoutDashboard className="w-6 h-6 text-blue-400" />
+          <div className="text-2xl font-bold">Bdatam CRM</div>
+        </div>
+        {companyName && (
+          <div className="text-sm text-gray-400 mb-6">{companyName}</div>
+        )}
         <nav className="flex-1 space-y-2">
           {navItems.map((item) => {
             const isActive = activeTab === item.name;
             const showBadge = item.name === 'Asingar Asesor' && pendingCount > 0;
+            const Icon = item.icon;
 
             return (
               <TooltipProvider key={item.name}>
@@ -74,12 +109,12 @@ export default function Home() {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setActiveTab(item.name)}
-                      className={`w-full flex items-center justify-between text-left p-3 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
-                        }`}
+                      className={`w-full flex items-center gap-3 text-left p-3 rounded-lg transition-all duration-200 ${isActive ? 'bg-blue-700 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white hover:shadow-sm'}`}
                     >
+                      <Icon className="w-5 h-5" />
                       <span>{item.label}</span>
                       {showBadge && (
-                        <Badge className="bg-red-600 text-white text-xs">
+                        <Badge className="ml-auto bg-red-600 text-white text-xs">
                           {pendingCount}
                         </Badge>
                       )}
@@ -98,13 +133,14 @@ export default function Home() {
 
         <button
           onClick={handleLogout}
-          className="mt-auto p-3 w-full text-left rounded-lg transition-colors text-red-400 hover:bg-red-500 hover:text-white"
+          className="mt-6 p-3 w-full flex items-center gap-3 text-left rounded-lg transition-all duration-200 text-red-400 hover:bg-red-600 hover:text-white hover:shadow-sm"
         >
+          <LogOut className="w-5 h-5" />
           Cerrar Sesión
         </button>
       </div>
 
-      <main className="flex-1 overflow-auto bg-gray-50">
+      <main className="flex-1 overflow-auto bg-gray-50 p-6">
         {renderContent()}
       </main>
     </div>

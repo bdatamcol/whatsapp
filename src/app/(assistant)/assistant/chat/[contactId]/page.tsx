@@ -1,14 +1,16 @@
-'use client'
+'use client';
 
 import { useParams, useRouter } from 'next/navigation';
 import ChatView from '@/app/components/whatsapp/ChatView';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client.supabase';
 
 export default function ChatPage() {
     const params = useParams();
     const contactId = params.contactId as string;
-    const [loading, setLoading] = useState(false);
+    const [companyId, setCompanyId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     const handleReturnToIA = async () => {
@@ -37,7 +39,36 @@ export default function ChatPage() {
         }
     };
 
-    if (!contactId) return <p>Cargando...</p>;
+    useEffect(() => {
+        const fetchCompanyId = async () => {
+            const { data, error } = await supabase
+                .from('conversations')
+                .select('company_id')
+                .eq('phone', contactId)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Error consultando company_id:', error.message);
+                toast.error('Error al obtener la empresa del contacto');
+                setLoading(false);
+                return;
+            }
+
+            if (data?.company_id) {
+                setCompanyId(data.company_id);
+            } else {
+                toast.warning('Este contacto aún no está asociado a una empresa');
+            }
+
+            setLoading(false);
+        };
+
+        if (contactId) {
+            fetchCompanyId();
+        }
+    }, [contactId]);
+
+    if (!contactId || loading || !companyId) return <p className="p-4">Cargando...</p>;
 
     return (
         <div className="flex flex-col h-screen">
@@ -51,7 +82,12 @@ export default function ChatPage() {
                     {loading ? 'Actualizando...' : 'Devolver a IA'}
                 </button>
             </div>
-            <ChatView contactId={contactId} role="assistant_humano" />
+
+            <ChatView
+                contactId={contactId}
+                role="assistant_humano"
+                companyId={companyId}
+            />
         </div>
     );
 }

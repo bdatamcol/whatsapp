@@ -1,6 +1,4 @@
-
-
-export async function askOpenAI(message: string): Promise<string> {
+export async function askOpenAIWithHistory(messages: { role: string; content: string }[]): Promise<string> {
   try {
     const res = await fetch(process.env.OPENAI_BASE_URL, {
       method: 'POST',
@@ -9,12 +7,9 @@ export async function askOpenAI(message: string): Promise<string> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: 'Responde como un asistente útil por WhatsApp. recuerda que solo tienes 100 tokens' },
-          { role: 'user', content: message },
-        ],
-        max_tokens: 100,
+        model: 'gpt-4.1-nano',
+        messages,
+        max_tokens: 300, // puedes ajustar este valor
       }),
     });
 
@@ -24,7 +19,7 @@ export async function askOpenAI(message: string): Promise<string> {
     }
 
     const data = await res.json();
-    return data.choices[0].message.content;
+    return data.choices?.[0]?.message?.content || 'Lo siento, ocurrió un error.';
   } catch (e: any) {
     console.error('Error en OpenAI:', e.message);
     return 'Lo siento, hubo un error con OpenAI.';

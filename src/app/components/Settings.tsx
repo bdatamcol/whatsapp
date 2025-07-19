@@ -6,13 +6,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import RegisterAssistantForm from '../(admin)/dashboard/assistant/RegisterAssistantForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AssistantTable from '../(admin)/dashboard/assistant/AssistantTable';
+import CompanyProfileEditor from './CompanyProfileEditor';
 
 const settingsOptions = [
   {
     id: 'profile',
     title: 'Perfil',
     icon: <User className="w-4 h-4 mr-2" />,
-    description: 'Actualiza tu información personal.'
+    description: 'Actualiza tu información empresarial.'
   },
   {
     id: 'security',
@@ -71,6 +72,7 @@ const Settings = () => {
                   <p className="text-gray-600 mb-6">{option.description}</p>
 
                   {option.id === 'assistants' && <AssistantTable />}
+                  {option.id === 'profile' && <CompanyProfileEditor/>}
                 </TabsContent>
               ))}
 

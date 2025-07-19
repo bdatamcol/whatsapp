@@ -16,6 +16,7 @@ export async function getCurrentUserClient() {
         ...user,
         role: profile.role,
         email: profile.email,
+        company_id: profile.company_id
     };
 }
 
