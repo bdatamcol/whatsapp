@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
 import Button from './ui/Button';
 import Card, { CardContent } from './ui/card';
@@ -38,22 +38,15 @@ export default function Leads() {
   const [forms, setForms] = useState<Form[]>([]);
   const [formId, setFormId] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [totalLeads, setTotalLeads] = useState(0);
   const [loading, setLoading] = useState({
     pages: false,
     forms: false,
-    leads: false
+    leads: false,
+    more: false
   });
-
-  // Estados para paginación
-  const [currentPage, setCurrentPage] = useState(1);
-  const leadsPerPage = 10;
-
-  // Calcular leads para la página actual
-  const indexOfLastLead = currentPage * leadsPerPage;
-  const indexOfFirstLead = indexOfLastLead - leadsPerPage;
-  const currentLeads = leads.slice(indexOfFirstLead, indexOfLastLead);
-  const totalPages = Math.ceil(leads.length / leadsPerPage);
 
   // Obtener páginas de Facebook al iniciar
   useEffect(() => {
@@ -63,7 +56,7 @@ export default function Leads() {
       try {
         const res = await fetch('/api/marketing/account');
         const json = await res.json();
-        
+
         if (!res.ok || json.error) {
           throw new Error(json.error || 'Error al obtener páginas');
         }
@@ -107,7 +100,7 @@ export default function Leads() {
         setForms(json.data || []);
         setFormId('');
         setLeads([]);
-        setCurrentPage(1); // Resetear paginación
+        setNextCursor(null);
       } catch (err: any) {
         setError(err.message || 'Error al cargar formularios');
         console.error('Error fetching forms:', err);
@@ -119,42 +112,43 @@ export default function Leads() {
     fetchForms();
   }, [pageId, pageAccessToken]);
 
-  // Obtener leads cuando se selecciona un formulario
-  useEffect(() => {
+  // Función para cargar leads (inicial o más)
+  const loadLeads = async (cursor: string | null = null) => {
     if (!formId || !pageAccessToken) return;
 
-    const fetchLeads = async () => {
-      setLoading(prev => ({ ...prev, leads: true }));
-      setError('');
-      try {
-        const res = await fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formId, pageId, pageAccessToken }),
-        });
+    setLoading(prev => ({ ...prev, ...(cursor ? { more: true } : { leads: true }) }));
+    setError('');
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formId, pageId, pageAccessToken, cursor, limit: 50 }),
+      });
 
-        const json = await res.json();
-        if (!res.ok || json.error) {
-          throw new Error(json.error || 'Error al obtener leads');
-        }
-        
-        setLeads(json.data || []);
-        setCurrentPage(1); // Resetear paginación
-      } catch (err: any) {
-        setError(err.message || 'Error al obtener leads');
-        console.error('Error fetching leads:', err);
-      } finally {
-        setLoading(prev => ({ ...prev, leads: false }));
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || 'Error al obtener leads');
       }
-    };
 
-    fetchLeads();
+      setLeads(prev => cursor ? [...prev, ...json.data] : json.data);
+      setNextCursor(json.paging?.next ? json.paging.cursors.after : null);
+    } catch (err: any) {
+      setError(err.message || 'Error al obtener leads');
+      console.error('Error fetching leads:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, ...(cursor ? { more: false } : { leads: false }) }));
+    }
+  };
+
+  // Cargar leads iniciales cuando se selecciona formulario
+  useEffect(() => {
+    loadLeads();
   }, [formId, pageAccessToken]);
 
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     const selected = pages.find(p => p.id === id);
-    
+
     if (!selected) {
       setError('Página no encontrada');
       return;
@@ -170,39 +164,80 @@ export default function Leads() {
     setError('');
   };
 
-  const handleExportCSV = () => {
-    if (!leads.length) return;
+  // Obtener total cuando se selecciona formulario
+  useEffect(() => {
+    if (!formId || !pageAccessToken) return;
 
-    const formattedLeads = leads.map(lead => {
-      const formattedLead: Record<string, string> = {
-        ID: lead.id,
-        'Fecha de creación': new Date(lead.created_time).toLocaleString()
-      };
+    const fetchTotal = async () => {
+      try {
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formId, pageId, pageAccessToken, getSummary: true }),
+        });
 
-      lead.field_data.forEach(field => {
-        formattedLead[field.name] = field.values.join(', ');
+        if (!res.ok) throw new Error('Error al obtener total');
+        const { total } = await res.json();
+        setTotalLeads(total || 0);
+      } catch (err) {
+        console.error('Error fetching total:', err);
+      }
+    };
+
+    fetchTotal();
+  }, [formId, pageAccessToken, pageId]);
+
+  // Función para cargar todos los leads (para export)
+  const loadAllLeads = async () => {
+    let allLeads = [...leads];
+    let currentCursor = nextCursor;
+
+    while (currentCursor) {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formId, pageId, pageAccessToken, cursor: currentCursor, limit: 50 }),
       });
 
-      return formattedLead;
-    });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error || 'Error al cargar más leads');
 
-    exportToCSV(formattedLeads, {
-      filename: `leads_${formId}`,
-      includeTimestamp: true
-    });
+      allLeads = [...allLeads, ...json.data];
+      currentCursor = json.paging?.cursors?.after || null;
+    }
+
+    return allLeads;
   };
 
-  // Funciones de paginación
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-  };
+  const handleExportCSV = async () => {
+    try {
+      let exportLeads = leads;
+      if (nextCursor) {
+        exportLeads = await loadAllLeads();
+      }
+      if (!exportLeads.length) return;
 
-  const goToPreviousPage = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1));
-  };
+      const formattedLeads = exportLeads.map(lead => {
+        const formattedLead = {
+          ID: lead.id,
+          'Fecha de creación': new Date(lead.created_time).toLocaleString()
+        };
 
-  const goToNextPage = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+        lead.field_data.forEach(field => {
+          formattedLead[field.name] = field.values.join(', ');
+        });
+
+        return formattedLead;
+      });
+
+      exportToCSV(formattedLeads, {
+        filename: `leads_${formId}`,
+        includeTimestamp: true
+      });
+    } catch (err) {
+      console.error('Error exporting CSV:', err);
+      setError('Error al exportar CSV');
+    }
   };
 
   return (
@@ -280,7 +315,7 @@ export default function Leads() {
                     <h2 className="text-lg font-semibold">Leads recibidos</h2>
                     {leads.length > 0 && (
                       <p className="text-sm text-gray-500">
-                        Mostrando {indexOfFirstLead + 1}-{Math.min(indexOfLastLead, leads.length)} de {leads.length} leads
+                        Mostrando {leads.length} de {totalLeads} leads (carga progresiva)
                       </p>
                     )}
                   </div>
@@ -303,94 +338,64 @@ export default function Leads() {
                     Cargando leads...
                   </div>
                 ) : leads.length > 0 ? (
-                  <>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Fecha
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fecha
+                          </th>
+                          {leads[0].field_data.map((field) => (
+                            <th
+                              key={field.name}
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            >
+                              {field.name}
                             </th>
-                            {leads[0].field_data.map((field) => (
-                              <th
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {leads.map((lead) => (
+                          <tr key={lead.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(lead.created_time).toLocaleString()}
+                            </td>
+                            {lead.field_data.map((field) => (
+                              <td
                                 key={field.name}
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                               >
-                                {field.name}
-                              </th>
+                                {field.values.join(', ')}
+                              </td>
                             ))}
                           </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {currentLeads.map((lead) => (
-                            <tr key={lead.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {new Date(lead.created_time).toLocaleString()}
-                              </td>
-                              {lead.field_data.map((field) => (
-                                <td
-                                  key={field.name}
-                                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                                >
-                                  {field.values.join(', ')}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Controles de paginación */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            onClick={goToPreviousPage}
-                            disabled={currentPage === 1}
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-1"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                            Anterior
-                          </Button>
-                          
-                          <div className="flex items-center space-x-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                              <Button
-                                key={page}
-                                onClick={() => goToPage(page)}
-                                variant={currentPage === page ? "default" : "outline"}
-                                size="sm"
-                                className="min-w-[2.5rem]"
-                              >
-                                {page}
-                              </Button>
-                            ))}
-                          </div>
-
-                          <Button
-                            onClick={goToNextPage}
-                            disabled={currentPage === totalPages}
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-1"
-                          >
-                            Siguiente
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        <div className="text-sm text-gray-500">
-                          Página {currentPage} de {totalPages}
-                        </div>
-                      </div>
-                    )}
-                  </>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
                   <div className="text-center py-4 text-gray-500">
                     No se encontraron leads para este formulario
+                  </div>
+                )}
+
+                {nextCursor && (
+                  <div className="mt-4 text-center">
+                    <Button
+                      onClick={() => loadLeads(nextCursor)}
+                      disabled={loading.more}
+                      variant="outline"
+                    >
+                      {loading.more ? (
+                        <>
+                          <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                          Cargando más...
+                        </>
+                      ) : (
+                        'Cargar más leads'
+                      )}
+                    </Button>
                   </div>
                 )}
               </div>

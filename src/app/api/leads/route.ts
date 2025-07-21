@@ -1,51 +1,54 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase/client.supabase';
+
+async function fetchFromMeta(url: string, accessToken: string) {
+  const response = await fetch(`${url}&access_token=${accessToken}`);
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message);
+  return data;
+}
 
 export async function POST(request: Request) {
-    const version = process.env.META_API_VERSION || 'v17.0';
-    const { pageId, pageAccessToken, formId } = await request.json();
-    const baseUrl = 'https://graph.facebook.com';
+  const version = process.env.META_API_VERSION || 'v17.0';
+  const { pageId, pageAccessToken, formId, cursor, limit = 50, getSummary = false } = await request.json();
+  const baseUrl = 'https://graph.facebook.com';
 
-    if (!formId && (!pageId || !pageAccessToken)) {
-        return NextResponse.json({ error: 'Se requieren pageId y pageAccessToken para listar formularios' }, { status: 400 });
+  if (!formId && (!pageId || !pageAccessToken)) {
+    return NextResponse.json({ error: 'Se requieren pageId y pageAccessToken' }, { status: 400 });
+  }
+
+  try {
+    if (formId) {
+      const cacheKey = `leads_${formId}`;
+      if (getSummary) {
+        // Obtener solo summary para total_count
+        const summaryUrl = `${baseUrl}/${version}/${formId}/leads?summary=true`;
+        const { summary } = await fetchFromMeta(summaryUrl, pageAccessToken);
+        return NextResponse.json({ success: true, total: summary?.total_count || 0 });
+      }
+
+      // Verificar caché para leads paginados
+      const { data: cached } = await supabase.from('leads_cache').select('*').eq('cache_key', `${cacheKey}_${cursor || 'initial'}`).single();
+      if (cached && (Date.now() - cached.updated_at < 3600000)) {
+        return NextResponse.json({ success: true, data: cached.leads, paging: cached.paging, fromCache: true });
+      }
+
+      // Fetch paginado
+      const leadsUrl = `${baseUrl}/${version}/${formId}/leads?fields=created_time,field_data&limit=${limit}${cursor ? `&after=${cursor}` : ''}`;
+      const { data, paging } = await fetchFromMeta(leadsUrl, pageAccessToken);
+
+      // Cachear
+      await supabase.from('leads_cache').upsert({ cache_key: `${cacheKey}_${cursor || 'initial'}`, leads: data, paging, updated_at: Date.now() });
+
+      return NextResponse.json({ success: true, data, paging });
     }
 
-    try {
-        // Si se proporciona formId, obtener leads específicos de ese formulario
-        if (formId) {
-            const leadsResponse = await fetch(
-                `${baseUrl}/${version}/${formId}/leads?access_token=${pageAccessToken}&fields=created_time,field_data`
-            );
-            const leadsData = await leadsResponse.json();
+    // Formularios
+    const formsUrl = `${baseUrl}/${version}/${pageId}/leadgen_forms?fields=name,id,status,created_time`;
+    const formsData = await fetchFromMeta(formsUrl, pageAccessToken);
+    return NextResponse.json({ success: true, data: formsData.data });
 
-            if (leadsData.error) {
-                throw new Error(leadsData.error.message);
-            }
-
-            return NextResponse.json({
-                success: true,
-                data: leadsData.data
-            });
-        }
-
-        // Si no hay formId, obtener lista de formularios
-        const formsResponse = await fetch(
-            `${baseUrl}/${version}/${pageId}/leadgen_forms?fields=name,id,status,created_time&access_token=${pageAccessToken}`
-        );
-        const formsData = await formsResponse.json();
-
-        if (formsData.error) {
-            throw new Error(formsData.error.message);
-        }
-
-        return NextResponse.json({
-            success: true,
-            data: formsData.data
-        });
-
-    } catch (error: any) {
-        return NextResponse.json(
-            { error: error.message || 'Error al procesar la solicitud de leads' },
-            { status: 500 }
-        );
-    }
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Error al procesar leads' }, { status: 500 });
+  }
 }
