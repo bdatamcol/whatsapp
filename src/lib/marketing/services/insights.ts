@@ -16,27 +16,62 @@ type Metric = {
     actions: { actionType: string; value: number }[];
 };
 
-export async function getFacebookInsights(limit = 20, after = ''): Promise<{ data: Metric[]; paging?: any }> {
+export async function getFacebookInsights(options: { limit?: number; after?: string; getTotalSpend?: boolean } = {}): Promise<any> {
+    const { limit = 20, after = '', getTotalSpend = false } = options;
+
     const version = process.env.META_API_VERSION || 'v23.0';
     const baseUrl = `https://graph.facebook.com/${version}/act_${process.env.FACEBOOK_AD_ACCOUNT_ID}/insights`;
 
     const params = new URLSearchParams({
-        fields: 'date_start,date_stop,spend,impressions,reach,clicks,unique_clicks,cpc,ctr,frequency,campaign_name,adset_name,ad_name,actions',
-        level: 'ad',
-        limit: limit.toString(),
+        fields: getTotalSpend ? 'spend' : 'date_start,date_stop,spend,impressions,reach,clicks,unique_clicks,cpc,ctr,frequency,campaign_name,adset_name,ad_name,actions',
+        level: getTotalSpend ? 'account' : 'ad',
         access_token: process.env.FACEBOOK_ACCESS_TOKEN!,
     });
 
-    if (after) params.append('after', after);
+    if (getTotalSpend) {
+        // Obtener moneda de la cuenta
+        const accountUrl = `https://graph.facebook.com/${version}/act_${process.env.FACEBOOK_AD_ACCOUNT_ID}?fields=currency&access_token=${process.env.FACEBOOK_ACCESS_TOKEN!}`;
+        const accountResponse = await fetch(accountUrl);
+        if (!accountResponse.ok) throw new Error('Error al obtener moneda');
+        const { currency: fromCurrency } = await accountResponse.json();
 
-    const response = await fetch(`${baseUrl}?${params.toString()}`);
+        // Último mes
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const year = lastMonth.getFullYear();
+        const month = lastMonth.getMonth() + 1;
+        const lastDay = new Date(year, month, 0).getDate();
+        const since = `${year}-${month.toString().padStart(2, '0')}-01`;
+        const until = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
+        params.set('time_range', JSON.stringify({ since, until }));
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error?.error?.message || 'Error en la API de Facebook');
-    }
+        const response = await fetch(`${baseUrl}?${params.toString()}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error?.error?.message || 'Error en la API de Facebook');
+        }
+        const raw = await response.json();
+        const spend = parseFloat(raw.data[0]?.spend) || 0;
 
-    const raw = await response.json();
+        // Convertir a COP
+        const exchangeUrl = `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`;
+        const exchangeResponse = await fetch(exchangeUrl);
+        if (!exchangeResponse.ok) throw new Error('Error al obtener tasa de cambio');
+        const exchangeData = await exchangeResponse.json();
+        const rate = exchangeData.rates.COP || 0;
+        const totalSpendInCOP = spend * rate;
+
+        return { totalSpend: totalSpendInCOP };
+    } else {
+        params.append('limit', limit.toString());
+        if (after) params.append('after', after);
+
+        const response = await fetch(`${baseUrl}?${params.toString()}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error?.error?.message || 'Error en la API de Facebook');
+        }
+        const raw = await response.json();
 
     const formattedData: Metric[] = raw.data.map((entry: any) => ({
         dateStart: entry.date_start || 'N/A',
@@ -60,4 +95,5 @@ export async function getFacebookInsights(limit = 20, after = ''): Promise<{ dat
     }));
 
     return { data: formattedData, paging: raw.paging };
+}
 }

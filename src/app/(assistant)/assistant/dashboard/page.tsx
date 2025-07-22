@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client.supabase';
 import { getCurrentUserClient } from '@/lib/auth/services/getUserFromRequest';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Card from '@/app/components/ui/card';
 
 type Contact = {
@@ -14,6 +15,19 @@ type Contact = {
 };
 
 export default function AssistantDashboard() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        router.replace('/login');
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [router]);
 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [userId, setUserId] = useState<string | null>(null);

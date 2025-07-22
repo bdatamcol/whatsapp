@@ -5,11 +5,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(req: NextRequest) {
 
     try {
-        const { companyName, email, password } = await req.json();
-        if (!email || !password || !companyName) {
-            return NextResponse.json({ error: 'Email, contraseña y nombre de empresa son requeridos' }, { status: 400 });
+        const { companyName, whatsappNumber, email, password } = await req.json();
+        if (!email || !password || !companyName || !whatsappNumber) {
+            return NextResponse.json({ error: 'Email, contraseña, nombre de empresa y número de WhatsApp son requeridos' }, { status: 400 });
         }
-        await registerCompany(email, password, companyName);
+        await registerCompany(email, password, companyName, whatsappNumber);
 
         return NextResponse.json({
             message: 'Empresa creada exitosamente',

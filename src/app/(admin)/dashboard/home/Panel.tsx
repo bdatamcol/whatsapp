@@ -1,217 +1,254 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { MessageCircle, BarChart, Zap } from 'lucide-react';
+
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  MessageCircle, Zap, BarChart, Users,
+  Activity,
+  DollarSign,
+} from 'lucide-react';
+import {
+  BarChart as Chart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { supabase } from '@/lib/supabase/client.supabase';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { TooltipContent } from '@radix-ui/react-tooltip';
 
-export default function Dashboard() {
-  const [summary, setSummary] = useState({
-    totalCampaigns: 0,
-    activeCampaigns: 0,
-    totalSpend: 0,
-    recentMessages: [],
-    recentInsights: [],
-    recentConversations: [],
-  });
-  const [loading, setLoading] = useState(true);
+export default function Panel() {
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
+  // Obtener usuario y su empresa
   useEffect(() => {
-    async function loadData() {
-      const user = await supabase.auth.getUser();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('id', user.data.user?.id)
+        .eq('id', user?.id)
         .maybeSingle();
 
-      const companyId = profile?.company_id;
+      if (profile?.company_id) setCompanyId(profile.company_id);
+    })();
+  }, []);
 
-      try {
-        const [adsRes, insightsRes, conversationsRes] = await Promise.all([
-          fetch('/api/marketing/ads'),
-          fetch('/api/marketing/insights?limit=5'),
-          fetch(`/api/whatsapp/conversations?companyId=${companyId}`),
-        ]);
+  // Queries con react-query
+  const { data: totalCampaignsData } = useQuery({
+    queryKey: ['totalCampaigns'],
+    queryFn: async () => (await fetch('/api/marketing/ads?getSummary=true')).json(),
+    staleTime: 5 * 60 * 1000,
+  });
 
-        const [ads, insights, conversations] = await Promise.all([
-          adsRes.json(),
-          insightsRes.json(),
-          conversationsRes.json(),
-        ]);
+  const { data: activeCampaignsData } = useQuery({
+    queryKey: ['activeCampaigns'],
+    queryFn: async () => (await fetch('/api/marketing/ads?getSummary=true&filterStatus=ACTIVE')).json(),
+    staleTime: 5 * 60 * 1000,
+  });
 
-        const activeCampaigns = ads.filter((c: any) => c.status === 'ACTIVE');
-        const totalSpend = insights.data.reduce(
-          (sum: number, metric: any) => sum + (Number(metric.spend) || 0),
-          0
-        );
+  const { data: totalSpendData } = useQuery({
+    queryKey: ['totalSpend'],
+    queryFn: async () => (await fetch('/api/marketing/insights?getTotalSpend=true')).json(),
+    staleTime: 5 * 60 * 1000,
+  });
 
-        setSummary({
-          totalCampaigns: ads.length,
-          activeCampaigns: activeCampaigns.length,
-          totalSpend,
-          recentMessages: conversations.slice(0, 5).map((c: any) => ({
-            phone: c.phone,
-            lastMessage: c.lastMessage?.content || '',
-            updated_at: c.updated_at,
-          })),
-          recentInsights: insights.data.map((i: any) => ({
-            ...i,
-            spend: Number(i.spend) || 0,
-            clicks: Number(i.clicks) || 0,
-            ctr: Number(i.ctr) || 0,
-          })),
-          recentConversations: conversations.slice(0, 5),
-        });
-      } catch (err) {
-        console.error('Error al cargar el dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const { data: insightsData } = useQuery({
+    queryKey: ['recentInsights'],
+    queryFn: async () => {
+      const res = await fetch('/api/marketing/insights?limit=50');
+      const json = await res.json();
+      return json.data
+        .sort((a, b) => new Date(b.dateStop).getTime() - new Date(a.dateStop).getTime())
+        .slice(0, 5);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-    loadData();
-    // Subscribirse a cambios en tiempo real
+  const { data: conversationsData } = useQuery({
+    queryKey: ['conversations', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const res = await fetch(`/api/whatsapp/conversations?companyId=${companyId}`);
+      return res.json();
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Suscripción realtime
+  useEffect(() => {
+    if (!companyId) return;
+
     const subscription = supabase
       .channel('contacts:needs_human')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'contacts',
-          filter: 'needs_human=eq.true',
-        },
-        (payload) => {
-          toast.info('Hay nuevos contactos que necesitan atención humana.') // Activar la alerta visual
-        }
-      )
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'contacts',
+        filter: 'needs_human=eq.true',
+      }, (payload) => {
+        toast.info('Nuevo contacto requiere atención humana');
+        console.log('Realtime payload:', payload);
+      })
       .subscribe();
 
-    // Limpiar suscripción cuando se desmonta
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, []);
+  }, [companyId]);
 
-  if (loading) return <p className="text-gray-500 text-sm">Cargando panel...</p>;
+  // Loading state
+  if (!companyId || !totalCampaignsData || !activeCampaignsData || !totalSpendData || !insightsData || !conversationsData) {
+    return <p className="text-gray-500 text-sm px-4 py-2">Cargando panel...</p>;
+  }
 
+  // Procesamiento de datos
+  const recentMessages = conversationsData.slice(0, 5).map((c: any) => ({
+    phone: c.phone,
+    lastMessage: c.lastMessage?.content || '',
+    updated_at: c.updated_at,
+  }));
+
+  const summary = {
+    totalCampaigns: totalCampaignsData.total || 0,
+    activeCampaigns: activeCampaignsData.total || 0,
+    totalSpend: totalSpendData.totalSpend || 0,
+    recentInsights: insightsData.map((i: any) => ({
+      campaignName: i.campaignName || 'Desconocida',
+      spend: Number(i.spend) || 0,
+      clicks: Number(i.clicks) || 0,
+      ctr: Number(i.ctr) || 0,
+    })),
+    recentMessages,
+  };
+  // Render UI
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-      {/* Campañas */}
-      <Card className="text-center">
-        <CardContent>
-          <p className="text-gray-500 text-sm">Campañas Totales</p>
-          <p className="text-lg font-bold">{summary.totalCampaigns}</p>
-        </CardContent>
-      </Card>
-      <Card className="text-center">
-        <CardContent>
-          <p className="text-gray-500 text-sm">Campañas Activas</p>
-          <p className="text-lg font-bold">{summary.activeCampaigns}</p>
-        </CardContent>
-      </Card>
-      <Card className="text-center">
-        <CardContent>
-          <p className="text-gray-500 text-sm">Gasto Total</p>
-          <p className="text-lg font-bold">${summary.totalSpend.toLocaleString()}</p>
-        </CardContent>
-      </Card>
-
-      {/* Últimos Mensajes */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-blue-500" />
-            Últimos Mensajes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          {summary.recentMessages.map((m, idx) => (
-            <div key={idx} className="border-b pb-1">
-              <p className="font-medium">{m.phone}</p>
-              <p className="text-gray-600 truncate">{m.lastMessage}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Insights recientes */}
-      <Card className="col-span-full lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-yellow-500" />
-            Insights Recientes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="text-sm w-full text-left">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="px-3 py-2">Campaña</th>
-                <th className="px-3 py-2">Gasto</th>
-                <th className="px-3 py-2">Clicks</th>
-                <th className="px-3 py-2">CTR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.recentInsights.map((i: any, idx) => (
-                <tr key={idx} className="border-b">
-                  <td className="px-3 py-2">{i.campaignName}</td>
-                  <td className="px-3 py-2">${i.spend}</td>
-                  <td className="px-3 py-2">{i.clicks}</td>
-                  <td className="px-3 py-2">{i.ctr}%</td>
+    <div className="p-6 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Card className="text-center hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-center gap-2 text-lg">
+                    <Users className="w-5 h-5 text-blue-500" /> Campañas Totales
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{summary.totalCampaigns}</p>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Total de campañas en la cuenta</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Card className="text-center hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-center gap-2 text-lg">
+                    <Activity className="w-5 h-5 text-green-500" /> Campañas Activas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{summary.activeCampaigns}</p>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Número de campañas actualmente activas</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Card className="text-center hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-center gap-2 text-lg">
+                    <DollarSign className="w-5 h-5 text-red-500" /> Gasto Mes Actual
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{summary.totalSpend.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</p>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Gasto total en todas las campañas</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-blue-500" /> Últimos Mensajes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {summary.recentMessages.map((m, idx) => (
+              <div key={idx} className="border-b pb-2 last:border-0">
+                <p className="font-medium text-sm">{m.phone}</p>
+                <p className="text-gray-600 text-xs truncate">{m.lastMessage}</p>
+                <p className="text-gray-400 text-xs">{new Date(m.updated_at).toLocaleString()}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-500" /> Insights Recientes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="text-sm w-full">
+              <thead className="bg-gray-100 text-gray-600">
+                <tr>
+                  <th className="px-4 py-2 text-left">Campaña</th>
+                  <th className="px-4 py-2 text-right">Gasto</th>
+                  <th className="px-4 py-2 text-right">Clicks</th>
+                  <th className="px-4 py-2 text-right">CTR</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
-      {/* rendimiento de campañas */}
-      <Card className="col-span-full">
+              </thead>
+              <tbody>
+                {summary.recentInsights.map((i, idx) => (
+                  <tr key={idx} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-2">{i.campaignName}</td>
+                    <td className="px-4 py-2 text-right">${i.spend.toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right">{i.clicks}</td>
+                    <td className="px-4 py-2 text-right">{i.ctr.toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      </div>
+      <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart className="w-5 h-5 text-purple-500" />
-            Rendimiento de Campañas (Gasto vs Clics)
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart className="w-5 h-5 text-purple-500" /> Rendimiento de Campañas
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={summary.recentInsights}>
+          <ResponsiveContainer width="100%" height={400}>
+            <Chart data={summary.recentInsights}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="campaignName" />
-
-              {/* Eje Y para el gasto */}
-              <YAxis yAxisId="left" orientation="left" />
-
-              {/* Eje Y para los clics */}
-              <YAxis yAxisId="right" orientation="right" />
-
-              <Tooltip />
+              <YAxis yAxisId="left" stroke="#4f46e5" />
+              <YAxis yAxisId="right" orientation="right" stroke="#22c55e" />
+              <RechartsTooltip />
               <Legend />
-
-              {/* Línea de gasto en el eje izquierdo */}
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="spend"
-                stroke="#4f46e5"
-                name="Gasto"
-              />
-
-              {/* Línea de clics en el eje derecho */}
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="clicks"
-                stroke="#22c55e"
-                name="Clics"
-              />
-            </LineChart>
+              <Bar yAxisId="left" dataKey="spend" fill="#4f46e5" name="Gasto" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="right" dataKey="clicks" fill="#22c55e" name="Clics" radius={[4, 4, 0, 0]} />
+            </Chart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
