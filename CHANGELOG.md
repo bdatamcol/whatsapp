@@ -6,6 +6,26 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.0.0/) y [Sem
 
 ---
 
+## [No publicado]
+
+### ✨ Agregado
+- **Implementación de panel para super administador**: Panel de administración para super administradores que permite gestionar cuentas, contactos y asignaciones.
+
+### ⚙️ Mejorado
+- **Refactorización de TanStack Query**: Se centralizó la configuración de React Query para usar un `QueryClientProvider` global, eliminando instancias locales en los componentes `Panel` y `AdsManager`. Esto asegura un comportamiento de caché consistente en toda la aplicación.
+- **Consistencia de nombrado**: Se renombró el archivo `AdsManage.tsx` a `AdsManager.tsx` para que coincida con el nombre del componente exportado.
+
+### 🐞 Corregido
+- **Error de renderizado en `AdsManager`**: Se solucionó un error que ocurría cuando el componente intentaba renderizar un objeto en lugar de un valor primitivo, causando un fallo en la UI del dashboard de marketing.
+
+### 🚨 Advertencias conocidas
+- `crypto.randomUUID()` no es compatible con algunos navegadores antiguos. Se recomienda usar navegadores modernos como Chrome, Edge o Firefox actualizados.
+- Hay advertencias relacionadas con SSR/hidratación en el chat, pero no bloquean el flujo funcional.
+- Algunas funcionalidades no están protegidas contra errores de red o recargas forzadas.
+- Inicialmento toda la informacion relacionada con meta está estatica y solo depende de una cuenta, no esta enlazada a un contacto especifico.
+- En el panel de administración, se muestra unicamente la informacion de la cuenta, no la de los contactos.
+
+
 ## [0.2.0] - 2025-07-12
 
 ### ✨ Agregado

@@ -9,8 +9,6 @@ import Button from './ui/Button';
 import {
   useInfiniteQuery,
   useQuery,
-  QueryClient,
-  QueryClientProvider,
 } from '@tanstack/react-query';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -19,28 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-interface Campaign {
-  id: string;
-  name: string;
-  status: string;
-  objective?: string;
-  daily_budget?: string;
-  start_time?: string;
-  stop_time?: string;
-}
-
-// 🧠 Crear el QueryClient aquí mismo
-const queryClient = new QueryClient();
-
-export default function AdsManagerWrapper() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AdsManager />
-    </QueryClientProvider>
-  );
-}
-
-function AdsManager() {
+export default function AdsManager() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
@@ -50,7 +27,7 @@ function AdsManager() {
       const res = await fetch('/api/marketing/ads?getSummary=true');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error fetching total');
-      return json.total || 0;
+      return json;
     },
   });
 
@@ -131,7 +108,7 @@ function AdsManager() {
           <h2 className="text-2xl font-bold">Campañas</h2>
           {campaigns.length > 0 && (
             <p className="text-sm text-gray-500">
-              Mostrando {filteredCampaigns.length} de {totalData || 0} campañas
+              Mostrando {filteredCampaigns.length} de {totalData?.total || 0} campañas
             </p>
           )}
         </div>

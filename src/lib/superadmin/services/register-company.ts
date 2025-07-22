@@ -2,12 +2,15 @@ import { supabase } from '@/lib/supabase/server.supabase';
 import { NextResponse } from 'next/server';
 
 
-export async function registerCompany(email: string, password: string, companyName: string) {
+export async function registerCompany(email: string, password: string, companyName: string, whatsappNumber: string) {
 
     // 1. Crear la empresa
     const { data: companyData, error: companyError } = await supabase
         .from('companies')
-        .insert({ name: companyName })
+        .insert({ 
+            name: companyName,
+            whatsapp_number: whatsappNumber
+        })
         .select()
         .maybeSingle();
 

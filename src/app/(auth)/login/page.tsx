@@ -42,6 +42,8 @@ export default function LoginForm() {
                 router.replace('/dashboard');
             } else if (profile.role === 'assistant') {
                 router.replace('/assistant/dashboard');
+            } else if (profile.role === 'superadmin') {
+                router.replace('/superadmin-dashboard');
             } else {
                 throw new Error('Rol desconocido');
             }

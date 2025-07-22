@@ -12,24 +12,12 @@ import {
 } from 'recharts';
 import { supabase } from '@/lib/supabase/client.supabase';
 import { toast } from 'sonner';
-import {
-  QueryClient, QueryClientProvider, useQuery,
-} from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { TooltipContent } from '@radix-ui/react-tooltip';
 
-const queryClient = new QueryClient();
-
-export default function Dashboard() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <DashboardContent />
-    </QueryClientProvider>
-  );
-}
-
-function DashboardContent() {
+export default function Panel() {
   const [companyId, setCompanyId] = useState<string | null>(null);
 
   // Obtener usuario y su empresa

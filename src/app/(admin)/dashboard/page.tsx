@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase/client.supabase';
 import Panel from '@/app/(admin)/dashboard/home/Panel';
 import Leads from '@/app/components/Leads';
 import Settings from '@/app/components/Settings';
-import Marketing from '@/app/components/MarketingDashboard';
 import ContactList from '@/app/components/ContactList';
 import WhatsAppPanel from '@/app/components/whatsapp/WhatsAppPanel';
 import AssignmentsPage from './assignments/page';
@@ -23,6 +22,7 @@ import {
   Settings as SettingsIcon,
   LogOut,
 } from 'lucide-react';
+import MarketingDashboard from '@/app/components/MarketingDashboard';
 
 export default function Home() {
   const router = useRouter();
@@ -81,7 +81,7 @@ export default function Home() {
       case 'Contactos': return <ContactList />;
       case 'Mensajes': return <WhatsAppPanel />;
       case 'Leads': return <Leads />;
-      case 'Marketing': return <Marketing />;
+      case 'Marketing': return <MarketingDashboard />;
       case 'Asingar Asesor': return <AssignmentsPage />;
       case 'Ajustes': return <Settings />;
       default: return <Panel />;

@@ -49,7 +49,9 @@ export async function middleware(request: NextRequest) {
                     ? '/dashboard'
                     : profile?.role === 'assistant'
                         ? '/assistant/dashboard'
-                        : '/login';
+                        : profile?.role === 'superadmin'
+                            ? '/superadmin'
+                            : '/login';
 
             return NextResponse.redirect(new URL(redirectPath, request.url));
         }
