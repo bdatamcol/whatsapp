@@ -51,6 +51,10 @@ type CompanyData = {
     whatsapp_access_token: string | null;
     meta_app_id: string | null;
     waba_id: string | null;
+    facebook_access_token: string | null;
+    facebook_ad_account_id: string | null;
+    marketing_account_id: string | null;
+    facebook_catalog_id: string | null;
 };
 
 // Tipo para almacenar los valores descifrados
@@ -60,6 +64,10 @@ type DecryptedValues = {
     meta_app_id: string;
     waba_id: string;
     prompt: string;
+    facebook_access_token: string;
+    facebook_ad_account_id: string;
+    marketing_account_id: string;
+    facebook_catalog_id: string;
 };
 
 export default function CompanyProfileEditor() {
@@ -305,6 +313,60 @@ export default function CompanyProfileEditor() {
                     onToggleVisibility={() => handleShowPassword('waba_id')}
                     isLoading={decrypting['waba_id']}
                 />
+            </div>
+
+            <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">Configuración de Facebook/Meta</h3>
+                
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="facebook_access_token">Token de Acceso Facebook</Label>
+                        <PasswordInput
+                            id="facebook_access_token"
+                            value={decryptedValues.facebook_access_token || decryptData(company.facebook_access_token)}
+                            disabled
+                            showPasswordToggle={true}
+                            onToggleVisibility={() => handleShowPassword('facebook_access_token')}
+                            isLoading={decrypting['facebook_access_token']}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="facebook_ad_account_id">ID de Cuenta de Anuncios Facebook</Label>
+                        <PasswordInput
+                            id="facebook_ad_account_id"
+                            value={decryptedValues.facebook_ad_account_id || decryptData(company.facebook_ad_account_id)}
+                            disabled
+                            showPasswordToggle={true}
+                            onToggleVisibility={() => handleShowPassword('facebook_ad_account_id')}
+                            isLoading={decrypting['facebook_ad_account_id']}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="marketing_account_id">ID de Cuenta de Marketing</Label>
+                        <PasswordInput
+                            id="marketing_account_id"
+                            value={decryptedValues.marketing_account_id || decryptData(company.marketing_account_id)}
+                            disabled
+                            showPasswordToggle={true}
+                            onToggleVisibility={() => handleShowPassword('marketing_account_id')}
+                            isLoading={decrypting['marketing_account_id']}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="facebook_catalog_id">ID de Catálogo Facebook</Label>
+                        <PasswordInput
+                            id="facebook_catalog_id"
+                            value={decryptedValues.facebook_catalog_id || decryptData(company.facebook_catalog_id)}
+                            disabled
+                            showPasswordToggle={true}
+                            onToggleVisibility={() => handleShowPassword('facebook_catalog_id')}
+                            isLoading={decrypting['facebook_catalog_id']}
+                        />
+                    </div>
+                </div>
             </div>
 
             <Button onClick={handleSave} disabled={saving} className="w-full">

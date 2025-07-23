@@ -24,7 +24,7 @@ export default function AdsManager() {
   const { data: totalData } = useQuery({
     queryKey: ['totalCampaigns'],
     queryFn: async () => {
-      const res = await fetch('/api/marketing/ads?getSummary=true');
+      const res = await fetch('/api/marketing/company/ads?getSummary=true');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error fetching total');
       return json;
@@ -43,7 +43,7 @@ export default function AdsManager() {
       const params = new URLSearchParams();
       if (pageParam) params.append('after', pageParam);
       params.append('limit', '25');
-      const res = await fetch(`/api/marketing/ads?${params.toString()}`);
+      const res = await fetch(`/api/marketing/company/ads?${params.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error al cargar campañas');
       return json;
@@ -64,7 +64,7 @@ export default function AdsManager() {
     let currentCursor = data?.pages[data.pages.length - 1]?.paging?.cursors?.after;
     while (currentCursor) {
       const params = new URLSearchParams({ after: currentCursor, limit: '25' });
-      const res = await fetch(`/api/marketing/ads?${params.toString()}`);
+      const res = await fetch(`/api/marketing/company/ads?${params.toString()}`);
       const json = await res.json();
       allCampaigns = [...allCampaigns, ...json.data];
       currentCursor = json.paging?.cursors?.after || null;

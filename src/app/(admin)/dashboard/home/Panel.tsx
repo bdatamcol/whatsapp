@@ -37,26 +37,26 @@ export default function Panel() {
   // Queries con react-query
   const { data: totalCampaignsData } = useQuery({
     queryKey: ['totalCampaigns'],
-    queryFn: async () => (await fetch('/api/marketing/ads?getSummary=true')).json(),
+    queryFn: async () => (await fetch('/api/marketing/company/ads?getSummary=true')).json(),
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: activeCampaignsData } = useQuery({
     queryKey: ['activeCampaigns'],
-    queryFn: async () => (await fetch('/api/marketing/ads?getSummary=true&filterStatus=ACTIVE')).json(),
+    queryFn: async () => (await fetch('/api/marketing/company/ads?getSummary=true&filterStatus=ACTIVE')).json(),
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: totalSpendData } = useQuery({
     queryKey: ['totalSpend'],
-    queryFn: async () => (await fetch('/api/marketing/insights?getTotalSpend=true')).json(),
+    queryFn: async () => (await fetch('/api/marketing/company/insights?getTotalSpend=true')).json(),
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: insightsData } = useQuery({
     queryKey: ['recentInsights'],
     queryFn: async () => {
-      const res = await fetch('/api/marketing/insights?limit=50');
+      const res = await fetch('/api/marketing/company/insights?limit=50');
       const json = await res.json();
       return json.data
         .sort((a, b) => new Date(b.dateStop).getTime() - new Date(a.dateStop).getTime())
@@ -89,7 +89,6 @@ export default function Panel() {
         filter: 'needs_human=eq.true',
       }, (payload) => {
         toast.info('Nuevo contacto requiere atención humana');
-        console.log('Realtime payload:', payload);
       })
       .subscribe();
 
@@ -170,7 +169,7 @@ export default function Panel() {
               <Card className="text-center hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-center gap-2 text-lg">
-                    <DollarSign className="w-5 h-5 text-red-500" /> Gasto Mes Actual
+                    <DollarSign className="w-5 h-5 text-red-500" /> Gasto Mes
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

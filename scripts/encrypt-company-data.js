@@ -43,7 +43,7 @@ async function migrateData() {
     // 1. Obtener todas las empresas
     const { data: companies, error } = await supabase
       .from('companies')
-      .select('id, prompt, whatsapp_access_token, phone_number_id, meta_app_id, waba_id');
+      .select('id, prompt, whatsapp_access_token, phone_number_id, meta_app_id, waba_id, facebook_access_token, facebook_ad_account_id, marketing_account_id, facebook_catalog_id');
 
     if (error) {
       throw new Error(`Error al obtener empresas: ${error.message}`);
@@ -84,6 +84,24 @@ async function migrateData() {
       // Cifrar waba_id si existe y no está cifrado
       if (company.waba_id && !isEncrypted(company.waba_id)) {
         updates.waba_id = encryptData(company.waba_id, secretKey);
+        needsUpdate = true;
+      }
+
+      // facebook_access_token, facebook_ad_account_id, marketing_account_id, facebook_catalog_id
+      if (company.facebook_access_token && !isEncrypted(company.facebook_access_token)) {
+        updates.facebook_access_token = encryptData(company.facebook_access_token, secretKey);
+        needsUpdate = true;
+      }
+      if (company.facebook_ad_account_id && !isEncrypted(company.facebook_ad_account_id)) {
+        updates.facebook_ad_account_id = encryptData(company.facebook_ad_account_id, secretKey);
+        needsUpdate = true;
+      }
+      if (company.marketing_account_id && !isEncrypted(company.marketing_account_id)) {
+        updates.marketing_account_id = encryptData(company.marketing_account_id, secretKey);
+        needsUpdate = true;
+      }
+      if (company.facebook_catalog_id && !isEncrypted(company.facebook_catalog_id)) {
+        updates.facebook_catalog_id = encryptData(company.facebook_catalog_id, secretKey);
         needsUpdate = true;
       }
 

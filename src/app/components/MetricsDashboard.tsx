@@ -25,7 +25,7 @@ const MetricsDashboard: React.FC = () => {
     useEffect(() => {
         const fetchMetrics = async () => {
             try {
-                const response = await fetch('/api/marketing/insights');
+                const response = await fetch('/api/marketing/company/insights');
 
                 if (!response.ok) {
                     const errorText = await response.text();

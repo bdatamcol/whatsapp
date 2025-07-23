@@ -7,7 +7,7 @@ export async function askOpenAIWithHistory(messages: { role: string; content: st
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-nano',
+        model: 'gpt-4.1-nano-2025-04-14',
         messages,
         max_tokens: 300, // puedes ajustar este valor
       }),

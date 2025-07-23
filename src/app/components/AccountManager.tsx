@@ -34,7 +34,7 @@ export default function AccountManager() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/marketing/account');
+        const res = await fetch('/api/marketing/company/account');
         const data = await res.json();
 
         if (!res.ok) {

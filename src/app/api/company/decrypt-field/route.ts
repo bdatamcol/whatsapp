@@ -43,7 +43,7 @@ function decryptData(encryptedText: string, secretKey: string): string {
 }
 
 // Campos permitidos para descifrar
-const allowedFields = ['phone_number_id', 'whatsapp_access_token', 'meta_app_id', 'waba_id', 'prompt'];
+const allowedFields = ['phone_number_id', 'whatsapp_access_token', 'meta_app_id', 'waba_id', 'prompt', 'facebook_access_token', 'facebook_ad_account_id', 'marketing_account_id', 'facebook_catalog_id'];
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,6 +69,10 @@ export async function POST(request: NextRequest) {
       whatsapp_access_token?: string | null;
       meta_app_id?: string | null;
       waba_id?: string | null;
+      facebook_access_token?: string | null;
+      facebook_ad_account_id?: string | null;
+      marketing_account_id?: string | null;
+      facebook_catalog_id?: string | null;
       [key: string]: string | null | undefined;
     };
 

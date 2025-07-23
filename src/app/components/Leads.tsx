@@ -54,7 +54,7 @@ export default function Leads() {
       setLoading(prev => ({ ...prev, pages: true }));
       setError('');
       try {
-        const res = await fetch('/api/marketing/account');
+        const res = await fetch('/api/marketing/company/account');
         const json = await res.json();
 
         if (!res.ok || json.error) {

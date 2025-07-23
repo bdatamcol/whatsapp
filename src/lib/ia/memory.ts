@@ -19,7 +19,6 @@ export async function getConversation(phone: string) {
     }
 
     if (!data) {
-        // console.log(`📭 No hay historial para ${phone}`);
         return [];
     }
 
@@ -31,7 +30,6 @@ export async function updateConversation(
     messages: any[],
     company: { id: string }
 ) {
-    // console.log(`📭 Actualizando historial para ${phone}`);
 
     const { error } = await supabase
         .from('conversations')

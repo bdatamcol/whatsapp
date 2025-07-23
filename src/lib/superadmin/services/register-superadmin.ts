@@ -24,7 +24,6 @@ export async function registerSuperadmin(email: string, password: string) {
     });
 
     if (profileError) {
-        console.log('Error creando perfil de superadmin:', profileError);
         return NextResponse.json({ error: 'Error creando perfil de superadmin' }, { status: 500 });
     }
 
