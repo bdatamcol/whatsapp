@@ -70,9 +70,9 @@ export async function getCompanyFacebookConfig(companyId: string) {
 
 export async function getCompanyFacebookCampaigns(
     companyId: string,
-    options: { limit?: number; after?: string; getSummary?: boolean; filterStatus?: string } = {}
+    options: { limit?: number; after?: string; getSummary?: boolean; filterStatus?: string; since?: string; until?: string } = {}
 ): Promise<any> {
-    const { limit = 25, after, getSummary = false, filterStatus } = options;
+    const { limit = 25, after, getSummary = false, filterStatus, since, until } = options;
     
     // Obtener configuración de Facebook de la empresa
     const config = await getCompanyFacebookConfig(companyId);
@@ -97,10 +97,23 @@ export async function getCompanyFacebookCampaigns(
         if (after) url += `&after=${after}`;
     }
     
+    // Agregar filtros
+    const filters = [];
+    
     if (filterStatus) {
-        url += `&filtering=[{"field":"effective_status","operator":"IN","value":["${filterStatus}"]}]`;
+        filters.push(`{"field":"effective_status","operator":"IN","value":["${filterStatus}"]}`);
     }
     
+    if (filters.length > 0) {
+        url += `&filtering=[${filters.join(',')}]`;
+    }
+    
+    // Para filtros de fecha, usar time_range
+    if (since && until) {
+        url += `&time_range=${encodeURIComponent(JSON.stringify({ since, until }))}`;
+    } else if (since) {
+        url += `&time_range=${encodeURIComponent(JSON.stringify({ since, until: new Date().toISOString().split('T')[0] }))}`;
+    }
     const response = await fetch(url);
     const data = await response.json();
     
