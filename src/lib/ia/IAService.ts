@@ -32,7 +32,7 @@ class IAService {
     const now = new Date().toISOString();
 
     const systemPrompt = await getPromptByEmpresaId(company.id);
-    const history = await getConversation(phone);
+    const history = await getConversation(phone, company.id);
     const hasSystemPrompt = history.some(m => m.role === 'system');
 
     const filtered = history

@@ -134,12 +134,13 @@ export default function CompanyProfileEditor() {
     }, []);
 
     const handleChange = (field: keyof CompanyData, value: string) => {
-        if (company && field === 'prompt') {  // Solo permitir cambio en prompt
+        if (company) {
             setCompany({ ...company, [field]: value });
             
             // También actualizar el valor descifrado para mantener sincronización
-            if (decryptedValues.prompt) {
-                setDecryptedValues(prev => ({ ...prev, prompt: value }));
+            const encryptedFields = ['prompt', 'phone_number_id', 'whatsapp_access_token', 'meta_app_id', 'waba_id', 'facebook_access_token', 'facebook_ad_account_id', 'marketing_account_id', 'facebook_catalog_id'];
+            if (encryptedFields.includes(field) && decryptedValues[field as keyof DecryptedValues]) {
+                setDecryptedValues(prev => ({ ...prev, [field]: value }));
             }
         }
     };
@@ -197,17 +198,27 @@ export default function CompanyProfileEditor() {
         setSaving(true);
 
         try {
-            // Usamos el valor descifrado si existe, de lo contrario usamos el valor del company
-            const promptToSave = decryptedValues.prompt || company.prompt;
+            // Preparar los datos para enviar, usando valores descifrados cuando estén disponibles
+            const dataToSave = {
+                name: company.name,
+                prompt: decryptedValues.prompt || company.prompt,
+                whatsapp_number: company.whatsapp_number,
+                phone_number_id: decryptedValues.phone_number_id || company.phone_number_id,
+                whatsapp_access_token: decryptedValues.whatsapp_access_token || company.whatsapp_access_token,
+                meta_app_id: decryptedValues.meta_app_id || company.meta_app_id,
+                waba_id: decryptedValues.waba_id || company.waba_id,
+                facebook_access_token: decryptedValues.facebook_access_token || company.facebook_access_token,
+                facebook_ad_account_id: decryptedValues.facebook_ad_account_id || company.facebook_ad_account_id,
+                marketing_account_id: decryptedValues.marketing_account_id || company.marketing_account_id,
+                facebook_catalog_id: decryptedValues.facebook_catalog_id || company.facebook_catalog_id,
+            };
             
-            const response = await fetch('/api/company/update-prompt', {
+            const response = await fetch('/api/company/update-company', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    prompt: promptToSave,
-                }),
+                body: JSON.stringify(dataToSave),
             });
 
             const result = await response.json();
@@ -216,13 +227,13 @@ export default function CompanyProfileEditor() {
             if (!response.ok) {
                 toast.error(result.error || 'Error al guardar cambios');
             } else {
-                toast.success('Prompt actualizado');
+                toast.success('Datos de empresa actualizados');
                 router.refresh();
             }
         } catch (error) {
             setSaving(false);
             toast.error('Error al guardar cambios');
-            console.error('Error al guardar prompt:', error);
+            console.error('Error al guardar datos de empresa:', error);
         }
     };
 
@@ -236,7 +247,7 @@ export default function CompanyProfileEditor() {
                 <Input
                     id="name"
                     value={company.name}
-                    disabled
+                    onChange={(e) => handleChange('name', e.target.value)}
                 />
             </div>
 
@@ -263,7 +274,7 @@ export default function CompanyProfileEditor() {
                 <Input
                     id="whatsapp_number"
                     value={company.whatsapp_number || ''}
-                    disabled
+                    onChange={(e) => handleChange('whatsapp_number', e.target.value)}
                 />
             </div>
 
@@ -272,7 +283,13 @@ export default function CompanyProfileEditor() {
                 <PasswordInput
                     id="phone_number_id"
                     value={decryptedValues.phone_number_id || decryptData(company.phone_number_id)}
-                    disabled
+                    onChange={(e) => {
+                        if (decryptedValues.phone_number_id) {
+                            setDecryptedValues(prev => ({ ...prev, phone_number_id: e.target.value }));
+                        } else {
+                            handleChange('phone_number_id', e.target.value);
+                        }
+                    }}
                     showPasswordToggle={true}
                     onToggleVisibility={() => handleShowPassword('phone_number_id')}
                     isLoading={decrypting['phone_number_id']}
@@ -284,7 +301,13 @@ export default function CompanyProfileEditor() {
                 <PasswordInput
                     id="whatsapp_access_token"
                     value={decryptedValues.whatsapp_access_token || decryptData(company.whatsapp_access_token)}
-                    disabled
+                    onChange={(e) => {
+                        if (decryptedValues.whatsapp_access_token) {
+                            setDecryptedValues(prev => ({ ...prev, whatsapp_access_token: e.target.value }));
+                        } else {
+                            handleChange('whatsapp_access_token', e.target.value);
+                        }
+                    }}
                     showPasswordToggle={true}
                     onToggleVisibility={() => handleShowPassword('whatsapp_access_token')}
                     isLoading={decrypting['whatsapp_access_token']}
@@ -296,7 +319,13 @@ export default function CompanyProfileEditor() {
                 <PasswordInput
                     id="meta_app_id"
                     value={decryptedValues.meta_app_id || decryptData(company.meta_app_id)}
-                    disabled
+                    onChange={(e) => {
+                        if (decryptedValues.meta_app_id) {
+                            setDecryptedValues(prev => ({ ...prev, meta_app_id: e.target.value }));
+                        } else {
+                            handleChange('meta_app_id', e.target.value);
+                        }
+                    }}
                     showPasswordToggle={true}
                     onToggleVisibility={() => handleShowPassword('meta_app_id')}
                     isLoading={decrypting['meta_app_id']}
@@ -308,7 +337,13 @@ export default function CompanyProfileEditor() {
                 <PasswordInput
                     id="waba_id"
                     value={decryptedValues.waba_id || decryptData(company.waba_id)}
-                    disabled
+                    onChange={(e) => {
+                        if (decryptedValues.waba_id) {
+                            setDecryptedValues(prev => ({ ...prev, waba_id: e.target.value }));
+                        } else {
+                            handleChange('waba_id', e.target.value);
+                        }
+                    }}
                     showPasswordToggle={true}
                     onToggleVisibility={() => handleShowPassword('waba_id')}
                     isLoading={decrypting['waba_id']}
@@ -324,7 +359,13 @@ export default function CompanyProfileEditor() {
                         <PasswordInput
                             id="facebook_access_token"
                             value={decryptedValues.facebook_access_token || decryptData(company.facebook_access_token)}
-                            disabled
+                            onChange={(e) => {
+                                if (decryptedValues.facebook_access_token) {
+                                    setDecryptedValues(prev => ({ ...prev, facebook_access_token: e.target.value }));
+                                } else {
+                                    handleChange('facebook_access_token', e.target.value);
+                                }
+                            }}
                             showPasswordToggle={true}
                             onToggleVisibility={() => handleShowPassword('facebook_access_token')}
                             isLoading={decrypting['facebook_access_token']}
@@ -336,7 +377,13 @@ export default function CompanyProfileEditor() {
                         <PasswordInput
                             id="facebook_ad_account_id"
                             value={decryptedValues.facebook_ad_account_id || decryptData(company.facebook_ad_account_id)}
-                            disabled
+                            onChange={(e) => {
+                                if (decryptedValues.facebook_ad_account_id) {
+                                    setDecryptedValues(prev => ({ ...prev, facebook_ad_account_id: e.target.value }));
+                                } else {
+                                    handleChange('facebook_ad_account_id', e.target.value);
+                                }
+                            }}
                             showPasswordToggle={true}
                             onToggleVisibility={() => handleShowPassword('facebook_ad_account_id')}
                             isLoading={decrypting['facebook_ad_account_id']}
@@ -348,7 +395,13 @@ export default function CompanyProfileEditor() {
                         <PasswordInput
                             id="marketing_account_id"
                             value={decryptedValues.marketing_account_id || decryptData(company.marketing_account_id)}
-                            disabled
+                            onChange={(e) => {
+                                if (decryptedValues.marketing_account_id) {
+                                    setDecryptedValues(prev => ({ ...prev, marketing_account_id: e.target.value }));
+                                } else {
+                                    handleChange('marketing_account_id', e.target.value);
+                                }
+                            }}
                             showPasswordToggle={true}
                             onToggleVisibility={() => handleShowPassword('marketing_account_id')}
                             isLoading={decrypting['marketing_account_id']}
@@ -360,7 +413,13 @@ export default function CompanyProfileEditor() {
                         <PasswordInput
                             id="facebook_catalog_id"
                             value={decryptedValues.facebook_catalog_id || decryptData(company.facebook_catalog_id)}
-                            disabled
+                            onChange={(e) => {
+                                if (decryptedValues.facebook_catalog_id) {
+                                    setDecryptedValues(prev => ({ ...prev, facebook_catalog_id: e.target.value }));
+                                } else {
+                                    handleChange('facebook_catalog_id', e.target.value);
+                                }
+                            }}
                             showPasswordToggle={true}
                             onToggleVisibility={() => handleShowPassword('facebook_catalog_id')}
                             isLoading={decrypting['facebook_catalog_id']}

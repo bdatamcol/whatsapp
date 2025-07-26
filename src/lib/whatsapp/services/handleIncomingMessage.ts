@@ -31,19 +31,20 @@ type IncomingMetadata = {
 };
 
 // --- Funciones privadas ---
-async function updateCityFromText(text: string, phone: string) {
+async function updateCityFromText(text: string, phone: string, companyId: string) {
     const cities = await getAllCitiesCached();
     const cityId = await findCityIdInText(text, cities);
     if (cityId) {
-        await supabase.from('contacts').update({ city_id: cityId }).eq('phone', phone);
+        await supabase.from('contacts').update({ city_id: cityId }).eq('phone', phone).eq('company_id', companyId);
     }
 }
 
-async function getContactStatus(phone: string): Promise<'new' | 'in_progress' | 'awaiting_response' | null> {
+async function getContactStatus(phone: string, companyId: string): Promise<'new' | 'in_progress' | 'awaiting_response' | null> {
     const { data: contact } = await supabase
         .from('contacts')
         .select('status')
         .eq('phone', phone)
+        .eq('company_id', companyId)
         .maybeSingle();
 
     return contact?.status ?? null;
@@ -60,7 +61,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
     const timestamp = message.timestamp ? new Date(message.timestamp * 1000).toISOString() : new Date().toISOString();
 
     const userInput = type === 'button' ? message.button?.payload || '' : text;
-    await updateCityFromText(text, from);
+    await updateCityFromText(text, from, company.id);
 
     //detectar si necesita humano
     const detection = needsHumanAgent(userInput);
@@ -78,10 +79,11 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
                 .from('contacts')
                 .update({ needs_human: true, status: 'waiting_human' })
                 .eq('phone', from)
+                .eq('company_id', company.id)
         ]);
 
         // Agregar el mensaje del usuario a la conversación
-        const history = await getConversation(from);
+        const history = await getConversation(from, company.id);
         const timestamp = new Date().toISOString();
         const updatedMessages = [
             ...history,
@@ -110,7 +112,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         return;
     }
 
-    const contactStatus = await getContactStatus(from);
+    const contactStatus = await getContactStatus(from, company.id);
 
     // Nuevo contacto
     if (!contactStatus || contactStatus === 'new') {
@@ -154,13 +156,14 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         .from('contacts')
         .select('needs_human')
         .eq('phone', from)
+        .eq('company_id', company.id)
         .maybeSingle();
 
     if (contact?.needs_human) {
         // console.log(`[IA BLOQUEADA] Contacto ${from} fue escalado a humano. La IA no responderá.`);
 
         // Solo guardamos el nuevo mensaje del usuario
-        const history = await getConversation(from);
+        const history = await getConversation(from, company.id);
         const updatedMessages = [
             ...history,
             {
@@ -174,7 +177,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         return;
     }
 
-    const history = await getConversation(from);
+    const history = await getConversation(from, company.id);
     const enrichedPrompt = userInput;
 
     const updatedMessages = [

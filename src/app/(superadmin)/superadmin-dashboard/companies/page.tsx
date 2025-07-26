@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Building2, Plus, Trash2, RefreshCw } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import RegisterCompanyForm from './RegisterCompanyForm';
+import { toast } from 'sonner';
 
 type Admin = {
   id: string;
@@ -51,29 +52,46 @@ export default function CompaniesManagement() {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleDeleteCompany = async (companyId: string) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta empresa? Esta acción no se puede deshacer.')) {
-      try {
-        const response = await fetch('/api/superadmin/delete-company', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ companyId }),
-        });
+const handleDeleteCompany = async (companyId: string) => {
+  toast('¿Estás seguro de que quieres eliminar esta empresa?', {
+    duration: Infinity,
+    action: {
+      label: 'Eliminar',
+      onClick: async () => {
+        try {
+          const response = await fetch('/api/superadmin/delete-company', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ companyId }),
+          });
+          
+          console.log(response);
+          const data = await response.json();
 
-        const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Error al eliminar la empresa');
+          if (!response.ok) {
+            toast.error(data.error || 'Error al eliminar la empresa');
+            return;
+          }
+
+          toast.success('Empresa eliminada correctamente');
+          handleRefresh();
+        } catch (error) {
+          console.error('Error al eliminar la empresa:', error);
+          toast.error('Error al eliminar la empresa');
         }
-
-        handleRefresh();
-      } catch (error) {
-        console.error('Error al eliminar la empresa:', error);
+      }
+    },
+    cancel: {
+      label: 'Cancelar',
+      onClick: () => {
+        toast.dismiss();
       }
     }
-  };
+  });
+};
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -95,14 +113,14 @@ export default function CompaniesManagement() {
           <Button
             onClick={handleRefresh}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex cursor-pointer items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
             Actualizar
           </Button>
           <Button
             onClick={() => setShowRegisterForm(true)}
-            className="flex items-center gap-2"
+            className="flex cursor-pointer items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Nueva Empresa
@@ -169,10 +187,9 @@ export default function CompaniesManagement() {
                         <td className="py-3 px-4">{formatDate(company.created_at)}</td>
                         <td className="py-3 px-4 text-right">
                           <Button
-                            disabled={company.admins?.length > 0}
                             variant="ghost"
                             size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="cursor-pointer text-red-500 hover:text-red-700 hover:bg-red-50"
                             onClick={() => handleDeleteCompany(company.id)}
                           >
                             <Trash2 className="h-4 w-4" />

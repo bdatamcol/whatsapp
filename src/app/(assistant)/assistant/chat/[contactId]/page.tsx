@@ -21,7 +21,7 @@ export default function ChatPage() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ phone: contactId }),
+                body: JSON.stringify({ phone: contactId, companyId }),
             });
 
             const result = await res.json();

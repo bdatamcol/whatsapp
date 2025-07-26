@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase/server.supabase';
 
-export async function appendMessageToConversation(phone: string, message: string, messageId: string, role: string = 'assistant') {
+export async function appendMessageToConversation(phone: string, message: string, messageId: string, companyId: string, role: string = 'assistant') {
     const { data: existing, error: fetchError } = await supabase
         .from('conversations')
         .select('messages')
         .eq('phone', phone)
+        .eq('company_id', companyId)
         .maybeSingle();
 
     if (fetchError) throw new Error('Error consultando historial');
@@ -24,14 +25,15 @@ export async function appendMessageToConversation(phone: string, message: string
         .upsert({
             phone,
             messages: updatedMessages,
+            company_id: companyId,
             updated_at: new Date().toISOString(),
-        }, { onConflict: 'phone' });
+        }, { onConflict: 'phone,company_id' });
 
     if (upsertError) throw new Error('Error guardando mensaje');
 }
 
 export type Role = 'user' | 'assistant' | 'assistant_humano';
-export async function getMessagesForContact(phone: string): Promise<
+export async function getMessagesForContact(phone: string, companyId: string): Promise<
     { id: string; role: Role; content: string; status: string; timestamp: string }[]
 > {
 
@@ -39,6 +41,7 @@ export async function getMessagesForContact(phone: string): Promise<
         .from('conversations')
         .select('messages')
         .eq('phone', phone)
+        .eq('company_id', companyId)
         .maybeSingle();
 
     if (error) {

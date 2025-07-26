@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     });
 
     // Agregar mensaje a la conversación
-    await appendMessageToConversation(phone, message, messageId, role);
+    await appendMessageToConversation(phone, message, messageId, companyId, role);
 
     return NextResponse.json({ success: true }, { status: 200 });
 

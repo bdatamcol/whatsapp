@@ -10,11 +10,15 @@ export async function GET(request: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '20');
         const after = searchParams.get('after') || undefined;
         const getTotalSpend = searchParams.get('getTotalSpend') === 'true';
+        const since = searchParams.get('since') || undefined;
+        const until = searchParams.get('until') || undefined;
         
         const insights = await getCompanyFacebookInsights(profile.company_id, {
             limit,
             after,
-            getTotalSpend
+            getTotalSpend,
+            since,
+            until
         });
         
         return NextResponse.json(insights);

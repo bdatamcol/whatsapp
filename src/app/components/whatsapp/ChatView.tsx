@@ -27,7 +27,7 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
     const [inputValue, setInputValue] = useState('');
 
     const fetchMessages = async () => {
-        const res = await fetch(`/api/whatsapp/messagess/${contactId}`);
+        const res = await fetch(`/api/whatsapp/messagess/${contactId}?companyId=${companyId}`);
         const data = await res.json();
         setMessages(data);
     };

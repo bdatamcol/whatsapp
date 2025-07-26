@@ -1,5 +1,3 @@
-import { supabase } from '@/lib/supabase/server.supabase';
-import crypto from 'crypto';
 import { getCompanyFacebookConfig } from './company-ads';
 
 type Metric = {
@@ -22,9 +20,9 @@ type Metric = {
 
 export async function getCompanyFacebookInsights(
     companyId: string,
-    options: { limit?: number; after?: string; getTotalSpend?: boolean } = {}
+    options: { limit?: number; after?: string; getTotalSpend?: boolean; since?: string; until?: string } = {}
 ): Promise<any> {
-    const { limit = 20, after = '', getTotalSpend = false } = options;
+    const { limit = 20, after = '', getTotalSpend = false, since: optSince, until: optUntil } = options;
 
     // Obtener configuración de Facebook de la empresa
     const config = await getCompanyFacebookConfig(companyId);
@@ -48,46 +46,41 @@ export async function getCompanyFacebookInsights(
         const accountResponse = await fetch(accountUrl);
         if (!accountResponse.ok) throw new Error('Error al obtener moneda de la empresa');
         const { currency: fromCurrency } = await accountResponse.json();
-
-        // Último mes
+    
+        // Usar fechas proporcionadas o default a último mes
         const now = new Date();
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const year = lastMonth.getFullYear();
-        const month = lastMonth.getMonth() + 1;
-        const lastDay = new Date(year, month, 0).getDate();
-        const since = `${year}-${month.toString().padStart(2, '0')}-01`;
-        const until = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
+        let since = optSince;
+        let until = optUntil;
+        if (!since || !until) {
+            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const year = lastMonth.getFullYear();
+            const month = lastMonth.getMonth() + 1;
+            const lastDay = new Date(year, month, 0).getDate();
+            since = `${year}-${month.toString().padStart(2, '0')}-01`;
+            until = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
+        }
         params.append('time_range', JSON.stringify({ since, until }));
-
+    
         const url = `${baseUrl}?${params.toString()}`;
         const response = await fetch(url);
         const raw = await response.json();
-
+    
         if (!response.ok || raw.error) {
             throw new Error(raw.error?.message || 'Error al obtener gasto total de la empresa');
         }
-
+    
         const totalSpend = raw.data?.[0]?.spend || '0';
-
-        // Convertir a USD si es necesario
-        let convertedSpend = parseFloat(totalSpend);
-        if (fromCurrency !== 'USD') {
-            try {
-                const conversionResponse = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`);
-                const conversionData = await conversionResponse.json();
-                const rate = conversionData.rates?.USD || 1;
-                convertedSpend = parseFloat(totalSpend) * rate;
-            } catch (error) {
-                console.warn('Error al convertir moneda, usando valor original:', error);
-            }
-        }
-
+    
         return {
-            totalSpend: convertedSpend.toFixed(2),
-            currency: 'USD',
+            totalSpend: parseFloat(totalSpend),
+            currency: 'COP',
             originalCurrency: fromCurrency,
             originalAmount: totalSpend
         };
+    }
+    // Para insights regulares, agregar time_range si se proporcionan fechas
+    if (optSince && optUntil) {
+        params.append('time_range', JSON.stringify({ since: optSince, until: optUntil }));
     }
 
     if (!getTotalSpend) {
