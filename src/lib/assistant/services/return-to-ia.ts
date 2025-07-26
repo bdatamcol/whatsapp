@@ -2,9 +2,9 @@
 
 import { supabase } from '@/lib/supabase/server.supabase';
 
-export async function returnContactToIA(phone: string) {
-    if (!phone) {
-        throw new Error('Falta número de teléfono');
+export async function returnContactToIA(phone: string, companyId: string) {
+    if (!phone || !companyId) {
+        throw new Error('Falta número de teléfono o ID de empresa');
     }
 
     // 1. Actualizar contacto
@@ -15,7 +15,8 @@ export async function returnContactToIA(phone: string) {
             status: 'closed',
             last_interaction_at: new Date().toISOString()
         })
-        .eq('phone', phone);
+        .eq('phone', phone)
+        .eq('company_id', companyId);
 
     if (contactError) {
         throw new Error('Error actualizando contacto');
@@ -26,6 +27,7 @@ export async function returnContactToIA(phone: string) {
         .from('assistants_assignments')
         .update({ active: false })
         .eq('contact_phone', phone)
+        .eq('company_id', companyId)
         .eq('active', true);
 
     if (assignmentError) {

@@ -82,7 +82,6 @@ export async function getPromptByEmpresaId(companyId: string): Promise<string> {
 
     // Intentar descifrar el prompt
     const secretKey = process.env.ENCRYPTION_KEY;
-    console.log('secretKey', secretKey);
     if (secretKey && data.prompt.includes(':')) {
         return decryptData(data.prompt, secretKey);
     }

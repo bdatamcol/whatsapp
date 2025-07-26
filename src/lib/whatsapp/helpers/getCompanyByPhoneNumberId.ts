@@ -41,7 +41,6 @@ function decryptData(encryptedText: string, secretKey: string): string {
 }
 
 export async function getCompanyByPhoneNumberId(phoneNumberId: string) {
-    console.log('[getCompanyByPhoneNumberId] Recibido:', phoneNumberId);
     
     // Primero intentamos buscar directamente (para compatibilidad con datos no cifrados)
     let { data: company, error } = await supabase
@@ -53,7 +52,6 @@ export async function getCompanyByPhoneNumberId(phoneNumberId: string) {
     // Si no encontramos la compañía directamente, puede ser porque el phone_number_id está cifrado
     // En ese caso, obtenemos todas las compañías y buscamos manualmente después de descifrar
     if (!company) {
-        console.log('[getCompanyByPhoneNumberId] No se encontró directamente, buscando en datos cifrados...');
         const secretKey = process.env.ENCRYPTION_KEY || '';
         
         if (secretKey) {
@@ -70,7 +68,6 @@ export async function getCompanyByPhoneNumberId(phoneNumberId: string) {
                         const decryptedPhoneNumberId = decryptData(comp.phone_number_id, secretKey);
                         if (decryptedPhoneNumberId === phoneNumberId) {
                             company = comp;
-                            console.log('[getCompanyByPhoneNumberId] Compañía encontrada después de descifrar');
                             break;
                         }
                     }

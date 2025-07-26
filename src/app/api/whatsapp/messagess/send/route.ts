@@ -47,8 +47,6 @@ export async function POST(request: Request) {
   try {
     const { phone, message, role, companyId } = await request.json();
 
-    // console.log({ phone, message, role, companyId });
-
     if (!phone || !message || !companyId) {
       return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 });
     }
@@ -61,7 +59,6 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (error) {
-      // console.error('[getCompanyById] Error:', error.message);
       return NextResponse.json({ error: 'Error al buscar la compañía' }, { status: 500 });
     }
 
@@ -97,7 +94,7 @@ export async function POST(request: Request) {
     });
 
     // Agregar mensaje a la conversación
-    await appendMessageToConversation(phone, message, messageId, role);
+    await appendMessageToConversation(phone, message, messageId, companyId, role);
 
     return NextResponse.json({ success: true }, { status: 200 });
 

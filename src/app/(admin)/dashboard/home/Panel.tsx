@@ -6,6 +6,7 @@ import {
   MessageCircle, Zap, BarChart, Users,
   Activity,
   DollarSign,
+  CalendarIcon,
 } from 'lucide-react';
 import {
   BarChart as Chart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
@@ -16,10 +17,16 @@ import { useQuery } from '@tanstack/react-query';
 import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { TooltipContent } from '@radix-ui/react-tooltip';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2 } from 'lucide-react';
 
 export default function Panel() {
   const [companyId, setCompanyId] = useState<string | null>(null);
-
+  const [dateRange, setDateRange] = useState<{ from: Date; to?: Date }>({ from: new Date(new Date().setMonth(new Date().getMonth() - 1)), to: new Date() });
   // Obtener usuario y su empresa
   useEffect(() => {
     (async () => {
@@ -37,26 +44,33 @@ export default function Panel() {
   // Queries con react-query
   const { data: totalCampaignsData } = useQuery({
     queryKey: ['totalCampaigns'],
-    queryFn: async () => (await fetch('/api/marketing/ads?getSummary=true')).json(),
+    queryFn: async () => (await fetch('/api/marketing/company/ads?getSummary=true')).json(),
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: activeCampaignsData } = useQuery({
     queryKey: ['activeCampaigns'],
-    queryFn: async () => (await fetch('/api/marketing/ads?getSummary=true&filterStatus=ACTIVE')).json(),
+    queryFn: async () => (await fetch('/api/marketing/company/ads?getSummary=true&filterStatus=ACTIVE')).json(),
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: totalSpendData } = useQuery({
-    queryKey: ['totalSpend'],
-    queryFn: async () => (await fetch('/api/marketing/insights?getTotalSpend=true')).json(),
+
+  const { data: totalSpendData, isLoading: isLoadingSpend } = useQuery({
+    queryKey: ['totalSpend', dateRange],
+    queryFn: async () => {
+      const since = dateRange.from.toISOString().split('T')[0];
+      const until = dateRange.to?.toISOString().split('T')[0] ?? new Date().toISOString().split('T')[0];
+      const url = `/api/marketing/company/insights?getTotalSpend=true&since=${since}&until=${until}`;
+      return (await fetch(url)).json();
+    },
     staleTime: 5 * 60 * 1000,
+    placeholderData: true,
   });
 
   const { data: insightsData } = useQuery({
     queryKey: ['recentInsights'],
     queryFn: async () => {
-      const res = await fetch('/api/marketing/insights?limit=50');
+      const res = await fetch('/api/marketing/company/insights?limit=50');
       const json = await res.json();
       return json.data
         .sort((a, b) => new Date(b.dateStop).getTime() - new Date(a.dateStop).getTime())
@@ -89,7 +103,6 @@ export default function Panel() {
         filter: 'needs_human=eq.true',
       }, (payload) => {
         toast.info('Nuevo contacto requiere atención humana');
-        console.log('Realtime payload:', payload);
       })
       .subscribe();
 
@@ -170,16 +183,47 @@ export default function Panel() {
               <Card className="text-center hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-center gap-2 text-lg">
-                    <DollarSign className="w-5 h-5 text-red-500" /> Gasto Mes Actual
+                    <DollarSign className="w-5 h-5 text-red-500" /> Gasto
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{summary.totalSpend.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</p>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-center gap-2 text-sm">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-[280px] justify-start text-left font-normal", !dateRange && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateRange?.from ? (
+                            dateRange.to ? (
+                              <>{format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}</>
+                            ) : (
+                              format(dateRange.from, "LLL dd, y")
+                            )
+                          ) : (
+                            <span>Selecciona un rango</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start" side='left'>
+                        <Calendar
+                          mode="range"
+                          defaultMonth={dateRange?.from}
+                          numberOfMonths={2}
+                          selected={dateRange}
+                          onSelect={setDateRange}
+                          className="bg-white"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <p className="text-2xl font-bold flex items-center justify-center gap-2">
+                    {summary.totalSpend.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}
+                    {isLoadingSpend && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </p>
                 </CardContent>
               </Card>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Gasto total en todas las campañas</p>
+              <p>Gasto total en campañas para el período seleccionado</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

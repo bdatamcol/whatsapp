@@ -67,7 +67,6 @@ export async function POST(req: NextRequest) {
 
     // 3. Cifrar el prompt
     const secretKey = process.env.ENCRYPTION_KEY;
-    console.log({ secretKey });
     const encryptedPrompt = encryptData(prompt, secretKey);
 
     // 4. Actualizar en la base de datos usando el cliente del servidor

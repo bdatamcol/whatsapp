@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ assistant });
 
     } catch (error) {
-        console.log(error);
         return NextResponse.json({ error: 'Error creando usuario' }, { status: 500 });
     }
 }

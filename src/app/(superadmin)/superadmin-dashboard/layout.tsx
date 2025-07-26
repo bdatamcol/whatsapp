@@ -53,13 +53,13 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           <nav className="space-y-2">
             <a
               onClick={() => router.push('/superadmin-dashboard')}
-              className="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200"
+              className="flex items-center p-3 text-gray-700 cursor-pointer rounded-lg hover:bg-gray-200 transition-all duration-200"
             >
               Panel de Control
             </a>
             <a
               onClick={() => router.push('/superadmin-dashboard/companies')}
-              className="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200"
+              className="flex items-center p-3 text-gray-700 cursor-pointer rounded-lg hover:bg-gray-200 transition-all duration-200"
             >
               Gestión de Empresas
             </a>
