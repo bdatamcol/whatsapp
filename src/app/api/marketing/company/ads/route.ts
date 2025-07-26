@@ -11,12 +11,16 @@ export async function GET(request: NextRequest) {
         const after = searchParams.get('after') || undefined;
         const getSummary = searchParams.get('getSummary') === 'true';
         const filterStatus = searchParams.get('filterStatus') || undefined;
+        const since = searchParams.get('since') || undefined;
+        const until = searchParams.get('until') || undefined;
         
         const campaigns = await getCompanyFacebookCampaigns(profile.company_id, {
             limit,
             after,
             getSummary,
-            filterStatus
+            filterStatus,
+            since,
+            until
         });
         
         return NextResponse.json(campaigns);

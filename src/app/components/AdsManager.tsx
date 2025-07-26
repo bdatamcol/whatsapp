@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-  CheckCircle2, AlertTriangle, Download, Loader2,
+  CheckCircle2, AlertTriangle, Download, Loader2, Calendar,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
 import Button from './ui/Button';
@@ -16,10 +16,14 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { DateRange } from 'react-day-picker';
+import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 
 export default function AdsManager() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange | undefined>();
 
   const { data: totalData } = useQuery({
     queryKey: ['totalCampaigns'],
@@ -31,6 +35,11 @@ export default function AdsManager() {
     },
   });
 
+  const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
+    setDateRange(newDateRange);
+    setAppliedDateRange(newDateRange);
+  };
+
   const {
     data,
     fetchNextPage,
@@ -38,11 +47,20 @@ export default function AdsManager() {
     isLoading,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['campaigns'],
+    queryKey: ['campaigns', appliedDateRange],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (pageParam) params.append('after', pageParam);
       params.append('limit', '25');
+      
+      // Agregar filtros de fecha si están definidos
+      if (appliedDateRange?.from) {
+        params.append('since', appliedDateRange.from.toISOString().split('T')[0]);
+      }
+      if (appliedDateRange?.to) {
+        params.append('until', appliedDateRange.to.toISOString().split('T')[0]);
+      }
+      
       const res = await fetch(`/api/marketing/company/ads?${params.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error al cargar campañas');
@@ -109,10 +127,23 @@ export default function AdsManager() {
           {campaigns.length > 0 && (
             <p className="text-sm text-gray-500">
               Mostrando {filteredCampaigns.length} de {totalData?.total || 0} campañas
+              {appliedDateRange?.from && (
+                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
+                  Filtrado por fecha
+                </span>
+              )}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-gray-500" />
+            <DatePickerWithRange
+              date={dateRange}
+              onDateChange={handleDateRangeChange}
+              className="w-[300px]"
+            />
+          </div>
           <Select
             value={statusFilter}
             onValueChange={(val) => setStatusFilter(val as 'all' | 'active' | 'inactive')}
