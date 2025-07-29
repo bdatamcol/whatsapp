@@ -94,7 +94,7 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                 throw new Error(result.error || 'Error desconocido');
             }
         } catch (error) {
-            console.error('Error al enviar el mensaje:', error);
+            // Error al enviar el mensaje
         }
     };
 

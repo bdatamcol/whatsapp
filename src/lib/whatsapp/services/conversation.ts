@@ -93,7 +93,6 @@ export async function getAllConversationsSummary(companyId: string): Promise<Con
         .order('updated_at', { ascending: false });
 
     if (error || !data) {
-        console.error('Error al obtener conversaciones:', error);
         throw new Error(error?.message || 'Sin datos');
     }
 

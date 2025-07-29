@@ -1,4 +1,4 @@
-    import { supabase } from '@/lib/supabase/server.supabase'
+import { supabase } from '@/lib/supabase/server.supabase'
     import { getCompanyByPhoneNumberId } from '../helpers/getCompanyByPhoneNumberId'
 
     interface Filters {
@@ -86,7 +86,7 @@
                 console.error('Error al guardar el contacto:', error.message);
             }
         } catch (err) {
-            console.error('Error en upsertContact:', err);
+            // Error handling without console.log
         }
     }
 

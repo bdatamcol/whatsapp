@@ -9,6 +9,7 @@ import Settings from '@/app/components/Settings';
 import ContactList from '@/app/components/ContactList';
 import WhatsAppPanel from '@/app/components/whatsapp/WhatsAppPanel';
 import AssignmentsPage from './assignments/page';
+import MessengerMessages from '@/app/components/MessengerMessages';
 import { usePendingContactsCount } from '@/hooks/usePendingContactsCount';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ import {
   Megaphone,
   UserCheck,
   Settings as SettingsIcon,
-  LogOut,
+  LogOut, MessageCircle,
 } from 'lucide-react';
 import MarketingDashboard from '@/app/components/MarketingDashboard';
 
@@ -36,6 +37,7 @@ export default function Home() {
     { name: 'Leads', label: 'Leads', icon: Target },
     { name: 'Marketing', label: 'Marketing', icon: Megaphone },
     { name: 'Asingar Asesor', label: 'Asignar Asesor', icon: UserCheck },
+    { name: 'Messenger', label: 'Messenger', icon: MessageCircle },
     { name: 'Ajustes', label: 'Ajustes', icon: SettingsIcon },
   ];
 
@@ -83,6 +85,7 @@ export default function Home() {
       case 'Leads': return <Leads />;
       case 'Marketing': return <MarketingDashboard />;
       case 'Asingar Asesor': return <AssignmentsPage />;
+      case 'Messenger': return <MessengerMessages />;
       case 'Ajustes': return <Settings />;
       default: return <Panel />;
     }

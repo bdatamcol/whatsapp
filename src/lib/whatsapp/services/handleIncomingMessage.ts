@@ -160,7 +160,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         .maybeSingle();
 
     if (contact?.needs_human) {
-        // console.log(`[IA BLOQUEADA] Contacto ${from} fue escalado a humano. La IA no responderá.`);
+        // IA bloqueada para contacto escalado a humano
 
         // Solo guardamos el nuevo mensaje del usuario
         const history = await getConversation(from, company.id);
