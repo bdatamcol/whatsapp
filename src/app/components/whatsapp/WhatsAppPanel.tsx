@@ -22,7 +22,6 @@ export default function WhatsAppPanel() {
             } = await supabase.auth.getUser();
 
             if (authError || !user) {
-                console.error('Error obteniendo el usuario autenticado:', authError?.message);
                 setLoading(false);
                 return;
             }
@@ -34,7 +33,7 @@ export default function WhatsAppPanel() {
                 .single();
 
             if (error || !data?.company_id) {
-                console.error('Error obteniendo company_id del perfil:', error?.message);
+                // Error obteniendo company_id del perfil
             } else {
                 setCompanyIdActual(data.company_id);
             }

@@ -31,9 +31,9 @@ export default function ConversationList({ companyId, onSelectAction }: Props) {
         if (Array.isArray(data)) {
             setConversations(data); // ya vendrán filtradas del backend
         } else {
-            console.warn('Respuesta inesperada del servidor:', data);
-            setConversations([]);
-        }
+             // Respuesta inesperada del servidor
+             setConversations([]);
+         }
     };
 
     // Escuchar cambios en la tabla

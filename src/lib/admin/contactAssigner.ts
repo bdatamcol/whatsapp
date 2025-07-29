@@ -50,7 +50,6 @@ export async function assignContactToAssistant(
     });
 
     if (error) {
-        console.error('Error al asignar contacto:', error.message);
         throw new Error('No se pudo asignar el contacto');
     }
 

@@ -67,7 +67,6 @@ const handleDeleteCompany = async (companyId: string) => {
             body: JSON.stringify({ companyId }),
           });
           
-          console.log(response);
           const data = await response.json();
 
 
@@ -79,7 +78,6 @@ const handleDeleteCompany = async (companyId: string) => {
           toast.success('Empresa eliminada correctamente');
           handleRefresh();
         } catch (error) {
-          console.error('Error al eliminar la empresa:', error);
           toast.error('Error al eliminar la empresa');
         }
       }

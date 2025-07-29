@@ -11,7 +11,7 @@ export async function getConversation(phone: string, companyId: string) {
         .maybeSingle();
 
     if (error) {
-        console.error(`Error consultando historial para ${phone} / empresa ${companyId}:`, error.message);
+        // Error handled silently
     }
 
     return data?.messages || [];
@@ -32,7 +32,6 @@ export async function updateConversation(
         .maybeSingle();
 
     if (contactError) {
-        console.error("Error buscando contacto:", contactError.message);
         return;
     }
 
@@ -45,7 +44,6 @@ export async function updateConversation(
         });
 
         if (insertError) {
-            console.error("Error al crear contacto:", insertError.message);
             return;
         }
     }
@@ -66,6 +64,6 @@ export async function updateConversation(
         );
 
     if (upsertError) {
-        console.error("Error al guardar conversación:", upsertError.message);
+        // Error handled silently
     }
 }

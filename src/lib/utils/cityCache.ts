@@ -20,7 +20,6 @@ export async function getAllCitiesCached(): Promise<City[]> {
     `);
 
     if (error || !data) {
-        console.error('Error cargando ciudades:', error?.message || 'Sin datos');
         return [];
     }
 
