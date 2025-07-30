@@ -41,10 +41,36 @@ export default function ChatPage() {
 
     useEffect(() => {
         const fetchCompanyId = async () => {
+            // Primero obtener el company_id del perfil del asistente
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('Usuario no autenticado');
+                toast.error('Usuario no autenticado');
+                setLoading(false);
+                return;
+            }
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('company_id')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (!profile?.company_id) {
+                console.error('Perfil sin empresa asociada');
+                toast.error('No estás asociado a ninguna empresa');
+                setLoading(false);
+                return;
+            }
+
+            const companyId = profile.company_id;
+
+            // Luego verificar si existe una conversación para este contacto en la empresa
             const { data, error } = await supabase
                 .from('conversations')
                 .select('company_id')
                 .eq('phone', contactId)
+                .eq('company_id', companyId)
                 .maybeSingle();
 
             if (error) {
@@ -57,7 +83,7 @@ export default function ChatPage() {
             if (data?.company_id) {
                 setCompanyId(data.company_id);
             } else {
-                toast.warning('Este contacto aún no está asociado a una empresa');
+                toast.warning('Este contacto no tiene conversación en tu empresa');
             }
 
             setLoading(false);

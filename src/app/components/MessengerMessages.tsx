@@ -37,6 +37,7 @@ interface PageInfo {
   pageName: string;
   hasToken: boolean;
   stats: PageStats;
+  source?: 'env' | 'company';
 }
 
 interface TokenVerification {
@@ -58,6 +59,8 @@ export default function MessengerMessages() {
   const [syncing, setSyncing] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [companyId, setCompanyId] = useState<string>('');
+  const [pagesLoading, setPagesLoading] = useState(true);
 
   // Función para limpiar notificaciones
   const clearNotifications = () => {
@@ -101,13 +104,6 @@ export default function MessengerMessages() {
 
   useEffect(() => {
     loadPages();
-    // Para pruebas, establecer una página de prueba por defecto
-    setSelectedPage({
-      pageId: 'test-page',
-      pageName: 'Página de Prueba',
-      hasToken: true,
-      stats: { totalConversations: 0, totalMessages: 0 }
-    });
 
     // Conectar al stream de notificaciones
     connectToNotifications();
@@ -180,20 +176,37 @@ export default function MessengerMessages() {
   // Cargar información de páginas
   const loadPages = async () => {
     try {
-      const response = await fetch('/api/messenger/pages');
+      setPagesLoading(true);
+      const response = await fetch('/api/messenger/company/pages');
       const data = await response.json();
 
       if (data.pages) {
         setPages(data.pages);
+        setCompanyId(data.companyId);
+        
         // Cargar conversaciones de la primera página por defecto
         if (data.pages.length > 0) {
           const firstPage = data.pages[0];
           setSelectedPage(firstPage);
           loadConversations(firstPage.pageId);
+        } else {
+          // Si no hay páginas, mostrar mensaje informativo
+          toast.info('No se encontraron páginas de Facebook Messenger configuradas');
         }
       }
-    } catch (error) {
-      // Error cargando páginas
+    } catch (error: any) {
+      console.error('Error cargando páginas:', error);
+      
+      // Manejar errores específicos
+      if (error.message?.includes('CONFIG_MISSING')) {
+        toast.error('La empresa no tiene configuración de Facebook Messenger');
+      } else if (error.message?.includes('PERMISSION_MISSING')) {
+        toast.error('Las páginas no tienen permisos de Messenger activados');
+      } else {
+        toast.error('Error al cargar las páginas de Facebook');
+      }
+    } finally {
+      setPagesLoading(false);
     }
   };
 
@@ -272,18 +285,28 @@ export default function MessengerMessages() {
       {/* Selector de página */}
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">Seleccionar página:</label>
-        <select
-          className="w-full p-2 border rounded"
-          onChange={(e) => loadConversations(e.target.value)}
-          value={selectedPage?.pageId || ''}
-        >
-          <option value="">Selecciona una página</option>
-          {pages.map(page => (
-            <option key={page.pageId} value={page.pageId}>
-              {page.pageName} {!page.hasToken && '(Sin token configurado)'}
-            </option>
-          ))}
-        </select>
+        {pagesLoading ? (
+          <div className="w-full p-2 border rounded bg-gray-50 text-gray-500">
+            Cargando páginas...
+          </div>
+        ) : pages.length === 0 ? (
+          <div className="w-full p-2 border rounded bg-yellow-50 text-yellow-700">
+            ⚠️ No hay páginas de Facebook configuradas
+          </div>
+        ) : (
+          <select
+            className="w-full p-2 border rounded"
+            onChange={(e) => loadConversations(e.target.value)}
+            value={selectedPage?.pageId || ''}
+          >
+            <option value="">Selecciona una página</option>
+            {pages.map(page => (
+              <option key={page.pageId} value={page.pageId}>
+                {page.pageName} {page.source === 'env' ? '(ENV)' : '(COMPANY)'}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Información de la página seleccionada */}
