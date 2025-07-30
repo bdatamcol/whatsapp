@@ -9,15 +9,18 @@ import {
     SquareStack,
 } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
-import { supabase } from '@/lib/supabase/client.supabase';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAssignedContactsCount } from '@/hooks/useAssignedContactsCount';
+import { useSessionValidator } from '@/hooks/useSessionValidator';
+import { supabase } from '@/lib/supabase/client.supabase';
 
 export default function AssistantLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const assignedCount = useAssignedContactsCount();
+    
+    useSessionValidator(); // Validación automática de sesión
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

@@ -29,11 +29,32 @@ export default function LoginForm() {
 
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('role')
+                .select('role, company_id')
                 .eq('id', user.id)
                 .maybeSingle();
 
             if (profileError || !profile?.role) throw new Error("Perfil no encontrado");
+
+            // Verificar si la empresa está activa (excepto para superadmin)
+            if (profile.role !== 'superadmin' && profile.company_id) {
+                const { data: company, error: companyError } = await supabase
+                    .from('companies')
+                    .select('is_active')
+                    .eq('id', profile.company_id)
+                    .maybeSingle();
+
+                if (companyError || !company) {
+                    throw new Error("Error al verificar el estado de la empresa");
+                }
+
+                if (!company.is_active) {
+                    // Esperar 3 segundos para que el usuario pueda leer el mensaje
+                    setError('Tu empresa ha sido desactivada. Por favor, contacta al administrador del sistema.');
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    await supabase.auth.signOut();
+                }
+            }
+
             document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`;
 
             if (profile.role === 'admin') {

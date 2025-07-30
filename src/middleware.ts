@@ -1,79 +1,145 @@
-import { supabase } from '@/lib/supabase/server.supabase';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-// El middleware actual está bien configurado para verificar la cookie 'sb-access-token'
-// Solo asegúrate de que las rutas públicas incluyan todos los recursos necesarios
 
 export async function middleware(request: NextRequest) {
     const publicRoutes = [
         '/login',
         '/_next/static',
-        '/api/',
+        '/_next/image',
         '/favicon.ico',
-        '/_next/image',  // Agregamos esta ruta para imágenes
-        '/_next/webpack-hmr'  // Agregamos esta ruta para desarrollo
+        '/_next/webpack-hmr',
+        '/api/auth',
+        '/api/health',
     ];
 
-    // Verificar si la ruta actual es pública
-    const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+    const isPublicRoute = publicRoutes.some(route => 
+        request.nextUrl.pathname.startsWith(route)
+    );
 
-    // Si es una ruta pública, permitir el acceso
     if (isPublicRoute) {
         return NextResponse.next();
     }
 
     try {
-        // Obtener el token de la cookie
+        // Crear cliente Supabase para server
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_ROLE_KEY!
+        );
+
+        // Obtener token de cookies
         const token = request.cookies.get('sb-access-token')?.value;
+        const refreshToken = request.cookies.get('sb-refresh-token')?.value;
+
         if (!token) {
-            // Si no hay token, redirigir al login
-            const redirectUrl = new URL('/login', request.url);
-            return NextResponse.redirect(redirectUrl);
+            const response = NextResponse.redirect(new URL('/login', request.url));
+            response.cookies.delete('sb-access-token');
+            response.cookies.delete('sb-refresh-token');
+            return response;
         }
 
-        // Verificar el token con Supabase
+        // Verificar token
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
-        // Token válido, redirigir a dashboard si está en `/`
-        if (request.nextUrl.pathname === '/') {
-            // Traer el perfil del usuario
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', user.id)
-                .maybeSingle();
+        if (error || !user) {
+            // Intentar refrescar token si está disponible
+            if (refreshToken) {
+                try {
+                    const { data, error: refreshError } = await supabase.auth.refreshSession({
+                        refresh_token: refreshToken
+                    });
 
+                    if (refreshError || !data.session) {
+                        throw refreshError || new Error('No session after refresh');
+                    }
+
+                    // Token refrescado exitosamente, continuar
+                    const newResponse = NextResponse.next();
+                    newResponse.cookies.set('sb-access-token', data.session.access_token);
+                    newResponse.cookies.set('sb-refresh-token', data.session.refresh_token);
+                    
+                    // Continuar con la verificación de empresa
+                } catch (refreshError) {
+                    const response = NextResponse.redirect(new URL('/login', request.url));
+                    response.cookies.delete('sb-access-token');
+                    response.cookies.delete('sb-refresh-token');
+                    return response;
+                }
+            } else {
+                const response = NextResponse.redirect(new URL('/login', request.url));
+                response.cookies.delete('sb-access-token');
+                response.cookies.delete('sb-refresh-token');
+                return response;
+            }
+        }
+
+        // Verificar perfil y empresa
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id, role')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile) {
+            const response = NextResponse.redirect(new URL('/login', request.url));
+            response.cookies.delete('sb-access-token');
+            response.cookies.delete('sb-refresh-token');
+            return response;
+        }
+
+        // Redirigir desde raíz según rol
+        if (request.nextUrl.pathname === '/') {
             const redirectPath =
-                profile?.role === 'admin'
-                    ? '/dashboard'
-                    : profile?.role === 'assistant'
-                        ? '/assistant/dashboard'
-                        : profile?.role === 'superadmin'
-                            ? '/superadmin'
-                            : '/login';
+                profile.role === 'admin' ? '/dashboard' :
+                profile.role === 'assistant' ? '/assistant/dashboard' :
+                profile.role === 'superadmin' ? '/superadmin-dashboard' : '/login';
 
             return NextResponse.redirect(new URL(redirectPath, request.url));
         }
 
-        if (error || !user) {
-            // Si hay error o no hay usuario, eliminar la cookie y redirigir al login
-            const response = NextResponse.redirect(new URL('/login', request.url));
-            response.cookies.delete('sb-access-token');
-            return response;
+        // Verificar permisos de ruta según rol
+        if (request.nextUrl.pathname.startsWith('/superadmin-dashboard')) {
+            if (profile.role !== 'superadmin') {
+                return NextResponse.redirect(new URL('/login', request.url));
+            }
+        } else if (request.nextUrl.pathname.startsWith('/assistant/dashboard')) {
+            if (profile.role !== 'assistant' && profile.role !== 'admin') {
+                return NextResponse.redirect(new URL('/login', request.url));
+            }
+        } else if (request.nextUrl.pathname.startsWith('/dashboard')) {
+            if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+                return NextResponse.redirect(new URL('/login', request.url));
+            }
         }
 
-        // Token válido, permitir el acceso
+        // Verificar estado de la empresa para usuarios no superadmin
+        if (profile.role !== 'superadmin' && profile.company_id) {
+            const { data: company } = await supabase
+                .from('companies')
+                .select('is_active')
+                .eq('id', profile.company_id)
+                .single();
+
+            if (!company || !company.is_active) {
+                // Empresa desactivada, cerrar sesión inmediatamente
+                const response = NextResponse.redirect(new URL('/login', request.url));
+                response.cookies.delete('sb-access-token');
+                response.cookies.delete('sb-refresh-token');
+                return response;
+            }
+        }
+
         return NextResponse.next();
     } catch (error) {
-        // En caso de error, eliminar la cookie y redirigir al login
+        console.error('Middleware error:', error);
         const response = NextResponse.redirect(new URL('/login', request.url));
         response.cookies.delete('sb-access-token');
+        response.cookies.delete('sb-refresh-token');
         return response;
     }
 }
 
-// Configurar las rutas que serán manejadas por el middleware
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|login).*)'],
 };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { Building2, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Building2, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import RegisterCompanyForm from './RegisterCompanyForm';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ type Company = {
   name: string;
   whatsapp_number: string;
   created_at: string;
+  is_active: boolean;
   admins: Admin[];
 };
 
@@ -53,32 +54,41 @@ export default function CompaniesManagement() {
   };
 
 const handleDeleteCompany = async (companyId: string) => {
-  toast('¿Estás seguro de que quieres eliminar esta empresa?', {
+  const company = companies.find(c => c.id === companyId);
+  if (!company) return;
+
+  const isActive = company.is_active;
+  const action = isActive ? 'desactiva' : 'activa';
+  const actionLabel = isActive ? 'Desactivar' : 'Activar';
+  
+  toast(`¿Estás seguro de que quieres ${action}r esta empresa?${isActive ? '\n\nNota: Todos los usuarios de esta empresa serán desconectados inmediatamente.' : ''}`, {
     duration: Infinity,
     action: {
-      label: 'Eliminar',
+      label: actionLabel,
       onClick: async () => {
         try {
-          const response = await fetch('/api/superadmin/delete-company', {
-            method: 'DELETE',
+          const response = await fetch(`/api/superadmin/delete-company?id=${companyId}`, {
+            method: isActive ? 'DELETE' : 'PUT',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ companyId }),
           });
           
           const data = await response.json();
 
-
           if (!response.ok) {
-            toast.error(data.error || 'Error al eliminar la empresa');
+            toast.error(data.error || `Error al ${action}r la empresa`);
             return;
           }
 
-          toast.success('Empresa eliminada correctamente');
+          const successMessage = isActive 
+            ? `Empresa ${action}da correctamente. ${data.usersTerminated || 0} sesiones cerradas.`
+            : `Empresa ${action}da correctamente`;
+          
+          toast.success(successMessage);
           handleRefresh();
         } catch (error) {
-          toast.error('Error al eliminar la empresa');
+          toast.error(`Error al ${action}r la empresa`);
         }
       }
     },
@@ -164,6 +174,7 @@ const handleDeleteCompany = async (companyId: string) => {
                     <tr className="border-b">
                       <th className="text-left py-3 px-4">Información de la Empresa</th>
                       <th className="text-left py-3 px-4">Fecha de Creación</th>
+                      <th className="text-left py-3 px-4">Estado</th>
                       <th className="text-right py-3 px-4">Acciones</th>
                     </tr>
                   </thead>
@@ -183,14 +194,25 @@ const handleDeleteCompany = async (companyId: string) => {
                           </div>
                         </td>
                         <td className="py-3 px-4">{formatDate(company.created_at)}</td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            company.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {company.is_active ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
                         <td className="py-3 px-4 text-right">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="cursor-pointer text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className={`cursor-pointer ${
+                              company.is_active 
+                                ? 'text-red-500 hover:text-red-700 hover:bg-red-50' 
+                                : 'text-green-500 hover:text-green-700 hover:bg-green-50'
+                            }`}
                             onClick={() => handleDeleteCompany(company.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {company.is_active ? <Trash2 className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                           </Button>
                         </td>
                       </tr>

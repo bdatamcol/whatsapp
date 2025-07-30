@@ -9,7 +9,8 @@ export async function registerCompany(email: string, password: string, companyNa
         .from('companies')
         .insert({ 
             name: companyName,
-            whatsapp_number: whatsappNumber
+            whatsapp_number: whatsappNumber,
+            is_active: true
         })
         .select()
         .maybeSingle();

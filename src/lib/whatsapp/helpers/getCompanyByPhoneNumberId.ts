@@ -47,6 +47,7 @@ export async function getCompanyByPhoneNumberId(phoneNumberId: string) {
         .from('companies')
         .select('id, whatsapp_access_token, whatsapp_number, phone_number_id, meta_app_id, waba_id')
         .eq('phone_number_id', phoneNumberId)
+        .eq('is_active', true)
         .maybeSingle();
     
     // Si no encontramos la compañía directamente, puede ser porque el phone_number_id está cifrado
@@ -57,7 +58,8 @@ export async function getCompanyByPhoneNumberId(phoneNumberId: string) {
         if (secretKey) {
             const { data: allCompanies, error: allError } = await supabase
                 .from('companies')
-                .select('id, whatsapp_access_token, whatsapp_number, phone_number_id, meta_app_id, waba_id');
+                .select('id, whatsapp_access_token, whatsapp_number, phone_number_id, meta_app_id, waba_id')
+                .eq('is_active', true);
             
             if (allError) {
                 console.error('[getCompanyByPhoneNumberId] Error al obtener todas las compañías:', allError);
