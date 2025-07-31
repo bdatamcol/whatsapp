@@ -7,7 +7,7 @@ import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import Input from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { motion } from 'framer-motion';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, Mail, ShieldAlert } from 'lucide-react';
 
 export default function LoginForm() {
     const router = useRouter();
@@ -22,9 +22,29 @@ export default function LoginForm() {
         setLoading(true);
 
         try {
+            // After successful login, around line 37-40
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error || !data.session) throw error || new Error('No se pudo iniciar sesión');
-
+            if (error || !data.session) throw error || new Error('Credenciales inválidas');
+            
+            // Set session cookies manually
+            // En la función handleLogin, reemplazar la parte de configuración de cookies:
+            
+            // Configurar ambas cookies correctamente (SOLO UNA VEZ)
+            const cookieOptions = {
+                path: '/',
+                maxAge: 60 * 60 * 24 * 7, // 7 días
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax'
+            };
+            
+            document.cookie = `sb-access-token=${data.session.access_token}; ${Object.entries(cookieOptions).map(([k,v]) => `${k}=${v}`).join('; ')}`;
+            document.cookie = `sb-refresh-token=${data.session.refresh_token}; ${Object.entries(cookieOptions).map(([k,v]) => `${k}=${v}`).join('; ')}`;
+            
+            // ELIMINAR esta línea duplicada:
+            // document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+            
+            // Eliminar el uso de supabase.auth.setSession() ya que puede causar conflictos
+            // await supabase.auth.setSession(data.session); // COMENTAR ESTA LÍNEA
             const user = data.session.user;
 
             const { data: profile, error: profileError } = await supabase
@@ -35,11 +55,11 @@ export default function LoginForm() {
 
             if (profileError || !profile?.role) throw new Error("Perfil no encontrado");
 
-            // Verificar si la empresa está activa (excepto para superadmin)
+            // Verificar estado de la empresa y email (excepto para superadmin)
             if (profile.role !== 'superadmin' && profile.company_id) {
                 const { data: company, error: companyError } = await supabase
                     .from('companies')
-                    .select('is_active')
+                    .select('is_active, email_verified')
                     .eq('id', profile.company_id)
                     .maybeSingle();
 
@@ -47,11 +67,28 @@ export default function LoginForm() {
                     throw new Error("Error al verificar el estado de la empresa");
                 }
 
-                if (!company.is_active) {
-                    // Esperar 3 segundos para que el usuario pueda leer el mensaje
-                    setError('Tu empresa ha sido desactivada. Por favor, contacta al administrador del sistema.');
-                    await new Promise(resolve => setTimeout(resolve, 3000));
+                if (!company.email_verified) {
                     await supabase.auth.signOut();
+                    setError(
+                        `⚠️ Verificación de correo electrónico pendiente\n\n` +
+                        `Hemos enviado un correo de verificación a ${email}. Por favor:\n` +
+                        `1. Revisa tu bandeja de entrada (incluyendo spam)\n` +
+                        `2. Haz clic en el enlace de verificación\n` +
+                        `3. Vuelve a intentar iniciar sesión\n\n` +
+                        `¿No recibiste el correo? Contacta al administrador del sistema.`
+                    );
+                    setLoading(false);
+                    return;
+                }
+
+                if (!company.is_active) {
+                    await supabase.auth.signOut();
+                    setError(
+                        `❌ Empresa temporalmente desactivada\n\n` +
+                        `Tu empresa ha sido desactivada. Por favor contacta al administrador del sistema para más información.`
+                    );
+                    setLoading(false);
+                    return;
                 }
             }
 
@@ -68,7 +105,7 @@ export default function LoginForm() {
             }
 
         } catch (error: any) {
-            setError(error.message);
+            setError(error.message || 'Error al iniciar sesión');
         } finally {
             setLoading(false);
         }
@@ -79,7 +116,7 @@ export default function LoginForm() {
             <div className="absolute inset-0 opacity-20">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent)] animate-pulse" />
                 <div className="absolute inset-0 bg-repeat" style={{ 
-                    backgroundImage: `url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M0 0h60v60H0z" fill="none"/%3E%3Cpath d="M30 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM6 6c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm48 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM30 48c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM6 54c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm48 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="%23ffffff" fill-opacity="0.05"/%3E%3C/svg%3E')`,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Cpath d='M30 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM6 6c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM48 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM30 48c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM6 54c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM48 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z' fill='%23ffffff' fill-opacity='0.05'/%3E%3C/svg%3E")`,
                     backgroundSize: '60px 60px'
                 }} />
             </div>
@@ -124,9 +161,16 @@ export default function LoginForm() {
                                 <motion.div 
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="p-3 text-red-200 bg-red-500/20 rounded-md border border-red-500/30"
+                                    className="p-4 text-sm bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg text-yellow-100"
                                 >
-                                    <p>{error}</p>
+                                    <div className="flex items-start space-x-3">
+                                        {error.includes('⚠️') ? (
+                                            <Mail className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                                        ) : (
+                                            <ShieldAlert className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                                        )}
+                                        <div className="whitespace-pre-line">{error}</div>
+                                    </div>
                                 </motion.div>
                             )}
                             <Button
