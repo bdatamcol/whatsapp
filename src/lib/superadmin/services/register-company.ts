@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase/server.supabase';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { CompanyEmailService } from '@/lib/email/services/company-email.service';
 
 export async function registerCompany(email: string, password: string, companyName: string, whatsappNumber: string) {
+    const emailService = new CompanyEmailService();
     // Generar token de verificación único
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
@@ -27,7 +29,7 @@ export async function registerCompany(email: string, password: string, companyNa
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
         password,
-        email_confirm: false, // Cambiado de true a false
+        email_confirm: false,
     });
 
     if (authError || !authData.user) {
@@ -54,14 +56,23 @@ export async function registerCompany(email: string, password: string, companyNa
         return NextResponse.json({ error: 'Error creando perfil' }, { status: 500 });
     }
 
-    // 5. Enviar email de verificación (configurar en Supabase)
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/verify-email/${verificationToken}`;
+    // 5. Enviar email de verificación usando nuestro servicio personalizado
+    // const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/verify-email/${verificationToken}`;
+    try {
+        const emailSent = await emailService.sendCompanyVerificationEmail(
+            email,
+            companyName,
+            verificationToken
+        );
 
-    // Aquí deberías usar el servicio de email de Supabase o un servicio externo
-    // Ejemplo con Supabase Edge Functions:
-    await supabase.functions.invoke('send-verification-email', {
-        body: { email, companyName, verificationUrl }
-    });
+        if(!emailSent) {
+            console.error('Error al enviar email de verificación');
+            // No fallar el registro si el email no se envía, pero loguear el error
+        }
+
+    } catch (emailError) {
+        console.log('Error al enviar email de verificación:', emailError);
+    }
 
     return NextResponse.json({
         success: true,

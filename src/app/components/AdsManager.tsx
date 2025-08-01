@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-  CheckCircle2, AlertTriangle, Download, Loader2, Calendar,
+  CheckCircle2, AlertTriangle, Download, Loader2, Calendar, Settings,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
 import Button from './ui/Button';
@@ -18,14 +18,17 @@ import {
 } from '@/components/ui/select';
 import { DateRange } from 'react-day-picker';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+import { useRouter } from 'next/navigation';
+import { FacebookConfigError } from './FacebookConfigError';
 
 export default function AdsManager() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange | undefined>();
+  const router = useRouter();
 
-  const { data: totalData } = useQuery({
+  const { data: totalData, error: totalError } = useQuery({
     queryKey: ['totalCampaigns'],
     queryFn: async () => {
       const res = await fetch('/api/marketing/company/ads?getSummary=true');
@@ -46,13 +49,14 @@ export default function AdsManager() {
     hasNextPage,
     isLoading,
     isFetchingNextPage,
+    error: campaignsError,
   } = useInfiniteQuery({
     queryKey: ['campaigns', appliedDateRange],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (pageParam) params.append('after', pageParam);
       params.append('limit', '25');
-      
+
       // Agregar filtros de fecha si están definidos
       if (appliedDateRange?.from) {
         params.append('since', appliedDateRange.from.toISOString().split('T')[0]);
@@ -60,8 +64,8 @@ export default function AdsManager() {
       if (appliedDateRange?.to) {
         params.append('until', appliedDateRange.to.toISOString().split('T')[0]);
       }
-      
-      const res = await fetch(`/api/marketing/company/ads?${params.toString()}`);
+
+      const res = await fetch(`/api/marketing/company/ads?\${params.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error al cargar campañas');
       return json;
@@ -76,6 +80,19 @@ export default function AdsManager() {
     if (statusFilter === 'all') return true;
     return c.status.toLowerCase() === statusFilter;
   });
+
+  // Check for Facebook configuration error
+  const isFacebookConfigError = totalError?.message?.includes('configuración de Facebook completa') ||
+    campaignsError?.message?.includes('configuración de Facebook completa');
+
+  if (isFacebookConfigError) {
+    return (
+      <FacebookConfigError
+        title="Configuración de Facebook incompleta"
+        message="Para ver tus campañas de Facebook Ads, necesitas completar la configuración de Facebook Ads en la sección de ajustes."
+      />
+    );
+  }
 
   const loadAllCampaigns = async () => {
     let allCampaigns = [...campaigns];
@@ -103,7 +120,7 @@ export default function AdsManager() {
         Nombre: c.name,
         Estado: c.status,
         Objetivo: c.objective || '',
-        'Presupuesto Diario': c.daily_budget ? `$${(+c.daily_budget / 100).toFixed(2)}` : '',
+        'Presupuesto Diario': c.daily_budget ? `${(+c.daily_budget / 100).toFixed(2)}` : '',
         'Fecha Inicio': c.start_time ? new Date(c.start_time).toLocaleDateString() : '',
         'Fecha Fin': c.stop_time ? new Date(c.stop_time).toLocaleDateString() : ''
       }));
@@ -199,7 +216,7 @@ export default function AdsManager() {
                 </TableCell>
                 <TableCell>{campaign.objective || 'Sin objetivo definido'}</TableCell>
                 <TableCell>
-                  {campaign.daily_budget ? `$${(+campaign.daily_budget / 100).toFixed(2)}/día` : ''}
+                  {campaign.daily_budget ? `${(+campaign.daily_budget / 100).toFixed(2)}/día` : ''}
                 </TableCell>
                 <TableCell>{campaign.start_time ? new Date(campaign.start_time).toLocaleDateString() : ''}</TableCell>
                 <TableCell>{campaign.stop_time ? new Date(campaign.stop_time).toLocaleDateString() : ''}</TableCell>

@@ -1,20 +1,40 @@
 'use client';
 
 import { supabase } from '@/lib/supabase/client.supabase';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import Input from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { motion } from 'framer-motion';
-import { BrainCircuit, Mail, ShieldAlert } from 'lucide-react';
+import { BrainCircuit, Mail, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 export default function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+
+    // Manejar parámetros de URL al cargar la página
+    useEffect(() => {
+        const verified = searchParams.get('verified');
+        const emailParam = searchParams.get('email');
+        
+        if (verified === 'true') {
+            setShowVerificationMessage(true);
+            // Limpiar la URL después de mostrar el mensaje
+            setTimeout(() => {
+                router.replace('/login');
+            }, 5000);
+        }
+        
+        if (emailParam) {
+            setEmail(emailParam);
+        }
+    }, [searchParams, router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,29 +42,19 @@ export default function LoginForm() {
         setLoading(true);
 
         try {
-            // After successful login, around line 37-40
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error || !data.session) throw error || new Error('Credenciales inválidas');
             
-            // Set session cookies manually
-            // En la función handleLogin, reemplazar la parte de configuración de cookies:
-            
-            // Configurar ambas cookies correctamente (SOLO UNA VEZ)
             const cookieOptions = {
                 path: '/',
-                maxAge: 60 * 60 * 24 * 7, // 7 días
+                maxAge: 60 * 60 * 24 * 7,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
+                sameSite: 'lax' as const
             };
             
             document.cookie = `sb-access-token=${data.session.access_token}; ${Object.entries(cookieOptions).map(([k,v]) => `${k}=${v}`).join('; ')}`;
             document.cookie = `sb-refresh-token=${data.session.refresh_token}; ${Object.entries(cookieOptions).map(([k,v]) => `${k}=${v}`).join('; ')}`;
             
-            // ELIMINAR esta línea duplicada:
-            // document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`;
-            
-            // Eliminar el uso de supabase.auth.setSession() ya que puede causar conflictos
-            // await supabase.auth.setSession(data.session); // COMENTAR ESTA LÍNEA
             const user = data.session.user;
 
             const { data: profile, error: profileError } = await supabase
@@ -55,7 +65,6 @@ export default function LoginForm() {
 
             if (profileError || !profile?.role) throw new Error("Perfil no encontrado");
 
-            // Verificar estado de la empresa y email (excepto para superadmin)
             if (profile.role !== 'superadmin' && profile.company_id) {
                 const { data: company, error: companyError } = await supabase
                     .from('companies')
@@ -91,8 +100,6 @@ export default function LoginForm() {
                     return;
                 }
             }
-
-            document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`;
 
             if (profile.role === 'admin') {
                 router.replace('/dashboard');
@@ -136,6 +143,23 @@ export default function LoginForm() {
                         <p className="text-sm text-gray-300 mt-2">Accede a tu CRM + IA + META</p>
                     </CardHeader>
                     <CardContent>
+                        {/* Mensaje de verificación exitosa */}
+                        {showVerificationMessage && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-4 p-4 text-sm bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg text-green-100"
+                            >
+                                <div className="flex items-start space-x-3">
+                                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-semibold">¡Cuenta verificada exitosamente!</p>
+                                        <p className="text-sm mt-1">Tu cuenta ha sido activada. Ahora puedes iniciar sesión con las credenciales que fueron enviadas a tu correo electrónico.</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                        
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-2">
                                 <Input
