@@ -1,5 +1,5 @@
-import nodemailer, { Transporter } from 'nodemailer';
-
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 
 export interface SendMailOptions {
@@ -12,7 +12,7 @@ export interface SendMailOptions {
 
 
 export class EmailService {
-    private transporter = Transporter;
+    private transporter: Transporter;
 
     constructor(
         mailerService: string,

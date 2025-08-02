@@ -2,14 +2,14 @@
 
 import { supabase } from '@/lib/supabase/client.supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import Input from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { motion } from 'framer-motion';
 import { BrainCircuit, Mail, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
-export default function LoginForm() {
+function LoginFormContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
@@ -199,15 +199,23 @@ export default function LoginForm() {
                             )}
                             <Button
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-600 hover:to-gray-800 text-white"
                                 disabled={loading}
+                                className="w-full bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 border border-white/10 text-white"
                             >
-                                {loading ? 'Iniciando sesión...' : 'Acceder'}
+                                {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                             </Button>
                         </form>
                     </CardContent>
                 </Card>
             </motion.div>
         </div>
+    );
+}
+
+export default function LoginForm() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900"><div className="text-white">Cargando...</div></div>}>
+            <LoginFormContent />
+        </Suspense>
     );
 }
