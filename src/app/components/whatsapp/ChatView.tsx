@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabase/client.supabase';
 import { useEffect, useState, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, ImagePlus, Loader2 } from 'lucide-react';
 
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -13,6 +13,8 @@ interface Message {
     content: string;
     timestamp?: string;
     status?: 'read' | 'sent';
+    type?: 'text' | 'image';
+    imageUrl?: string;
 }
 
 interface Props {
@@ -25,6 +27,8 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
     const [messages, setMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const [inputValue, setInputValue] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchMessages = async () => {
         const res = await fetch(`/api/whatsapp/messagess/${contactId}?companyId=${companyId}`);
@@ -85,7 +89,7 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                     phone: contactId,
                     message: inputValue,
                     role,
-                    companyId, // <--- Aquí se envía correctamente
+                    companyId,
                 }),
             });
 
@@ -96,6 +100,70 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
         } catch (error) {
             // Error al enviar el mensaje
         }
+    };
+
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validar tipo de archivo
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!validTypes.includes(file.type)) {
+            alert('Por favor selecciona una imagen JPG o PNG');
+            return;
+        }
+
+        // Validar tamaño (máximo 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            alert('La imagen no debe superar los 5MB');
+            return;
+        }
+
+        setIsUploading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('phone', contactId);
+            formData.append('companyId', companyId);
+            formData.append('role', role);
+
+            const response = await fetch('/api/whatsapp/messagess/send-image', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Error al enviar imagen');
+            }
+
+            // Agregar mensaje de imagen a la conversación local
+            const newMessage: Message = {
+                id: result.messageId || crypto.randomUUID(),
+                role: role,
+                content: `📸 Imagen enviada: ${file.name}`,
+                timestamp: new Date().toISOString(),
+                type: 'image',
+                imageUrl: result.imageUrl,
+            };
+            setMessages((prev) => [...prev, newMessage]);
+
+        } catch (error) {
+            console.error('Error al subir imagen:', error);
+            alert('Error al enviar la imagen. Por favor intenta de nuevo.');
+        } finally {
+            setIsUploading(false);
+            // Limpiar el input de archivo
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    const handleImageButtonClick = () => {
+        fileInputRef.current?.click();
     };
 
     return (
@@ -120,7 +188,19 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                                             : 'bg-white border'
                                     }`}
                             >
-                                <p>{msg.content}</p>
+                                {msg.type === 'image' && msg.imageUrl ? (
+                                    <div>
+                                        <img 
+                                            src={msg.imageUrl} 
+                                            alt={msg.content}
+                                            className="max-w-full h-auto rounded-md mb-2 cursor-pointer"
+                                            onClick={() => window.open(msg.imageUrl, '_blank')}
+                                        />
+                                        <p className="text-sm">{msg.content.replace('📸 Imagen enviada: ', '')}</p>
+                                    </div>
+                                ) : (
+                                    <p>{msg.content}</p>
+                                )}
 
                                 {isHumanAssistant && (
                                     <div className="absolute -top-5 right-0 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-full">
@@ -150,6 +230,27 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
 
             <div className="p-4 border-t bg-white">
                 <div className="flex gap-2 items-center">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept=".jpg,.jpeg,.png"
+                        className="hidden"
+                        disabled={isUploading}
+                    />
+                    <Button
+                        variant="outline"
+                        size="default"
+                        onClick={handleImageButtonClick}
+                        disabled={isUploading}
+                        className="shrink-0"
+                    >
+                        {isUploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <ImagePlus className="h-4 w-4" />
+                        )}
+                    </Button>
                     <Input
                         value={inputValue}
                         placeholder="Escribe un mensaje..."
@@ -161,8 +262,14 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                                 handleSendMessage();
                             }
                         }}
+                        disabled={isUploading}
                     />
-                    <Button variant="default" size="default" onClick={handleSendMessage} disabled={!inputValue.trim()}>
+                    <Button 
+                        variant="default" 
+                        size="default" 
+                        onClick={handleSendMessage} 
+                        disabled={!inputValue.trim() || isUploading}
+                    >
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>

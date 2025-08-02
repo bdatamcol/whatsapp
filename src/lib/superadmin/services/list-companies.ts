@@ -9,8 +9,10 @@ export async function listCompanies() {
                 name,
                 whatsapp_number,
                 created_at,
+                is_active,
                 admins:profiles!left(id, email)
             `)
+            .order('created_at', { ascending: false });
         if (error) throw error;
 
         // Formatear los datos para tener una estructura más limpia

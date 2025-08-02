@@ -14,6 +14,41 @@ export async function appendMessageToConversation(phone: string, message: string
         id: messageId,
         role,
         content: message,
+        type: 'text',
+        timestamp: new Date().toISOString(),
+        status: 'sent',
+    };
+
+    const updatedMessages = [...(existing?.messages || []), newMessage];
+
+    const { error: upsertError } = await supabase
+        .from('conversations')
+        .upsert({
+            phone,
+            messages: updatedMessages,
+            company_id: companyId,
+            updated_at: new Date().toISOString(),
+        }, { onConflict: 'phone,company_id' });
+
+    if (upsertError) throw new Error('Error guardando mensaje');
+}
+
+export async function appendImageMessageToConversation(phone: string, imageUrl: string, messageId: string, companyId: string, role: string = 'assistant', caption?: string) {
+    const { data: existing, error: fetchError } = await supabase
+        .from('conversations')
+        .select('messages')
+        .eq('phone', phone)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+    if (fetchError) throw new Error('Error consultando historial');
+
+    const newMessage = {
+        id: messageId,
+        role,
+        content: caption || '📸 Imagen enviada',
+        type: 'image',
+        imageUrl,
         timestamp: new Date().toISOString(),
         status: 'sent',
     };
@@ -33,9 +68,17 @@ export async function appendMessageToConversation(phone: string, message: string
 }
 
 export type Role = 'user' | 'assistant' | 'assistant_humano';
-export async function getMessagesForContact(phone: string, companyId: string): Promise<
-    { id: string; role: Role; content: string; status: string; timestamp: string }[]
-> {
+export interface Message {
+    id: string;
+    role: Role;
+    content: string;
+    type?: 'text' | 'image';
+    imageUrl?: string;
+    status: string;
+    timestamp: string;
+}
+
+export async function getMessagesForContact(phone: string, companyId: string): Promise<Message[]> {
 
     const { data, error } = await supabase
         .from('conversations')
@@ -53,11 +96,12 @@ export async function getMessagesForContact(phone: string, companyId: string): P
             id: `${phone}-${i}`,
             role: msg.role,
             content: msg.content,
+            type: msg.type || 'text',
+            imageUrl: msg.imageUrl,
             status: msg.status,
             timestamp: msg.timestamp || new Date().toISOString(),
         })) || []
     );
-
 }
 
 

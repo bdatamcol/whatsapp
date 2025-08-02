@@ -2,38 +2,35 @@ import { supabase } from '@/lib/supabase/server.supabase';
 
 export async function deleteCompany(companyId: string) {
     try {
-        // IMPORTANTE: Esta función es potencialmente peligrosa y debe usarse con extrema precaución
-        // Eliminar una empresa implica eliminar todos sus datos relacionados
-        
-        // 1. Obtener los perfiles asociados a la empresa
-        const { data: profiles } = await supabase
+        // Soft delete: Actualizar el estado is_active a false en lugar de eliminar
+        const { error: companyError } = await supabase
+            .from('companies')
+            .update({ is_active: false })
+            .eq('id', companyId);
+            
+        if (companyError) throw companyError;
+
+        // Obtener todos los usuarios de esta empresa
+        const { data: users, error: usersError } = await supabase
             .from('profiles')
             .select('id')
             .eq('company_id', companyId);
-            
-        // 2. Eliminar los usuarios de auth.users (esto debe hacerse con cuidado)
-        if (profiles && profiles.length > 0) {
-            for (const profile of profiles) {
-                // Eliminar el usuario de auth.users
-                await supabase.auth.admin.deleteUser(profile.id);
+
+        if (usersError) throw usersError;
+
+        // Forzar cierre de sesión para todos los usuarios de esta empresa
+        const userIds = users.map(user => user.id);
+        for (const userId of userIds) {
+            try {
+                await supabase.auth.admin.signOut(userId);
+            } catch (logoutError) {
+                console.error(`Error al cerrar sesión del usuario ${userId}:`, logoutError);
             }
         }
         
-        // 3. Eliminar registros relacionados en otras tablas
-        // Nota: Esto depende de las restricciones de clave foránea y cascadas configuradas
-        // Si las cascadas están configuradas correctamente, solo necesitamos eliminar la empresa
-        
-        // 4. Finalmente eliminar la empresa
-        const { error } = await supabase
-            .from('companies')
-            .delete()
-            .eq('id', companyId);
-            
-        if (error) throw error;
-        
-        return { success: true };
+        return { success: true, usersTerminated: userIds.length };
     } catch (error) {
-        console.error('Error al eliminar empresa:', error);
+        console.error('Error al desactivar empresa:', error);
         throw error;
     }
 }

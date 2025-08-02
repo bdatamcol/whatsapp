@@ -149,6 +149,16 @@ export default function ContactList() {
     );
   }
 
+  if(contacts.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <p className="text-gray-500">No se encontraron contactos.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Card>

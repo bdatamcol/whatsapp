@@ -21,9 +21,12 @@ export async function assignContactToAssistant(
 
     // 2. Verificar que el contacto y el asistente pertenezcan a la misma empresa
     const [{ data: contact }, { data: assistant }] = await Promise.all([
-        supabase.from('contacts').select('company_id').eq('phone', contactPhone).maybeSingle(),
-        supabase.from('profiles').select('company_id').eq('id', assistantId).maybeSingle()
+        supabase.from('contacts').select('company_id').eq('phone', contactPhone).eq('company_id', companyId).maybeSingle(),
+        supabase.from('profiles').select('company_id').eq('id', assistantId).eq('company_id', companyId).maybeSingle()
     ]);
+
+    console.log('contact', contact);
+    console.log('assistant', assistant);
 
     if (!contact || contact.company_id !== companyId) {
         throw new Error('El contacto no pertenece a tu empresa');

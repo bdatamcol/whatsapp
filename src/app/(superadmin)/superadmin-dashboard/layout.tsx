@@ -1,42 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client.supabase';
+import { useSessionValidator } from '@/hooks/useSessionValidator';
 import { LogOut } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client.supabase';
+import { useRouter } from 'next/navigation';
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  useSessionValidator(); // Validación automática de sesión
   const router = useRouter();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/login');
-        return;
-      }
-
-      // Verificar si el usuario es superadmin
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      // Si no es superadmin, redirigir según su rol
-      if (!profile || profile.role !== 'superadmin') {
-        if (profile?.role === 'admin') {
-          router.replace('/dashboard');
-        } else if (profile?.role === 'assistant') {
-          router.replace('/assistant/dashboard');
-        } else {
-          router.replace('/login');
-        }
-      }
-    };
-    
-    checkAuth();
-  }, [router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

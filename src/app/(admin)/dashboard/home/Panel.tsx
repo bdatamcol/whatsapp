@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
 import {
   MessageCircle, Zap, BarChart, Users,
   Activity,
   DollarSign,
   CalendarIcon,
   Filter,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   BarChart as Chart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
@@ -25,11 +25,13 @@ import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FacebookConfigError } from '@/app/components/FacebookConfigError';
 
 export default function Panel() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date; to?: Date }>({ from: new Date(new Date().setMonth(new Date().getMonth() - 1)), to: new Date() });
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all');
+  const [configError, setConfigError] = useState<string | null>(null);
   // Obtener usuario y su empresa
   useEffect(() => {
     (async () => {
@@ -44,82 +46,140 @@ export default function Panel() {
     })();
   }, []);
 
+  // Función auxiliar para manejar errores de configuración
+  const handleApiError = (error: any) => {
+    if (error?.error?.includes('Facebook') && error?.error?.includes('configuración')) {
+      setConfigError('Tu empresa no tiene configurada la integración con Facebook Ads. Configura tu cuenta para ver los datos de marketing.');
+      return null;
+    }
+    throw error;
+  };
+
   // Queries con react-query
   const { data: totalCampaignsData } = useQuery({
     queryKey: ['totalCampaigns'],
-    queryFn: async () => (await fetch('/api/marketing/company/ads?getSummary=true')).json(),
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/marketing/company/ads?getSummary=true');
+        if (!res.ok) {
+          const error = await res.json();
+          return handleApiError(error);
+        }
+        return res.json();
+      } catch (error: any) {
+        return handleApiError(error);
+      }
+    },
     staleTime: 5 * 60 * 1000,
+    select: (data) => data || { total: 0 },
   });
 
   const { data: activeCampaignsData } = useQuery({
     queryKey: ['activeCampaigns'],
-    queryFn: async () => (await fetch('/api/marketing/company/ads?getSummary=true&filterStatus=ACTIVE')).json(),
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/marketing/company/ads?getSummary=true&filterStatus=ACTIVE');
+        if (!res.ok) {
+          const error = await res.json();
+          return handleApiError(error);
+        }
+        return res.json();
+      } catch (error: any) {
+        return handleApiError(error);
+      }
+    },
     staleTime: 5 * 60 * 1000,
+    select: (data) => data || { total: 0 },
   });
 
 
   const { data: totalSpendData, isLoading: isLoadingSpend } = useQuery({
     queryKey: ['totalSpend', dateRange],
     queryFn: async () => {
-      const since = dateRange.from.toISOString().split('T')[0];
-      const until = dateRange.to?.toISOString().split('T')[0] ?? new Date().toISOString().split('T')[0];
-      const url = `/api/marketing/company/insights?getTotalSpend=true&since=${since}&until=${until}`;
-      return (await fetch(url)).json();
+      try {
+        const since = dateRange.from.toISOString().split('T')[0];
+        const until = dateRange.to?.toISOString().split('T')[0] ?? new Date().toISOString().split('T')[0];
+        const url = `/api/marketing/company/insights?getTotalSpend=true&since=${since}&until=${until}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const error = await res.json();
+          return handleApiError(error);
+        }
+        return res.json();
+      } catch (error: any) {
+        return handleApiError(error);
+      }
     },
     staleTime: 5 * 60 * 1000,
-    placeholderData: true,
+    placeholderData: { totalSpend: 0 },
+    select: (data) => data || { totalSpend: 0 },
   });
 
   const { data: insightsData } = useQuery({
     queryKey: ['recentInsights'],
     queryFn: async () => {
-      const res = await fetch('/api/marketing/company/insights?limit=50');
-      const json = await res.json();
-      return json.data
-        .sort((a, b) => new Date(b.dateStop).getTime() - new Date(a.dateStop).getTime())
-        .slice(0, 5);
+      try {
+        const res = await fetch('/api/marketing/company/insights?limit=50');
+        if (!res.ok) {
+          const error = await res.json();
+          return handleApiError(error);
+        }
+        const json = await res.json();
+        return json.data
+          .sort((a, b) => new Date(b.dateStop).getTime() - new Date(a.dateStop).getTime())
+          .slice(0, 5);
+      } catch (error: any) {
+        return handleApiError(error);
+      }
     },
     staleTime: 5 * 60 * 1000,
+    placeholderData: [],
+    select: (data) => data || [],
   });
 
   // Query para datos de impresiones y resultados basado en el rango de fechas
   const { data: impressionsResultsData, isLoading: isLoadingChart } = useQuery({
     queryKey: ['impressionsResults', dateRange, selectedCampaign],
     queryFn: async () => {
-      const since = dateRange.from.toISOString().split('T')[0];
-      const until = dateRange.to?.toISOString().split('T')[0] ?? new Date().toISOString().split('T')[0];
-      const url = `/api/marketing/company/insights?limit=100&since=${since}&until=${until}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      
-      // Filtrar por campaña si se seleccionó una específica
-      let filteredData = json.data || [];
-      if (selectedCampaign !== 'all') {
-        filteredData = filteredData.filter((item: any) => item.campaignName === selectedCampaign);
-      }
-      
-      // Agrupar datos por fecha y sumar impresiones y resultados
-      const groupedData = filteredData.reduce((acc: any, item: any) => {
-        const date = item.dateStart;
-        if (!acc[date]) {
-          acc[date] = {
-            date,
-            impressions: 0,
-            results: 0,
-          };
+      try {
+        const since = dateRange.from.toISOString().split('T')[0];
+        const until = dateRange.to?.toISOString().split('T')[0] ?? new Date().toISOString().split('T')[0];
+        const url = `/api/marketing/company/insights?limit=100&since=${since}&until=${until}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const error = await res.json();
+          return handleApiError(error);
         }
-        acc[date].impressions += item.impressions || 0;
-        // Sumar todos los resultados de las acciones
-        const totalResults = item.actions?.reduce((sum: number, action: any) => {
-          return sum + (action.value || 0);
-        }, 0) || 0;
-        acc[date].results += totalResults;
-        return acc;
-      }, {});
-      
-      return Object.values(groupedData || {}).sort((a: any, b: any) => 
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
+        const json = await res.json();
+
+        let filteredData = json.data || [];
+        if (selectedCampaign !== 'all') {
+          filteredData = filteredData.filter((item: any) => item.campaignName === selectedCampaign);
+        }
+
+        const groupedData = filteredData.reduce((acc: any, item: any) => {
+          const date = item.dateStart;
+          if (!acc[date]) {
+            acc[date] = {
+              date,
+              impressions: 0,
+              results: 0,
+            };
+          }
+          acc[date].impressions += item.impressions || 0;
+          const totalResults = item.actions?.reduce((sum: number, action: any) => {
+            return sum + (action.value || 0);
+          }, 0) || 0;
+          acc[date].results += totalResults;
+          return acc;
+        }, {});
+
+        return Object.values(groupedData || {}).sort((a: any, b: any) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+      } catch (error: any) {
+        return handleApiError(error);
+      }
     },
     staleTime: 5 * 60 * 1000,
     placeholderData: [],
@@ -129,15 +189,21 @@ export default function Panel() {
   const { data: campaignsListData } = useQuery({
     queryKey: ['campaignsList', dateRange],
     queryFn: async () => {
-      const since = dateRange.from.toISOString().split('T')[0];
-      const until = dateRange.to?.toISOString().split('T')[0] ?? new Date().toISOString().split('T')[0];
-      const url = `/api/marketing/company/insights?limit=100&since=${since}&until=${until}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      
-      // Obtener lista única de campañas
-      const campaigns = [...new Set(json.data?.map((item: any) => item.campaignName) || [])];
-      return campaigns.filter(Boolean);
+      try {
+        const since = dateRange.from.toISOString().split('T')[0];
+        const until = dateRange.to?.toISOString().split('T')[0] ?? new Date().toISOString().split('T')[0];
+        const url = `/api/marketing/company/insights?limit=100&since=${since}&until=${until}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const error = await res.json();
+          return handleApiError(error);
+        }
+        const json = await res.json();
+        const campaigns = [...new Set(json.data?.map((item: any) => item.campaignName) || [])];
+        return campaigns.filter(Boolean);
+      } catch (error: any) {
+        return handleApiError(error);
+      }
     },
     staleTime: 5 * 60 * 1000,
     placeholderData: [],
@@ -176,29 +242,39 @@ export default function Panel() {
   }, [companyId]);
 
   // Loading state
-  if (!companyId || !totalCampaignsData || !activeCampaignsData || !totalSpendData || !insightsData || !conversationsData || !impressionsResultsData) {
+  if (!companyId || !conversationsData) {
     return <p className="text-gray-500 text-sm px-4 py-2">Cargando panel...</p>;
   }
 
-  // Procesamiento de datos
-  const recentMessages = conversationsData.slice(0, 5).map((c: any) => ({
+  if(configError) {
+    return(
+      <FacebookConfigError
+        title="Configuración de Facebook Requerida"
+        message={configError}
+      />
+    )
+  }
+
+  // Procesamiento de datos - Agregar verificaciones de nulidad
+  const recentMessages = conversationsData?.slice(0, 5).map((c: any) => ({
     phone: c.phone,
     lastMessage: c.lastMessage?.content || '',
     updated_at: c.updated_at,
-  }));
+  })) || [];
 
   const summary = {
-    totalCampaigns: totalCampaignsData.total || 0,
-    activeCampaigns: activeCampaignsData.total || 0,
-    totalSpend: totalSpendData.totalSpend || 0,
-    recentInsights: insightsData.map((i: any) => ({
+    totalCampaigns: totalCampaignsData?.total || 0,
+    activeCampaigns: activeCampaignsData?.total || 0,
+    totalSpend: totalSpendData?.totalSpend || 0,
+    recentInsights: insightsData?.map((i: any) => ({
       campaignName: i.campaignName || 'Desconocida',
       spend: Number(i.spend) || 0,
       clicks: Number(i.clicks) || 0,
       ctr: Number(i.ctr) || 0,
-    })),
+    })) || [],
     recentMessages,
   };
+
   // Render UI
   return (
     <div className="p-6 space-y-6">
@@ -362,7 +438,7 @@ export default function Panel() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        
+
         {/* Nuevo gráfico de Impresiones vs Resultados */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
@@ -372,7 +448,7 @@ export default function Panel() {
             </CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 mt-2">
               <p className="text-sm text-gray-600">
-                Datos del {dateRange?.from ? format(dateRange.from, "dd/MM/yyyy") : ''} 
+                Datos del {dateRange?.from ? format(dateRange.from, "dd/MM/yyyy") : ''}
                 {dateRange?.to ? ` al ${format(dateRange.to, "dd/MM/yyyy")}` : ''}
               </p>
               <div className="flex items-center gap-2">
@@ -397,13 +473,13 @@ export default function Panel() {
             <ResponsiveContainer width="100%" height={400}>
               <Chart data={impressionsResultsData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   tickFormatter={(value) => format(new Date(value), "dd/MM")}
                 />
                 <YAxis yAxisId="left" stroke="#f97316" />
                 <YAxis yAxisId="right" orientation="right" stroke="#06b6d4" />
-                <RechartsTooltip 
+                <RechartsTooltip
                   labelFormatter={(value) => `Fecha: ${format(new Date(value), "dd/MM/yyyy")}`}
                   formatter={(value: number, name: string) => [
                     name === 'impressions' ? value.toLocaleString() : value,
@@ -411,19 +487,19 @@ export default function Panel() {
                   ]}
                 />
                 <Legend />
-                <Bar 
-                  yAxisId="left" 
-                  dataKey="impressions" 
-                  fill="#f97316" 
-                  name="Impresiones" 
-                  radius={[4, 4, 0, 0]} 
+                <Bar
+                  yAxisId="left"
+                  dataKey="impressions"
+                  fill="#f97316"
+                  name="Impresiones"
+                  radius={[4, 4, 0, 0]}
                 />
-                <Bar 
-                  yAxisId="right" 
-                  dataKey="results" 
-                  fill="#06b6d4" 
-                  name="Resultados" 
-                  radius={[4, 4, 0, 0]} 
+                <Bar
+                  yAxisId="right"
+                  dataKey="results"
+                  fill="#06b6d4"
+                  name="Resultados"
+                  radius={[4, 4, 0, 0]}
                 />
               </Chart>
             </ResponsiveContainer>
