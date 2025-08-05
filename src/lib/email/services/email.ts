@@ -48,6 +48,8 @@ export class EmailService {
                 html: htmlBody,
                 attachments,
             });
+            console.log(sentInformation);
+
             return true;
 
         } catch (error) {
