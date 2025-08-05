@@ -18,7 +18,7 @@ export class CompanyEmailService {
         const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/verify-email/${verificationToken}`;
         
         const mailOptions: SendMailOptions = {
-            from: `"${process.env.MAILER_NAME || 'WhatsApp Clean'}" <${process.env.MAILER_EMAIL}>`,
+            from: process.env.MAILER_EMAIL,
             to: email,
             subject: `Verifica tu cuenta - ${companyName}`,
             htmlBody: companyVerificationTemplate(companyName, verificationUrl)

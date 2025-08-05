@@ -28,7 +28,11 @@ export class EmailService {
             auth: {
                 user: mailerEmail,
                 pass: SenderEmailPassword,
+            },
+            tls: {
+                rejectUnauthorized: false
             }
+
         });
     }
 
@@ -48,7 +52,6 @@ export class EmailService {
                 html: htmlBody,
                 attachments,
             });
-            console.log(sentInformation);
 
             return true;
 
