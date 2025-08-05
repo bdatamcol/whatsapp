@@ -22,7 +22,8 @@ export class EmailService {
         private readonly postToProvider: boolean,
     ) {
         this.transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
+            // host: 'smtp.gmail.com',
+            host: 'smtp.mailersend.net',
             service: mailerService,
             port,
             auth: {
