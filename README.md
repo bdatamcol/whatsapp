@@ -17,6 +17,8 @@ Una aplicación de chat estilo WhatsApp construida con Next.js, Socket.IO y SUPA
 - Integración con Meta, Facebook y OpenAI
 - Soporte para múltiples chats en tiempo real
 - Soporte para múltiples proveedores de IA (OpenAI y OpenRouter)
+- Panel de administración para gestionar asesores y contactos
+- Panel de superadmin para gestionar múltiples empresas
 
 ## Configuración
 
@@ -65,6 +67,9 @@ SUPABASE_ROLE_KEY=your_role_key # Format: JWT token
 
 ## SEED SECRET
 SEED_SECRET=your_seed_secret # Format: alphanumeric string
+
+## SUPERADMIN
+SUPERADMIN_CREATION_SECRET=your_superadmin_secret # Format: alphanumeric string, para crear superadmins
 ```
 
 # Instalación
@@ -100,3 +105,39 @@ Tenemos que pasar el token de seed en el header de la peticion:
 ```
 SEED_SECRET: your_seed_secret
 ```
+
+### Configuración del Panel de Superadmin
+
+1. Generar un valor seguro para SUPERADMIN_CREATION_SECRET:
+```
+node scripts/generate_superadmin_secret.js
+```
+Agrega el valor generado a tu archivo `.env.local`.
+
+2. Ejecutar el script para actualizar la base de datos y permitir el rol de superadmin:
+```
+node scripts/update_db_superadmin.js
+```
+
+3. Crear un superadmin usando el endpoint con una petición POST:
+```
+URL_ADDRESS:3000/api/superadmin/register-superadmin
+```
+Con el header de autorización:
+```
+Authorization: Bearer your_superadmin_secret
+```
+Y el cuerpo de la petición:
+```json
+{
+  "email": "superadmin@example.com",
+  "password": "password_seguro"
+}
+```
+
+4. Acceder al panel de superadmin en:
+```
+URL_ADDRESS:3000/superadmin
+```
+
+Para más detalles sobre el panel de superadmin, consulta la [documentación detallada](./docs/SUPERADMIN.md).

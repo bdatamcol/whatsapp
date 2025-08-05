@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { ScrollArea } from '@radix-ui/react-scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AlertCircle, Settings } from 'lucide-react';
+import Link from 'next/link';
+import { FacebookConfigError } from './FacebookConfigError';
 
 interface Metric {
     campaignName: string;
@@ -16,37 +19,45 @@ interface Metric {
     dateStop: string;
 }
 
-
 const MetricsDashboard: React.FC = () => {
     const [metrics, setMetrics] = useState<any[]>([]);
     const [filteredMetrics, setFilteredMetrics] = useState<any[]>([]);
     const [selectedCampaign, setSelectedCampaign] = useState<string>('');
+    const [configError, setConfigError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchMetrics = async () => {
             try {
-                const response = await fetch('/api/marketing/insights');
+                setLoading(true);
+                const response = await fetch('/api/marketing/company/insights');
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('Error en la solicitud:', errorText || 'Respuesta vacía');
+
+                    // Detectar específicamente el error de configuración de Facebook
+                    if (errorText.includes('configuración de Facebook completa')) {
+                        setConfigError('Facebook no está configurado');
+                    } else {
+                        console.error('Error en la solicitud:', errorText || 'Respuesta vacía');
+                    }
                     return;
                 }
 
                 const data = await response.json();
-                //Accede a la propiedad `data` que es el array de métricas
-                setMetrics(data.data);
-                setFilteredMetrics(data.data); // También inicializa las métricas filtradas
+                setMetrics(data.data || []);
+                setFilteredMetrics(data.data || []);
+                setConfigError(null);
 
             } catch (error) {
                 console.error('Error al obtener los datos:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchMetrics();
     }, []);
-
-
 
     const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const selected = event.target.value;
@@ -59,6 +70,31 @@ const MetricsDashboard: React.FC = () => {
     };
 
     const uniqueCampaigns = Array.from(new Set(metrics.map(metric => metric.campaignName)));
+
+    // Mostrar mensaje de configuración si Facebook no está configurado
+    if (configError) {
+        return (
+            <FacebookConfigError
+                title="Configuración de Facebook Requerida"
+                message="Para ver las métricas de tus campañas publicitarias, necesitas configurar tu cuenta de Facebook Ads."
+            />
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <Card className="w-full max-w-md">
+                    <CardContent className="pt-6">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                            <p className="text-gray-600">Cargando métricas...</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-4 p-4">

@@ -4,7 +4,6 @@ import { processWebhookRequest } from '@/lib/whatsapp/services/webhookDispatcher
 
 const mySecretToken = process.env.VERYFY_WEBHOOK_SECRET;
 
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('hub.mode');
@@ -25,6 +24,7 @@ export async function POST(request: NextRequest) {
   try {
     return await processWebhookRequest(request);
   } catch (error) {
+    console.error('Error en el webhook:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,14 +1,17 @@
-'use client'
+'use client';
 
-import { redirect, useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import ChatView from '@/app/components/whatsapp/ChatView';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client.supabase';
 
 export default function ChatPage() {
     const params = useParams();
     const contactId = params.contactId as string;
-    const [loading, setLoading] = useState(false);
+    const [companyId, setCompanyId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     const handleReturnToIA = async () => {
         setLoading(true);
@@ -18,14 +21,14 @@ export default function ChatPage() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ phone: contactId }),
+                body: JSON.stringify({ phone: contactId, companyId }),
             });
 
             const result = await res.json();
 
             if (res.ok) {
                 toast.success('IA reactivada para este contacto');
-                redirect('/assistant/dashboard');
+                router.push('/assistant/dashboard');
             } else {
                 throw new Error(result.error || 'Error desconocido');
             }
@@ -36,7 +39,62 @@ export default function ChatPage() {
         }
     };
 
-    if (!contactId) return <p>Cargando...</p>;
+    useEffect(() => {
+        const fetchCompanyId = async () => {
+            // Primero obtener el company_id del perfil del asistente
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('Usuario no autenticado');
+                toast.error('Usuario no autenticado');
+                setLoading(false);
+                return;
+            }
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('company_id')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (!profile?.company_id) {
+                console.error('Perfil sin empresa asociada');
+                toast.error('No estás asociado a ninguna empresa');
+                setLoading(false);
+                return;
+            }
+
+            const companyId = profile.company_id;
+
+            // Luego verificar si existe una conversación para este contacto en la empresa
+            const { data, error } = await supabase
+                .from('conversations')
+                .select('company_id')
+                .eq('phone', contactId)
+                .eq('company_id', companyId)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Error consultando company_id:', error.message);
+                toast.error('Error al obtener la empresa del contacto');
+                setLoading(false);
+                return;
+            }
+
+            if (data?.company_id) {
+                setCompanyId(data.company_id);
+            } else {
+                toast.warning('Este contacto no tiene conversación en tu empresa');
+            }
+
+            setLoading(false);
+        };
+
+        if (contactId) {
+            fetchCompanyId();
+        }
+    }, [contactId]);
+
+    if (!contactId || loading || !companyId) return <p className="p-4">Cargando...</p>;
 
     return (
         <div className="flex flex-col h-screen">
@@ -50,7 +108,12 @@ export default function ChatPage() {
                     {loading ? 'Actualizando...' : 'Devolver a IA'}
                 </button>
             </div>
-            <ChatView contactId={contactId} role="assistant_humano" />
+
+            <ChatView
+                contactId={contactId}
+                role="assistant_humano"
+                companyId={companyId}
+            />
         </div>
     );
 }

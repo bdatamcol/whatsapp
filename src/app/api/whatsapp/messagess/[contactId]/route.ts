@@ -5,7 +5,14 @@ export async function GET(request: Request, context: { params: { contactId: stri
   
   try {
     const { contactId } = await context.params;
-    const messages = await getMessagesForContact(contactId);
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
+
+    if (!companyId) {
+      return NextResponse.json({ error: 'Falta companyId' }, { status: 400 });
+    }
+
+    const messages = await getMessagesForContact(contactId, companyId);
     return NextResponse.json(messages);
 
   } catch (error) {

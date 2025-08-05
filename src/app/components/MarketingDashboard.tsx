@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { PieChart, BarChart, UserCheck, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import MetricsDashboard from '@/app/components/MetricsDashboard';
-import AccountManager from '@/app/components/AccountManager';
-import AdsManage from '@/app/components/AdsManage';
+import AccountManager from './AccountManager';
+import AdsManager from './AdsManager';
 
 const sections = [
   {
@@ -35,7 +35,7 @@ const MarketingDashboard = () => {
   const renderComponent = () => {
     switch (activeComponent) {
       case 'AccountManager': return <AccountManager />;
-      case 'AdsManage': return <AdsManage />;
+      case 'AdsManage': return <AdsManager />;
       case 'MetricsDashboard': return <MetricsDashboard />;
       default: return null;
     }
