@@ -4,6 +4,17 @@ import { supabase } from '../supabase/server.supabase';
 
 export async function registerAssistant(email: string, password: string, companyId: string) {
 
+    // 1. Verificar si el email ya está registrado
+    const { data: existingUser, error: existingUserError } = await supabase
+        .from('auth.users')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+    if (existingUser) {
+        return NextResponse.json({ error: 'El email ya está registrado' }, { status: 400 });
+    }
+
     // 2. Crear usuario en Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
@@ -12,7 +23,8 @@ export async function registerAssistant(email: string, password: string, company
     });
 
     if (authError || !authData.user) {
-        return NextResponse.json({ error: 'Error creando usuario' }, { status: 500 });
+        return NextResponse.json({ error: 'Error creando asistente' }, { status: 500 });
+
     }
 
     const userId = authData.user.id;

@@ -15,6 +15,7 @@ type AssignedContact = {
     status: string;
     last_interaction_at: string;
     assigned_at: string;
+    updated_at?: string;
     active: boolean;
     assignment_id: string;
 };
@@ -31,7 +32,7 @@ export default function HistoryPage() {
             const { data, error } = await supabase
                 .from('assistants_assignments')
                 .select(
-                    `assignment_id: id, contact_phone, assigned_at, active, 
+                    `assignment_id: id, contact_phone, assigned_at, updated_at, active, 
             contacts ( phone, name, status, last_interaction_at )`
                 )
                 .eq('assigned_to', user.id)
@@ -50,6 +51,7 @@ export default function HistoryPage() {
                 status: a.contacts?.status,
                 last_interaction_at: a.contacts?.last_interaction_at,
                 assigned_at: a.assigned_at,
+                updated_at: a.updated_at,
                 active: a.active,
                 assignment_id: a.assignment_id,
             }));
@@ -72,6 +74,16 @@ export default function HistoryPage() {
             ...prev,
             [phone]: !prev[phone]
         }));
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     if (loading) {
@@ -133,14 +145,16 @@ export default function HistoryPage() {
                                                             <TableRow>
                                                                 <TableHead>Asignado</TableHead>
                                                                 <TableHead>Última interacción</TableHead>
+                                                                <TableHead>Última actualización</TableHead>
                                                                 <TableHead>Estado</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
                                                             {records.map((a) => (
                                                                 <TableRow key={a.assignment_id}>
-                                                                    <TableCell>{new Date(a.assigned_at).toLocaleString()}</TableCell>
-                                                                    <TableCell>{new Date(a.last_interaction_at).toLocaleString()}</TableCell>
+                                                                    <TableCell>{formatDate(a.assigned_at)}</TableCell>
+                                                                    <TableCell>{a.last_interaction_at ? formatDate(a.last_interaction_at) : 'Sin interacción'}</TableCell>
+                                                                    <TableCell>{a.updated_at ? formatDate(a.updated_at) : 'N/A'}</TableCell>
                                                                     <TableCell>{a.status}</TableCell>
                                                                 </TableRow>
                                                             ))}

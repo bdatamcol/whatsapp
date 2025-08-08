@@ -13,9 +13,11 @@ export async function getAssistantList(user: { id: string }) {
 
     const { data, error } = await supabase
         .from('profiles')
-        .select('id, email')
+        .select('id, email, created_at, is_active') // Add is_active
         .eq('role', 'assistant')
-        .eq('company_id', profile.company_id);
+        .eq('company_id', profile.company_id)
+        .is('deleted_at', null) // Filter out soft deleted
+        .order('created_at', { ascending: false });
 
     if (error) {
         throw new Error(error.message);

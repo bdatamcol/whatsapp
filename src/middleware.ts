@@ -76,11 +76,11 @@ export async function middleware(request: NextRequest) {
                     // Continuar con el nuevo usuario
                     const { data: profile } = await supabase
                         .from('profiles')
-                        .select('company_id, role')
+                        .select('company_id, role, is_active')
                         .eq('id', user.id)
                         .single();
 
-                    if (!profile) {
+                    if (!profile || !profile.is_active) {
                         const response = NextResponse.redirect(new URL('/login', request.url));
                         response.cookies.delete('sb-access-token');
                         response.cookies.delete('sb-refresh-token');
@@ -130,19 +130,16 @@ export async function middleware(request: NextRequest) {
         // Si llegamos aquí, user tiene valor válido
         const { data: profile } = await supabase
             .from('profiles')
-            .select('company_id, role')
+            .select('company_id, role, is_active')
             .eq('id', user.id)
             .single();
 
-        if (!profile) {
+        if (!profile || !profile.is_active) {
             const response = NextResponse.redirect(new URL('/login', request.url));
             response.cookies.delete('sb-access-token');
             response.cookies.delete('sb-refresh-token');
             return response;
         }
-
-        console.log('Middleware - profile.role:', profile.role);
-        console.log('Middleware - profile.company_id:', profile.company_id);
 
         // CORREGIDO: Los superadmins no necesitan verificación de empresa
         if (profile.role !== 'superadmin') {
