@@ -14,37 +14,75 @@ export function useAssignedContactsCount() {
             const user = await getCurrentUserClient();
             if (!user?.id || !user?.company_id) return;
 
-            const { count, error } = await supabase
+            const { count: newCount, error } = await supabase
                 .from('assistants_assignments')
                 .select('*', { count: 'exact', head: true })
                 .eq('assigned_to', user.id)
                 .eq('company_id', user.company_id)
                 .eq('active', true);
 
-            if (!error && typeof count === 'number') {
-                setCount(count);
+            if (!error && typeof newCount === 'number') {
+                setCount(newCount);
+                console.log('📊 Contador actualizado:', newCount);
             }
+        };
 
-            // Suscripción en tiempo real a INSERTS y DELETES o UPDATES que afecten "active"
+        const setupRealtime = async () => {
+            const user = await getCurrentUserClient();
+            if (!user?.id || !user?.company_id) return;
+
+            // Cargar conteo inicial
+            await fetchCount();
+
+            // Configurar suscripción real-time con filtros separados
             channel = supabase
                 .channel(`assignment-count-${user.id}`)
                 .on(
                     'postgres_changes',
                     {
-                        event: '*',
+                        event: 'INSERT',
                         schema: 'public',
                         table: 'assistants_assignments',
-                        filter: `assigned_to=eq.${user.id},company_id=eq.${user.company_id}`,
+                        filter: `assigned_to=eq.${user.id}`,
                     },
                     fetchCount
                 )
-                .subscribe();
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'assistants_assignments',
+                        filter: `assigned_to=eq.${user.id}`,
+                    },
+                    (payload) => {
+                        // Solo actualizar si cambia el estado 'active'
+                        if (payload.new.active !== payload.old.active) {
+                            fetchCount();
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'DELETE',
+                        schema: 'public',
+                        table: 'assistants_assignments',
+                        filter: `assigned_to=eq.${user.id}`,
+                    },
+                    fetchCount
+                )
+                .subscribe((status) => {
+                    console.log('Estado del canal real-time:', status);
+                });
         };
 
-        fetchCount();
+        setupRealtime();
 
         return () => {
-            if (channel) supabase.removeChannel(channel);
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
         };
     }, []);
 

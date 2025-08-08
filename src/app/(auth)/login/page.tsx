@@ -7,7 +7,7 @@ import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import Input from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { motion } from 'framer-motion';
-import { BrainCircuit, Mail, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { BrainCircuit, Mail, ShieldAlert, CheckCircle2, UserX } from 'lucide-react';
 
 function LoginFormContent() {
     const router = useRouter();
@@ -17,18 +17,26 @@ function LoginFormContent() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+    const [showDeactivationMessage, setShowDeactivationMessage] = useState(false);
 
     // Manejar parámetros de URL al cargar la página
     useEffect(() => {
         const verified = searchParams.get('verified');
         const emailParam = searchParams.get('email');
+        const deactivated = searchParams.get('deactivated');
         
         if (verified === 'true') {
             setShowVerificationMessage(true);
-            // Limpiar la URL después de mostrar el mensaje
             setTimeout(() => {
                 router.replace('/login');
             }, 5000);
+        }
+        
+        if (deactivated === 'true') {
+            setShowDeactivationMessage(true);
+            setTimeout(() => {
+                router.replace('/login');
+            }, 8000);
         }
         
         if (emailParam) {
@@ -59,11 +67,28 @@ function LoginFormContent() {
 
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('role, company_id')
+                .select('role, company_id, is_active')
                 .eq('id', user.id)
                 .maybeSingle();
 
             if (profileError || !profile?.role) throw new Error("Perfil no encontrado");
+
+            // Verificar si el usuario está desactivado
+            if (profile.is_active === false) {
+                await supabase.auth.signOut();
+                setError(
+                    `🔒 Cuenta temporalmente desactivada\n\n` +
+                    `Tu cuenta ha sido desactivada por un administrador del sistema.\n\n` +
+                    `Esto puede deberse a:\n` +
+                    `• Revisión de seguridad en curso\n` +
+                    `• Cambios en la configuración de acceso\n` +
+                    `• Finalización de tu período de servicio\n\n` +
+                    `Para más información o para solicitar la reactivación de tu cuenta,\n` +
+                    `por favor contacta al equipo de soporte técnico.`
+                );
+                setLoading(false);
+                return;
+            }
 
             if (profile.role !== 'superadmin' && profile.company_id) {
                 const { data: company, error: companyError } = await supabase
@@ -159,6 +184,23 @@ function LoginFormContent() {
                                 </div>
                             </motion.div>
                         )}
+
+                        {/* Mensaje de desactivación */}
+                        {showDeactivationMessage && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-4 p-4 text-sm bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg text-orange-100"
+                            >
+                                <div className="flex items-start space-x-3">
+                                    <UserX className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-semibold">Cuenta Desactivada</p>
+                                        <p className="text-sm mt-1">Tu cuenta ha sido desactivada por un administrador. Por favor contacta al soporte técnico para más información.</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
                         
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-2">
@@ -188,7 +230,9 @@ function LoginFormContent() {
                                     className="p-4 text-sm bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg text-yellow-100"
                                 >
                                     <div className="flex items-start space-x-3">
-                                        {error.includes('⚠️') ? (
+                                        {error.includes('🔒') ? (
+                                            <UserX className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                                        ) : error.includes('⚠️') ? (
                                             <Mail className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                                         ) : (
                                             <ShieldAlert className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />

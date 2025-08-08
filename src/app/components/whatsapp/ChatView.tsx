@@ -29,6 +29,41 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
     const [inputValue, setInputValue] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showShortcut, setShowShortcut] = useState(false);
+
+    // Agregar atajo de teclado para adjuntar imagen
+    useEffect(() => {
+        const handleKeyPress = (event: KeyboardEvent) => {
+            // Ctrl+Shift+I para abrir el selector de archivos
+            if (event.ctrlKey && event.shiftKey && event.key === 'I') {
+                event.preventDefault();
+                handleImageButtonClick();
+            }
+        };
+
+        // Mostrar tooltip cuando se presiona Ctrl
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.ctrlKey && event.shiftKey) {
+                setShowShortcut(true);
+            }
+        };
+
+        const handleKeyUp = (event: KeyboardEvent) => {
+            if (!event.ctrlKey || !event.shiftKey) {
+                setShowShortcut(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyPress);
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, []);
 
     const fetchMessages = async () => {
         const res = await fetch(`/api/whatsapp/messagess/${contactId}?companyId=${companyId}`);
@@ -228,7 +263,14 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                 <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-4 border-t bg-white">
+            <div className="p-4 border-t bg-white relative">
+                {/* Tooltip de atajo de teclado */}
+                {showShortcut && (
+                    <div className="absolute -top-10 left-4 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg">
+                        Presiona <kbd className="bg-gray-600 px-1 rounded">Ctrl</kbd> + <kbd className="bg-gray-600 px-1 rounded">Shift</kbd> + <kbd className="bg-gray-600 px-1 rounded">I</kbd> para adjuntar imagen
+                    </div>
+                )}
+                
                 <div className="flex gap-2 items-center">
                     <input
                         type="file"
@@ -244,6 +286,7 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                         onClick={handleImageButtonClick}
                         disabled={isUploading}
                         className="shrink-0"
+                        title="Adjuntar imagen (Ctrl+Shift+I)"
                     >
                         {isUploading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

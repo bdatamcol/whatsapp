@@ -70,7 +70,10 @@ export default function AssistantLayout({ children }: { children: React.ReactNod
                                         {show && (
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Badge className="ml-auto text-white bg-red-500 hover:bg-red-600">
+                                                    <Badge 
+                                                        className="ml-auto text-white bg-red-500 hover:bg-red-600 animate-pulse"
+                                                        style={{ animationDuration: '2s' }}
+                                                    >
                                                         {assignedCount}
                                                     </Badge>
                                                 </TooltipTrigger>

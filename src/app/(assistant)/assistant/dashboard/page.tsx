@@ -35,27 +35,48 @@ export default function AssistantDashboard() {
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    const fetchContacts = async (userId: string, companyId: string) => {
+      try {
+        // Usar JOIN directo en lugar de la vista para mayor control
+        const { data, error } = await supabase
+          .from('assistants_assignments')
+          .select(`
+            contact_phone,
+            contacts!inner(name, phone)
+          `)
+          .eq('assigned_to', userId)
+          .eq('company_id', companyId)
+          .eq('active', true)
+          .order('assigned_at', { ascending: false });
 
+        if (error) {
+          console.error('Error fetching contacts:', error);
+          return;
+        }
+
+        if (data) {
+          const contactsData = data.map((item: any) => ({
+            phone: item.contact_phone,
+            name: item.contacts?.name || 'Contacto sin nombre'
+          }));
+          setContacts(contactsData);
+        }
+      } catch (error) {
+        console.error('Error in fetchContacts:', error);
+      }
+    };
     const init = async () => {
       const user = await getCurrentUserClient();
       if (!user?.id) return;
 
       setUserId(user.id);
 
-      // Obtener contactos asignados al cargar
-      const { data: existing, error } = await supabase
-        .from('assigned_contacts_view')
-        .select('phone, name')
-        .eq('assigned_to', user.id)
-        .eq('company_id', user.company_id);
+      // Cargar contactos inicialmente
+      await fetchContacts(user.id, user.company_id);
 
-      if (!error && existing) {
-        setContacts(existing);
-      }
-
-      // Realtime: escuchar nuevas asignaciones
-      channel = supabase
-        .channel('realtime-assistant-assignments')
+      // Configurar real-time con canales separados para cada tipo de evento
+      const assignmentsChannel = supabase
+        .channel('realtime-assignments')
         .on(
           'postgres_changes',
           {
@@ -65,30 +86,104 @@ export default function AssistantDashboard() {
             filter: `assigned_to=eq.${user.id}`,
           },
           async (payload) => {
+            console.log('Nueva asignación recibida:', payload.new);
             const newPhone = payload.new.contact_phone;
 
-            toast.info(`Nuevo contacto asignado: ${newPhone}`);
+            toast.success(`📱 Nuevo contacto asignado: ${newPhone}`);
 
-            const { data: contact, error } = await supabase
+            // Obtener datos del contacto
+            const { data: contact } = await supabase
               .from('contacts')
               .select('name, phone')
               .eq('phone', newPhone)
-              .maybeSingle();
+              .single();
 
-            if (contact && !error) {
-              setContacts((prev: any) => [...prev, contact]);
-              setNewPhones((prev) => new Set(prev).add(contact.phone));
+            if (contact) {
+              setContacts(prev => {
+                // Evitar duplicados
+                const exists = prev.some(c => c.phone === contact.phone);
+                if (exists) return prev;
+                return [...prev, contact];
+              });
+
+              setNewPhones(prev => new Set(prev).add(contact.phone));
               setTimeout(() => {
                 setNewPhones(prev => {
                   const newSet = new Set(prev);
                   newSet.delete(contact.phone);
                   return newSet;
                 });
-              }, 10000);
+              }, 8000);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'assistants_assignments',
+            filter: `assigned_to=eq.${user.id}`,
+          },
+          async (payload) => {
+            console.log('Asignación actualizada:', payload.new);
+
+            if (payload.new.active === false) {
+              toast.info(`🔄 Contacto devuelto a IA: ${payload.new.contact_phone}`);
+
+              // Remover el contacto de la lista
+              setContacts(prev =>
+                prev.filter(contact => contact.phone !== payload.new.contact_phone)
+              );
+            } else if (payload.new.active === true) {
+              // Si se reactivó, refrescar toda la lista
+              await fetchContacts(user.id, user.company_id);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'assistants_assignments',
+            filter: `assigned_to=eq.${user.id}`,
+          },
+          async (payload) => {
+            console.log('Asignación eliminada:', payload.old);
+
+            toast.warning(`❌ Asignación removida: ${payload.old.contact_phone}`);
+
+            // Remover el contacto de la lista
+            setContacts(prev =>
+              prev.filter(contact => contact.phone !== payload.old.contact_phone)
+            );
+          }
+        )
+        .subscribe();
+
+      // También escuchar cambios en los contactos que podrían afectar las asignaciones
+      const contactsChannel = supabase
+        .channel('realtime-contacts-status')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'contacts',
+          },
+          async (payload) => {
+            // Si el contacto cambia de estado, refrescar las asignaciones
+            if (payload.new.needs_human !== payload.old.needs_human ||
+              payload.new.status !== payload.old.status) {
+              await fetchContacts(user.id, user.company_id);
             }
           }
         )
         .subscribe();
+
+      // Guardar referencias para limpieza
+      channel = assignmentsChannel;
     };
 
     init();
@@ -113,14 +208,14 @@ export default function AssistantDashboard() {
               <Link
                 key={c.phone}
                 href={`/assistant/chat/${c.phone}`}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors animate-in fade-in duration-300"
               >
                 <div>
                   <p className="font-medium">{c.name || 'Contacto sin nombre'}</p>
                   <p className="text-sm text-muted-foreground">{c.phone}</p>
                 </div>
                 {newPhones.has(c.phone) && (
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs animate-pulse">
                     Nuevo
                   </span>
                 )}

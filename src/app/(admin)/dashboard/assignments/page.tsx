@@ -39,11 +39,13 @@ export default function AssignmentsPage() {
                 .eq('needs_human', true)
                 .eq('company_id', userData.company_id);
 
+            // Update the assistants query to filter only active ones
             const { data: assistantsData } = await supabase
                 .from('profiles')
                 .select('id, email')
                 .eq('role', 'assistant')
-                .eq('company_id', userData.company_id);
+                .eq('company_id', userData.company_id)
+                .eq('is_active', true); // Only active assistants
 
             setContacts(contactsData || []);
             setAssistants(assistantsData || []);

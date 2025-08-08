@@ -29,6 +29,7 @@ export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Panelcontrol');
   const [companyName, setCompanyName] = useState('');
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const pendingCount = usePendingContactsCount();
   const navItems = [
     { name: 'Panelcontrol', label: 'Panel de control', icon: LayoutDashboard },
@@ -56,15 +57,58 @@ export default function Home() {
         .maybeSingle();
 
       if (profile?.company_id) {
+        setCompanyId(profile.company_id);
+
         const { data: company } = await supabase
           .from('companies')
-          .select('name')
+          .select('name, is_active')
           .eq('id', profile.company_id)
           .maybeSingle();
 
         if (company?.name) {
           setCompanyName(company.name);
         }
+        // Verificar inmediatamente si la empresa está activa
+        if (!company?.is_active) {
+          await handleLogout();
+          return;
+        }
+        // Suscribirse a cambios en tiempo real de la empresa
+        const subscription = supabase
+          .channel(`company-${profile.company_id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'companies',
+              filter: `id=eq.${profile.company_id}`
+            },
+            async (payload) => {
+              if (payload.new.is_active === false) {
+                await handleLogout();
+              }
+            }
+          )
+          .subscribe();
+
+        // También verificar cada 5 segundos como respaldo
+        const interval = setInterval(async () => {
+          const { data: currentCompany } = await supabase
+            .from('companies')
+            .select('is_active')
+            .eq('id', profile.company_id)
+            .maybeSingle();
+
+          if (!currentCompany?.is_active) {
+            await handleLogout();
+          }
+        }, 5000);
+
+        return () => {
+          subscription.unsubscribe();
+          clearInterval(interval);
+        };
       }
     };
     checkAuth();
@@ -72,8 +116,8 @@ export default function Home() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    // Eliminar la cookie del token
-    document.cookie = `sb-access-token=; max-age=0`;
+    document.cookie = 'sb-access-token=; max-age=0; path=/';
+    document.cookie = 'sb-refresh-token=; max-age=0; path=/';
     router.replace('/login');
   };
 
