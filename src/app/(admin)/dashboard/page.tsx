@@ -24,6 +24,7 @@ import {
   LogOut, MessageCircle,
 } from 'lucide-react';
 import MarketingDashboard from '@/app/components/MarketingDashboard';
+import BugReportButton from '@/app/components/bug-reports/BugReportButton';
 
 export default function Home() {
   const router = useRouter();
@@ -190,6 +191,11 @@ export default function Home() {
       <main className="flex-1 overflow-auto bg-gray-50 p-6">
         {renderContent()}
       </main>
+      <BugReportButton
+        variant="floating"
+        position="bottom-right"
+        label="Reportar Problema"
+      />
     </div>
   );
 }
