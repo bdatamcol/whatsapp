@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Building2, Users, MessageCircle, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BugReportButton from '@/app/components/bug-reports/BugReportButton';
-import BugReportList from '@/app/components/bug-reports/BugReportList';
 import { Bug } from 'lucide-react';
 
 export default function SuperAdminDashboard() {

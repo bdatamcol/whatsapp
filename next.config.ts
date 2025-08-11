@@ -1,12 +1,22 @@
 // next.config.ts
 import type { NextConfig } from 'next';
-// next.config.js
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'kqilbhvuxevjrsyhfrfu.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

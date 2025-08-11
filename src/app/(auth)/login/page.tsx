@@ -259,14 +259,6 @@ function LoginFormContent() {
                 position="bottom-right"
                 label="¿Problemas? Reportar Aquí"
             />
-
-            <div className="fixed bottom-6 left-6 z-50">
-                <BugReportButton
-                    variant="inline"
-                    label="Ayuda y Soporte"
-                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
-                />
-            </div>
         </div>
     );
 }

@@ -1,11 +1,11 @@
 'use client';
 
-import BugReportList from '@/app/components/bug-reports/BugReportList';
+import SuperAdminBugReportList from '@/app/components/bug-reports/SuperAdminBugReportList';
 
 export default function BugReportsPage() {
   return (
-    <div className="container mx-auto py-8">
-      <BugReportList />
+    <div className="container mx-auto py-8 px-4">
+      <SuperAdminBugReportList />
     </div>
   );
 }
