@@ -8,6 +8,7 @@ import Input from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { motion } from 'framer-motion';
 import { BrainCircuit, Mail, ShieldAlert, CheckCircle2, UserX } from 'lucide-react';
+import BugReportButton from '@/app/components/bug-reports/BugReportButton';
 
 function LoginFormContent() {
     const router = useRouter();
@@ -24,21 +25,21 @@ function LoginFormContent() {
         const verified = searchParams.get('verified');
         const emailParam = searchParams.get('email');
         const deactivated = searchParams.get('deactivated');
-        
+
         if (verified === 'true') {
             setShowVerificationMessage(true);
             setTimeout(() => {
                 router.replace('/login');
             }, 5000);
         }
-        
+
         if (deactivated === 'true') {
             setShowDeactivationMessage(true);
             setTimeout(() => {
                 router.replace('/login');
             }, 8000);
         }
-        
+
         if (emailParam) {
             setEmail(emailParam);
         }
@@ -52,17 +53,17 @@ function LoginFormContent() {
         try {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error || !data.session) throw error || new Error('Credenciales inválidas');
-            
+
             const cookieOptions = {
                 path: '/',
                 maxAge: 60 * 60 * 24 * 7,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax' as const
             };
-            
-            document.cookie = `sb-access-token=${data.session.access_token}; ${Object.entries(cookieOptions).map(([k,v]) => `${k}=${v}`).join('; ')}`;
-            document.cookie = `sb-refresh-token=${data.session.refresh_token}; ${Object.entries(cookieOptions).map(([k,v]) => `${k}=${v}`).join('; ')}`;
-            
+
+            document.cookie = `sb-access-token=${data.session.access_token}; ${Object.entries(cookieOptions).map(([k, v]) => `${k}=${v}`).join('; ')}`;
+            document.cookie = `sb-refresh-token=${data.session.refresh_token}; ${Object.entries(cookieOptions).map(([k, v]) => `${k}=${v}`).join('; ')}`;
+
             const user = data.session.user;
 
             const { data: profile, error: profileError } = await supabase
@@ -147,13 +148,13 @@ function LoginFormContent() {
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
             <div className="absolute inset-0 opacity-20">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent)] animate-pulse" />
-                <div className="absolute inset-0 bg-repeat" style={{ 
+                <div className="absolute inset-0 bg-repeat" style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Cpath d='M30 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM6 6c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM48 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM30 48c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM6 54c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM48 0c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z' fill='%23ffffff' fill-opacity='0.05'/%3E%3C/svg%3E")`,
                     backgroundSize: '60px 60px'
                 }} />
             </div>
-            
-            <motion.div 
+
+            <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
@@ -170,7 +171,7 @@ function LoginFormContent() {
                     <CardContent>
                         {/* Mensaje de verificación exitosa */}
                         {showVerificationMessage && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="mb-4 p-4 text-sm bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg text-green-100"
@@ -187,7 +188,7 @@ function LoginFormContent() {
 
                         {/* Mensaje de desactivación */}
                         {showDeactivationMessage && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="mb-4 p-4 text-sm bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg text-orange-100"
@@ -201,7 +202,7 @@ function LoginFormContent() {
                                 </div>
                             </motion.div>
                         )}
-                        
+
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-2">
                                 <Input
@@ -224,7 +225,7 @@ function LoginFormContent() {
                                 />
                             </div>
                             {error && (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="p-4 text-sm bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg text-yellow-100"
@@ -252,6 +253,12 @@ function LoginFormContent() {
                     </CardContent>
                 </Card>
             </motion.div>
+            {/* Botones de Reporte de Bugs - posicionados absolutamente */}
+            <BugReportButton
+                variant="floating"
+                position="bottom-right"
+                label="¿Problemas? Reportar Aquí"
+            />
         </div>
     );
 }

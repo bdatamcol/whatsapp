@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Card from '@/app/components/ui/card';
+import BugReportButton from '@/app/components/bug-reports/BugReportButton';
 
 type Contact = {
   name: string;
@@ -224,6 +225,11 @@ export default function AssistantDashboard() {
           </div>
         )}
       </Card>
+      <BugReportButton
+        variant="floating"
+        position="bottom-right"
+        label="Reportar Problema"
+      />
     </div>
   );
 }

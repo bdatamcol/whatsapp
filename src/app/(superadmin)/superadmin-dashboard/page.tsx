@@ -4,10 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Building2, Users, MessageCircle, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import BugReportButton from '@/app/components/bug-reports/BugReportButton';
+import { Bug } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
-  
+
   const { data: analytics, isLoading: loadingAnalytics } = useQuery({
     queryKey: ['superadmin-analytics'],
     queryFn: async () => {
@@ -155,7 +157,7 @@ export default function SuperAdminDashboard() {
                   <p className="text-xs text-gray-600">Crear, editar y administrar empresas</p>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => router.push('/superadmin-dashboard/analytics')}
                 className="w-full p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-all flex items-center space-x-3 text-left"
@@ -166,10 +168,25 @@ export default function SuperAdminDashboard() {
                   <p className="text-xs text-gray-600">Análisis detallado del sistema</p>
                 </div>
               </button>
+              <button
+                onClick={() => router.push('/superadmin-dashboard/bug-reports')}
+                className="w-full p-3 bg-red-50 hover:bg-red-100 rounded-lg transition-all flex items-center space-x-3 text-left"
+              >
+                <Bug className="h-5 w-5 text-red-600" />
+                <div>
+                  <h3 className="font-medium text-sm">Ver Reportes de Bugs</h3>
+                  <p className="text-xs text-gray-600">Administrar problemas reportados</p>
+                </div>
+              </button>
             </div>
           </CardContent>
         </Card>
       </div>
+      <BugReportButton
+        variant="floating"
+        position="bottom-right"
+        label="Reportar Bug"
+      />
     </div>
   );
 }
