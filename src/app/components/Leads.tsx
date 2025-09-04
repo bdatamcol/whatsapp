@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, Send, MessageSquare } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
 import Button from './ui/Button';
 import Card, { CardContent } from './ui/card';
+import { supabase } from '@/lib/supabase/client.supabase';
 
 interface Page {
   id: string;
@@ -45,8 +46,10 @@ export default function Leads() {
     pages: false,
     forms: false,
     leads: false,
-    more: false
+    more: false,
+    templates: false
   });
+  const [templateResult, setTemplateResult] = useState<any>(null);
 
   // Obtener páginas de Facebook al iniciar
   useEffect(() => {
@@ -201,8 +204,9 @@ export default function Leads() {
 
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error || 'Error al cargar más leads');
-
+      
       allLeads = [...allLeads, ...json.data];
+      console.log('All Leads', allLeads);
       currentCursor = json.paging?.cursors?.after || null;
     }
 
@@ -240,6 +244,58 @@ export default function Leads() {
     }
   };
 
+  // Función para enviar plantillas WhatsApp
+  const handleSendWhatsAppTemplates = async () => {
+    if (!formId || !pageAccessToken) {
+      alert('Por favor selecciona un formulario primero');
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, templates: true }));
+    setTemplateResult(null);
+
+    try {
+      // Obtener company_id del usuario actual
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user?.id)
+        .single();
+
+      if (!profile?.company_id) {
+        alert('No estás asociado a ninguna empresa');
+        return;
+      }
+
+      const response = await fetch('/api/whatsapp/process-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formId,
+          pageAccessToken,
+          companyId: profile.company_id,
+          templateName: 'menu_inicial',
+          pageId
+        })
+      });
+
+      const result = await response.json();
+      setTemplateResult(result);
+
+      if (result.success) {
+        alert(`✅ Plantillas enviadas: ${result.data.sent}\n❌ Fallidas: ${result.data.failed}`);
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
+
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, templates: false }));
+    }
+  };
+
   return (
     <div className="p-4 space-y-4">
       <Card>
@@ -249,6 +305,27 @@ export default function Leads() {
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
+            </div>
+          )}
+
+          {templateResult && (
+            <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+              <strong>Resultado del envío:</strong>
+              <br />
+              ✅ Enviados: {templateResult.data?.sent || 0}
+              <br />
+              ❌ Fallidos: {templateResult.data?.failed || 0}
+              {templateResult.data?.errors?.length > 0 && (
+                <>
+                  <br />
+                  <strong>Errores:</strong>
+                  <ul className="list-disc list-inside">
+                    {templateResult.data.errors.map((error: string, index: number) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
 
@@ -319,17 +396,36 @@ export default function Leads() {
                       </p>
                     )}
                   </div>
-                  {leads.length > 0 && (
-                    <Button
-                      onClick={handleExportCSV}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Exportar CSV
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {leads.length > 0 && (
+                      <>
+                        <Button
+                          onClick={handleExportCSV}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Exportar CSV
+                        </Button>
+                        
+                        <Button
+                          onClick={handleSendWhatsAppTemplates}
+                          disabled={loading.templates}
+                          variant="default"
+                          size="sm"
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                        >
+                          {loading.templates ? (
+                            <Loader2 className="animate-spin h-4 w-4" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                          Enviar Plantillas WhatsApp
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {loading.leads ? (

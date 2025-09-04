@@ -1,78 +1,62 @@
-import { askOpenAIWithHistory } from './providers/openai';
-import { askOpenRouterWithHistory } from './providers/openrouter';
 import { getConversation, updateConversation } from './memory';
 import { getPromptByEmpresaId } from './promptConfig';
-
-type Provider = 'openai' | 'openrouter';
+import { AssistantThreadService } from './providers/assistantThreadService';
 
 class IAService {
-  private static provider: Provider = process.env.IA_PROVIDER as Provider || 'openrouter';
+    public static async askSmart(
+        phone: string, 
+        message: string, 
+        company: { id: string }
+    ): Promise<string> {
+        const now = new Date().toISOString();
+        
+        // Obtener prompt del sistema para la empresa
+        const systemPrompt = await getPromptByEmpresaId(company.id);
+        
+        // Obtener o crear el thread_id
+        const threadId = await AssistantThreadService.getOrCreateThread(phone, company.id);
+        
+        // Guardar mensaje del usuario en la base de datos (mantener historial local)
+        const history = await getConversation(phone, company.id);
+        const updatedHistory = [
+            ...history,
+            {
+                id: `user-${Date.now()}`,
+                role: 'user',
+                content: message,
+                timestamp: now,
+            }
+        ];
 
-  public static setProvider(provider: Provider) {
-    this.provider = provider;
-  }
+        // Enviar solo el mensaje actual al assistant (no todo el historial)
+        const response = await AssistantThreadService.sendMessage(
+            phone,
+            company.id,
+            message,
+            process.env.OPENAI_ASSISTANT_ID!
+        );
 
-  public static async ask(message: string): Promise<string> {
-    switch (this.provider) {
-      case 'openai':
-        return await askOpenAIWithHistory([{ role: 'user', content: message }]);
-      case 'openrouter':
-      default:
-        return await askOpenRouterWithHistory([{ role: 'user', content: message }]);
+        // Guardar respuesta en la base de datos con el thread_id
+        const finalHistory = [
+            ...updatedHistory,
+            {
+                id: `assistant-${Date.now()}`,
+                role: 'assistant',
+                content: response,
+                timestamp: new Date().toISOString(),
+                status: 'sent',
+            }
+        ];
+
+        // Asegurar que el thread_id se guarda en la base de datos
+        await updateConversation(phone, finalHistory, company, threadId);
+        return response;
     }
-  }
 
-  /**
-   * Procesa el mensaje con historial e IA.
-   * @param phone Número de teléfono del contacto
-   * @param message Mensaje del usuario
-   * @param company Objeto con el id de la copañia
-   */
-  public static async askSmart(phone: string, message: string, company:{ id: string }): Promise<string> {
-    const now = new Date().toISOString();
-
-    const systemPrompt = await getPromptByEmpresaId(company.id);
-    const history = await getConversation(phone, company.id);
-    const hasSystemPrompt = history.some(m => m.role === 'system');
-
-    const filtered = history
-      .filter(m => m.role === 'user' || m.role === 'assistant')
-      .slice(-4); // últimas 2 rondas
-
-    const inputMessages = [
-      ...(hasSystemPrompt ? [] : [{ role: 'system', content: systemPrompt }]),
-      ...filtered,
-      { role: 'user', content: message },
-    ];
-
-    const response = await askOpenAIWithHistory(inputMessages);
-
-    const updated = [
-      ...history,
-      ...(hasSystemPrompt ? [] : [{
-        id: `system-${Date.now()}`,
-        role: 'system',
-        content: systemPrompt,
-        timestamp: now,
-      }]),
-      {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: message,
-        timestamp: now,
-      },
-      {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: response,
-        timestamp: now,
-        status: 'sent',
-      },
-    ];
-
-    await updateConversation(phone, updated, company);
-    return response;
-  }
+    // Método legacy para compatibilidad
+    public static async ask(message: string): Promise<string> {
+        return "Este método está obsoleto. Usa askSmart() en su lugar.";
+    }
 }
 
 export default IAService;
