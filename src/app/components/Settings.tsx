@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Lock, Bell, Globe, Users } from 'lucide-react';
+import { User, Lock, Bell, Users, MessageSquare } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import RegisterAssistantForm from '../(admin)/dashboard/assistant/RegisterAssistantForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AssistantTable from '../(admin)/dashboard/assistant/AssistantTable';
 import CompanyProfileEditor from './CompanyProfileEditor';
+import AdminTemplatesPage from '../(admin)/dashboard/templates/page';
 
 const settingsOptions = [
   {
@@ -28,10 +29,10 @@ const settingsOptions = [
     description: 'Configura las alertas que recibes.'
   },
   {
-    id: 'preferences',
-    title: 'Preferencias',
-    icon: <Globe className="w-4 h-4 mr-2" />,
-    description: 'Ajusta idioma y tema.'
+    id: 'templates',
+    title: 'Templates WABA',
+    icon: <MessageSquare className="w-4 h-4 mr-2" />,
+    description: 'Gestiona tus templates WABA.'
   },
   {
     id: 'assistants',
@@ -73,6 +74,7 @@ const Settings = () => {
 
                   {option.id === 'assistants' && <AssistantTable />}
                   {option.id === 'profile' && <CompanyProfileEditor/>}
+                  {option.id === 'templates' && <AdminTemplatesPage />}
                 </TabsContent>
               ))}
 
