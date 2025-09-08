@@ -3,7 +3,7 @@ import { LeadsProcessor } from '@/lib/whatsapp/services/leadsProcessor';
 
 export async function POST(request: Request) {
     try {
-        const { pageId, formId, pageAccessToken, cursor, companyId, templateName = 'menu_inicial' } = await request.json();
+        const { pageId, formId, pageAccessToken, cursor, companyId, templateName = 'menu_inicial', templateLanguage } = await request.json();
 
         if (!formId || !pageAccessToken || !companyId) {
             return NextResponse.json(
@@ -18,7 +18,8 @@ export async function POST(request: Request) {
             formId,
             cursor,
             companyId,
-            templateName
+            templateName,
+            templateLanguage
         );
         return NextResponse.json({
             success: result.success,

@@ -91,7 +91,8 @@ export class LeadsProcessor {
     static async processLeadsAndSendTemplates(
         leads: Lead[],
         companyId: string,
-        templateName: string = 'menu_inicial'
+        templateName: string = 'menu_inicial',
+        templateLanguage?: string
     ): Promise<{
         success: boolean;
         processed: number;
@@ -143,12 +144,12 @@ export class LeadsProcessor {
                                     phone_number_id: company.phone_number_id,
                                     whatsapp_access_token: company.whatsapp_access_token
                                 },
-                                templateName
+                                templateName,
+                                languageCode: templateLanguage || 'en'
                             });
 
                             results.sent++;
 
-                            // Registrar en base de datos que se envió
                             await this.registerLeadMessage(lead.id, phoneNumber, companyId, templateName);
 
                         } catch (error) {
@@ -204,7 +205,8 @@ export class LeadsProcessor {
         formId: string,
         cursor: string,
         companyId: string,
-        templateName?: string
+        templateName?: string,
+        templateLanguage?: string
     ): Promise<{
         success: boolean;
         processed: number;
@@ -247,8 +249,14 @@ export class LeadsProcessor {
                 };
             }
 
-            return await this.processLeadsAndSendTemplates(leads, companyId, templateName);
-
+            // Aquí (cuando tengas los leads listos):
+            const processed = await this.processLeadsAndSendTemplates(
+                leads,
+                companyId,
+                templateName || 'menu_inicial',
+                templateLanguage
+            );
+            return processed;
         } catch (error) {
             console.error('Error en fetchAndProcessLeads:', error);
             return {
