@@ -59,50 +59,54 @@ export default function ConversationList({ companyId, onSelectAction }: Props) {
     }, []);
 
     return (
-        <div className="space-y-4 p-4">
-            <h2 className="text-xl font-semibold mb-4">Chats</h2>
-            {conversations.length === 0 && (
-                <p className="text-gray-500">No hay chats disponibles.</p>
-            )}
-            {conversations.map(({ phone, name, avatar_url, lastMessage, updated_at }) => (
-                <div
-                    key={phone}
-                    onClick={() => onSelectAction({ phone, companyId })}
-                    className="flex items-center gap-3 bg-white p-3 rounded-lg shadow hover:bg-gray-100 transition cursor-pointer"
-                >
-                    {/* Avatar */}
-                    <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                        {avatar_url ? (
-                            <img
-                                src={avatar_url}
-                                alt={name}
-                                className="h-full w-full object-cover"
-                            />
-                        ) : (
-                            <span className="text-gray-600 font-bold text-lg">
-                                {name.charAt(0).toUpperCase()}
-                            </span>
-                        )}
-                    </div>
+        <div className="h-full flex flex-col">
+             <div className="p-4 border-b">
+                 <h2 className="text-xl font-semibold">Chats</h2>
+             </div>
+            <div className="flex-1 p-4 space-y-4">
+                 {conversations.length === 0 && (
+                     <p className="text-gray-500">No hay chats disponibles.</p>
+                 )}
+                 {conversations.map(({ phone, name, avatar_url, lastMessage, updated_at }) => (
+                     <div
+                         key={phone}
+                         onClick={() => onSelectAction({ phone, companyId })}
+                         className="flex items-center gap-3 bg-white p-3 rounded-lg shadow hover:bg-gray-100 transition cursor-pointer"
+                     >
+                         {/* Avatar */}
+                         <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                             {avatar_url ? (
+                                 <img
+                                     src={avatar_url}
+                                     alt={name}
+                                     className="h-full w-full object-cover"
+                                 />
+                             ) : (
+                                 <span className="text-gray-600 font-bold text-lg">
+                                     {name.charAt(0).toUpperCase()}
+                                 </span>
+                             )}
+                         </div>
 
-                    {/* Información del chat */}
-                    <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-semibold text-sm text-gray-900 truncate">{name}</h3>
-                            <span className="text-xs text-gray-400">
-                                {new Date(updated_at).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                            </span>
-                        </div>
-                        <p className="text-gray-600 text-sm truncate">
-                            {lastMessage?.content ? lastMessage.content.slice(0, 80) + '…' : 'No hay mensajes'}
-                        </p>
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
+                         {/* Información del chat */}
+                         <div className="flex-1 min-w-0">
+                             <div className="flex justify-between items-center">
+                                 <h3 className="font-semibold text-sm text-gray-900 truncate">{name}</h3>
+                                 <span className="text-xs text-gray-400">
+                                     {new Date(updated_at).toLocaleTimeString([], {
+                                         hour: '2-digit',
+                                         minute: '2-digit',
+                                     })}
+                                 </span>
+                             </div>
+                             <p className="text-gray-600 text-sm truncate">
+                                 {lastMessage?.content ? lastMessage.content.slice(0, 80) + '…' : 'No hay mensajes'}
+                             </p>
+                         </div>
+                     </div>
+                 ))}
+             </div>
+         </div>
+     );
 
 }

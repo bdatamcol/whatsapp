@@ -53,30 +53,30 @@ export default function WhatsAppPanel() {
     }
 
     return (
-        <div className="flex h-full">
-            {/* Lista de chats */}
-            <aside className="w-[40%] border-r bg-white overflow-y-auto">
-                <ConversationList
-                    companyId={companyIdActual}
-                    onSelectAction={({ phone }) =>
-                        setSelectedContact({ phone, companyId: companyIdActual })
-                    }
-                />
-            </aside>
+        <div className="flex h-screen">
+             {/* Lista de chats */}
+            <aside className="w-[40%] h-full border-r bg-white overflow-y-auto">
+                 <ConversationList
+                     companyId={companyIdActual}
+                     onSelectAction={({ phone }) =>
+                         setSelectedContact({ phone, companyId: companyIdActual })
+                     }
+                 />
+             </aside>
 
-            {/* Vista del chat */}
-            <main className="flex-1 bg-gray-50 overflow-y-auto">
-                {selectedContact ? (
-                    <ChatView
-                        contactId={selectedContact.phone}
-                        companyId={selectedContact.companyId}
-                    />
-                ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400">
-                        Selecciona un chat para empezar
-                    </div>
-                )}
-            </main>
-        </div>
-    );
+             {/* Vista del chat */}
+            <main className="flex-1 bg-gray-50 overflow-hidden">
+                 {selectedContact ? (
+                     <ChatView
+                         contactId={selectedContact.phone}
+                         companyId={selectedContact.companyId}
+                     />
+                 ) : (
+                     <div className="h-full flex items-center justify-center text-gray-400">
+                         Selecciona un chat para empezar
+                     </div>
+                 )}
+             </main>
+         </div>
+     );
 }

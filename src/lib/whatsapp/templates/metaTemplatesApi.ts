@@ -6,17 +6,63 @@
 export type TemplateCategory = "MARKETING" | "UTILITY" | "AUTHENTICATION";
 export type ParameterFormat = "POSITIONAL" | "NAMED";
 
+export interface CreateTemplateHeaderComponent {
+  type: "HEADER";
+  format: "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+  // Para formato TEXT
+  text?: string;
+  // Para medios o para ejemplos de header text
+  example?: any; // Meta usa estructuras "example" específicas; lo dejamos flexible para no romper compatibilidad
+}
+
 export interface CreateTemplateBodyComponent {
   type: "BODY";
   text: string;
+  // Opcional: ejemplos de variables si lo necesitas
+  example?: any;
 }
+
+export interface CreateTemplateFooterComponent {
+  type: "FOOTER";
+  text: string;
+}
+
+export interface QuickReplyButton {
+  type: "QUICK_REPLY";
+  text: string;
+}
+
+export interface UrlButton {
+  type: "URL";
+  text: string;
+  url: string; // URL con o sin parámetros
+}
+
+export interface PhoneButton {
+  type: "PHONE_NUMBER";
+  text: string;
+  phone_number: string; // E164, ej: +573001112233
+}
+
+export type CreateTemplateButton = QuickReplyButton | UrlButton | PhoneButton;
+
+export interface CreateTemplateButtonsComponent {
+  type: "BUTTONS";
+  buttons: CreateTemplateButton[];
+}
+
+export type CreateTemplateComponent =
+  | CreateTemplateHeaderComponent
+  | CreateTemplateBodyComponent
+  | CreateTemplateFooterComponent
+  | CreateTemplateButtonsComponent;
 
 export interface CreateTemplatePayload {
   name: string;
   category: TemplateCategory;
   language: string;
   parameter_format?: ParameterFormat;
-  components: CreateTemplateBodyComponent[];
+  components: CreateTemplateComponent[];
 }
 
 export interface TemplateItem {

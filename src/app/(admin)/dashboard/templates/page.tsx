@@ -3,6 +3,7 @@
 import TemplateForm from "@/app/components/templates/TemplateForm";
 import TemplateList from "@/app/components/templates/TemplateList";
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from '@/lib/supabase/client.supabase';
 
 type Company = {
   id: string;
@@ -28,15 +29,39 @@ export default function AdminTemplatesPage() {
     setLoadingCompanies(true);
     setError(null);
     try {
-      const res = await fetch("/api/companies/list");
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "Error cargando empresas");
-      setCompanies(json.data || []);
-      if (json.data?.length && !companyId) {
-        setCompanyId(json.data[0].id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuario no autenticado');
       }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!profile?.company_id) {
+        throw new Error('No estás asociado a ninguna empresa');
+      }
+
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('id, name, waba_id, phone_number_id')
+        .eq('id', profile.company_id)
+        .maybeSingle();
+
+      if (companyError) throw companyError;
+      if (!company) {
+        throw new Error('Empresa no encontrada');
+      }
+
+      setCompanies([company]);
+      setCompanyId(company.id);
     } catch (err: any) {
       setError(err.message || "Error");
+      setCompanies([]);
+      setCompanyId('');
     } finally {
       setLoadingCompanies(false);
     }
@@ -81,7 +106,7 @@ export default function AdminTemplatesPage() {
               <select
                 value={companyId}
                 onChange={(e) => setCompanyId(e.target.value)}
-                className="w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-dark-500"
                 disabled={loadingCompanies}
               >
                 {companies.map((c) => (
@@ -91,24 +116,18 @@ export default function AdminTemplatesPage() {
                 ))}
               </select>
               <button
-                className="rounded-md bg-gray-100 hover:bg-gray-200 px-3 py-2 text-sm"
+                className="rounded-md bg-black hover:bg-black/80 text-white px-3 py-2 text-sm"
                 onClick={loadCompanies}
                 disabled={loadingCompanies}
               >
                 {loadingCompanies ? "..." : "Actualizar"}
               </button>
             </div>
-            {selectedCompany ? (
-              <div className="text-xs text-gray-600">
-                <div><span className="font-semibold">WABA:</span> {selectedCompany.waba_id || "—"}</div>
-                <div><span className="font-semibold">Phone Number ID:</span> {selectedCompany.phone_number_id || "—"}</div>
-              </div>
-            ) : null}
           </div>
 
           <div className="flex items-end gap-2">
             <button
-              className="rounded-md bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm"
+              className="rounded-md bg-black hover:bg-black/80 text-white px-3 py-2 text-sm"
               onClick={() => loadTemplates()}
               disabled={loadingTemplates || !companyId}
             >

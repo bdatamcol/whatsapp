@@ -41,7 +41,7 @@ export default function TemplateList({ templates, loading, onRefresh }: Props) {
         <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">{templates.length} plantillas</div>
-                <button className="text-indigo-600 hover:underline text-sm" onClick={onRefresh}>Refrescar</button>
+                <button className="text-dark-600 hover:underline text-sm" onClick={onRefresh}>Refrescar</button>
             </div>
             <div className="grid gap-3 sm:grid-cols-1">
                 {templates.map((tpl: any) => (
