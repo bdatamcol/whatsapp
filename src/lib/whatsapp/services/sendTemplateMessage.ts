@@ -43,6 +43,7 @@ export async function sendTemplateMessage({
     to,
     company,
     templateName = 'menu_inicial',
+    languageCode = 'en',
 }: {
     to: string;
     company: {
@@ -50,6 +51,7 @@ export async function sendTemplateMessage({
         whatsapp_access_token: string;
     };
     templateName?: string;
+    languageCode?: string;
 }) {
     // Descifrar datos si están cifrados
     let phone_number_id = company.phone_number_id;
@@ -83,7 +85,7 @@ export async function sendTemplateMessage({
             type: 'template',
             template: {
                 name: templateName,
-                language: { code: 'en' }, // puedes hacerlo dinámico si quieres después
+                language: { code: languageCode }, // ahora dinámico
             },
         }),
     });

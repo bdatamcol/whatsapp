@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { Building2, Plus, Trash2, RefreshCw, CheckCircle2, Users, Eye, RotateCcw } from 'lucide-react';
+import { Building2, Plus, RefreshCw, CheckCircle2, Users, Eye, RotateCcw, X } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import RegisterCompanyForm from './RegisterCompanyForm';
 import { toast } from 'sonner';
@@ -276,26 +276,36 @@ const handleDeleteCompany = async (companyId: string) => {
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="cursor-pointer text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                              onClick={() => handleViewCompanyDetails(company)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`cursor-pointer ${
-                                company.is_active 
-                                  ? 'text-red-500 hover:text-red-700 hover:bg-red-50' 
-                                  : 'text-green-500 hover:text-green-700 hover:bg-green-50'
-                              }`}
-                              onClick={() => handleDeleteCompany(company.id)}
-                            >
-                              {company.is_active ? <Trash2 className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                            </Button>
+                            <div className="relative group">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="cursor-pointer text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={() => handleViewCompanyDetails(company)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <div className="absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded px-2 py-1 -top-8 left-1/2 transform -translate-x-1/2">
+                                Ver
+                              </div>
+                            </div>
+                            <div className="relative group">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`cursor-pointer ${
+                                  company.is_active 
+                                    ? 'text-red-500 hover:text-red-700 hover:bg-red-50' 
+                                    : 'text-green-500 hover:text-green-700 hover:bg-green-50'
+                                }`}
+                                onClick={() => handleDeleteCompany(company.id)}
+                              >
+                                {company.is_active ? <X className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                              </Button>
+                              <div className="absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded px-2 py-1 -top-8 left-1/2 transform -translate-x-1/2">
+                                {company.is_active ? 'Desactivar' : 'Activar'}
+                              </div>
+                            </div>
                           </div>
                         </td>
                       </tr>

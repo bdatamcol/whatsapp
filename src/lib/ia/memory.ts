@@ -1,27 +1,42 @@
 import { supabase } from '../supabase/server.supabase';
-import { getCompanyByPhoneNumberId } from '../whatsapp/helpers/getCompanyByPhoneNumberId';
 
-// Consulta una conversación específica por teléfono y empresa
-export async function getConversation(phone: string, companyId: string) {
+// Agregar tipo para incluir thread_id
+interface ConversationData {
+    messages: any[];
+    thread_id?: string;
+}
+
+export async function getConversation(phone: string, companyId: string): Promise<any[]> {
     const { data, error } = await supabase
         .from("conversations")
-        .select("messages")
+        .select("messages, thread_id")
         .eq("phone", phone)
         .eq("company_id", companyId)
         .maybeSingle();
 
     if (error) {
-        // Error handled silently
+        console.error("Error getting conversation:", error);
     }
 
     return data?.messages || [];
 }
 
-// Crea o actualiza una conversación asociada a un número y empresa
+export async function getThreadId(phone: string, companyId: string): Promise<string | null> {
+    const { data } = await supabase
+        .from("conversations")
+        .select("thread_id")
+        .eq("phone", phone)
+        .eq("company_id", companyId)
+        .maybeSingle();
+    
+    return data?.thread_id || null;
+}
+
 export async function updateConversation(
     phone: string,
     messages: any[],
-    company: { id: string }
+    company: { id: string },
+    threadId?: string
 ) {
     // Paso 1: asegurarse de que el contacto existe para esta empresa
     const { data: contact, error: contactError } = await supabase
@@ -49,21 +64,24 @@ export async function updateConversation(
     }
 
     // Paso 3: actualizar o insertar la conversación
+    const updateData: any = {
+        phone,
+        messages,
+        company_id: company.id,
+        updated_at: new Date().toISOString()
+    };
+
+    if (threadId) {
+        updateData.thread_id = threadId;
+    }
+
     const { error: upsertError } = await supabase
         .from("conversations")
-        .upsert(
-            {
-                phone,
-                messages,
-                company_id: company.id,
-                updated_at: new Date().toISOString(),
-            },
-            {
-                onConflict: "phone,company_id", // clave compuesta
-            }
-        );
+        .upsert(updateData, {
+            onConflict: "phone,company_id"
+        });
 
     if (upsertError) {
-        // Error handled silently
+        console.error("Error updating conversation:", upsertError);
     }
 }
