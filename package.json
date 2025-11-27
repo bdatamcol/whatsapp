@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@openai/agents": "^0.1.9",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-collapsible": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -36,7 +37,7 @@
     "next-themes": "^0.4.6",
     "nodemailer": "^7.0.5",
     "npm": "11.3.0",
-    "openai": "^5.19.1",
+    "openai": "^5.23.2",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",
     "react": "^18.2.0",

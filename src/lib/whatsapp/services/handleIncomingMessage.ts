@@ -3,6 +3,7 @@ import { getAllCitiesCached } from '@/lib/utils/cityCache';
 import { findCityIdInText } from '@/lib/utils/cityMatcher';
 import { getConversation, updateConversation } from '@/lib/ia/memory';
 import IAService from '@/lib/ia/IAService';
+import { CreditBotService } from '@/lib/ia/CreditBotService';
 import { sendTemplateMessage } from './sendTemplateMessage';
 import { needsHumanAgent } from '@/lib/utils/humanDetector';
 import { upsertContact } from './contacts';
@@ -103,7 +104,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         ];
 
         // Actualizar conversación y responder al cliente
-        await updateConversation(from, updatedMessages,company);
+        await updateConversation(from, updatedMessages, company);
         await sendMessageToWhatsApp({
             to: from,
             message: 'Gracias por tu mensaje. En breve un asesor humano se pondrá en contacto contigo.',
@@ -185,8 +186,17 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         { id: message.id, role: 'user', content: enrichedPrompt, timestamp },
     ];
 
-    const iaResponse = await IAService.askSmart(from, enrichedPrompt, company);
-    // const messageId = await sendMessageToWhatsApp(from, phoneNumberId, iaResponse);
+    // Usar el bot de créditos con creación automática del Assistant
+    let iaResponse: string;
+
+    try {
+        iaResponse = await CreditBotService.askCreditBot(from, enrichedPrompt, company);
+    } catch (error: any) {
+        console.error('Error en el servicio de IA:', error);
+        // Fallback a un mensaje de error amigable
+        iaResponse = 'Lo siento, estoy experimentando dificultades técnicas. Por favor, intenta de nuevo en unos momentos.';
+    }
+
     const messageId = await sendMessageToWhatsApp(
         {
             to: from,
