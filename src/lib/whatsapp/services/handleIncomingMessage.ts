@@ -53,11 +53,28 @@ async function getContactStatus(phone: string, companyId: string): Promise<'new'
 
 // --- Función principal ---
 export const handleIncomingMessage = async (message: any, metadata: IncomingMetadata) => {
+    console.log('[HANDLE] Iniciando procesamiento de mensaje:', message.id);
+    
     const type = message.type;
     const from = message.from;
     const text = message.text?.body || '';
     const phoneNumberId = metadata.metadata.phone_number_id;
-    const company = await getCompanyByPhoneNumberId(phoneNumberId);
+    
+    console.log(`[HANDLE] Datos recibidos: From=${from}, PhoneID=${phoneNumberId}, Type=${type}`);
+
+    let company;
+    try {
+        company = await getCompanyByPhoneNumberId(phoneNumberId);
+        if (!company) {
+             console.error(`[HANDLE] ERROR: No se encontró empresa para PhoneID=${phoneNumberId}`);
+             return;
+        }
+        console.log(`[HANDLE] Empresa encontrada: ID=${company.id}`);
+    } catch (error) {
+        console.error('[HANDLE] Error buscando empresa:', error);
+        return;
+    }
+
     const name = metadata.contacts?.[0]?.profile?.name || 'Desconocido';
     const timestamp = message.timestamp ? new Date(message.timestamp * 1000).toISOString() : new Date().toISOString();
 
