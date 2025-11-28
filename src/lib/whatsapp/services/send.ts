@@ -87,6 +87,10 @@ export async function sendMessageToWhatsApp({
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || 'Error enviando mensaje');
+    console.log('[DEBUG] Meta API Response:', JSON.stringify(data, null, 2));
+    if (!res.ok) {
+        console.error('[DEBUG] Meta API Error Details:', data);
+        throw new Error(data?.error?.message || 'Error enviando mensaje');
+    }
     return data.messages?.[0]?.id || crypto.randomUUID();
 }

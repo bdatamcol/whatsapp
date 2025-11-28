@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
 
 
   processWebhookRequest(requestClone as NextRequest).catch(error => {
+    console.error('[WEBHOOK-ERROR] Error processing webhook:', error);
     processingMessageIds.delete(messageId);
   });
 
