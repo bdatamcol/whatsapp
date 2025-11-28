@@ -309,8 +309,9 @@ export class CreditBotService {
                 if (['queued', 'in_progress', 'requires_action'].includes(run.status)) {
                     console.warn(`Cancelando run activo ${run.id} para el hilo ${threadId}.`);
                     try {
-                        // La API espera: cancel(runId, { thread_id: threadId })
-                        await openai.beta.threads.runs.cancel(run.id, { thread_id: threadId });
+                        // La API espera: cancel(threadId, runId)
+                        // @ts-ignore
+                        await openai.beta.threads.runs.cancel(threadId, run.id);
                         // Esperar un momento para que se complete la cancelación
                         await new Promise(resolve => setTimeout(resolve, 500));
                         console.log(`✅ Run ${run.id} cancelado exitosamente`);
@@ -383,6 +384,12 @@ export class CreditBotService {
                     runId = event.data.id;
                 }
 
+                // Detectar fallo
+                if (event?.event === "thread.run.failed") {
+                    console.error("❌ Run falló:", event.data);
+                    throw new Error(event.data.last_error?.message || "Error en la generación de respuesta");
+                }
+
                 // Texto que llega de a pedacitos
                 if (
                     event?.event === "thread.message.delta" &&
@@ -420,7 +427,6 @@ export class CreditBotService {
 
                     // Enviar los resultados de las funciones
                     if (toolOutputs.length > 0) {
-                        // La API espera: submitToolOutputs(runId, { thread_id, tool_outputs, stream })
                         const submitStream = await openai.beta.threads.runs.submitToolOutputs(
                             currentRunId,
                             {
@@ -430,8 +436,12 @@ export class CreditBotService {
                             }
                         );
 
-                        // Procesar la respuesta después de ejecutar las funciones
                         for await (const submitEvent of submitStream as any) {
+                            if (submitEvent?.event === "thread.run.failed") {
+                                console.error("❌ Run falló durante submitToolOutputs:", submitEvent.data);
+                                throw new Error(submitEvent.data.last_error?.message || "Error tras ejecutar función");
+                            }
+
                             if (
                                 submitEvent?.event === "thread.message.delta" &&
                                 Array.isArray(submitEvent?.data?.delta?.content)
@@ -447,24 +457,30 @@ export class CreditBotService {
                 }
             }
 
-        } catch (error: any) {
-            console.error("Stream error/fallback:", error.message);
-            throw error;
-        }
-
-        // 8. Guardar respuesta del bot en la base de datos
-        const finalHistory = [
-            ...updatedHistory,
-            {
-                id: `assistant-${Date.now()}`,
-                role: 'assistant',
-                content: responseText,
-                timestamp: new Date().toISOString(),
+            if (!responseText) {
+                 console.warn("⚠️ Respuesta vacía del bot. Enviando mensaje genérico.");
+                 responseText = "Lo siento, tuve un problema procesando tu solicitud. ¿Podrías intentarlo de nuevo?";
             }
-        ];
 
-        await updateConversation(phone, finalHistory, company);
+            // 8. Guardar respuesta del bot en la base de datos
+            const finalHistory = [
+                ...updatedHistory,
+                {
+                    id: `assistant-${Date.now()}`,
+                    role: 'assistant',
+                    content: responseText,
+                    timestamp: new Date().toISOString(),
+                }
+            ];
 
-        return responseText || "Lo siento, no pude procesar tu solicitud en este momento.";
+            await updateConversation(phone, finalHistory, company);
+
+            return responseText;
+
+        } catch (error: any) {
+            console.error("Error en askCreditBot:", error);
+            // Retornar mensaje de error amigable
+            return "Lo siento, estoy experimentando dificultades técnicas. Por favor intenta de nuevo en unos momentos.";
+        }
     }
 }
