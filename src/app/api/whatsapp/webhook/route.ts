@@ -4,6 +4,8 @@ import { processWebhookRequest } from '@/lib/whatsapp/services/webhookDispatcher
 
 const mySecretToken = process.env.VERYFY_WEBHOOK_SECRET;
 
+const processingMessageIds = new Set<string>();
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('hub.mode');
@@ -21,10 +23,37 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const requestClone = request.clone();
+  let body: any;
+
   try {
-    return await processWebhookRequest(request);
-  } catch (error) {
-    console.error('Error en el webhook:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    body = await request.json();
+  } catch (e) {
+    console.error("Error parsing webhook body:", e);
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
+
+  const messageId = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
+
+  if (!messageId) {
+    return NextResponse.json('OK (Not a message)', { status: 200 });
+  }
+
+  if (processingMessageIds.has(messageId)) {
+    console.log(`Webhook duplicado ignorado: ${messageId}`);
+    return NextResponse.json('OK (Duplicate)', { status: 200 });
+  }
+
+  processingMessageIds.add(messageId);
+
+  setTimeout(() => {
+    processingMessageIds.delete(messageId);
+  }, 120 * 1000);
+
+
+  processWebhookRequest(requestClone as NextRequest).catch(error => {
+    processingMessageIds.delete(messageId);
+  });
+
+  return NextResponse.json('OK (Processing)', { status: 200 });
 }

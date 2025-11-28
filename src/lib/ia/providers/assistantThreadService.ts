@@ -57,6 +57,27 @@ export class AssistantThreadService {
         // 1) Obtener o crear thread
         const threadId = await this.getOrCreateThread(phone, companyId);
 
+        // ---
+        // PASO 1.5: CANCELAR RUNS ANTERIORES (¡NUEVO!)
+        // ---
+        try {
+            // Listamos los runs activos de este hilo
+            const runs = await openai.beta.threads.runs.list(threadId, {
+                limit: 1, // Solo nos interesa el último
+            });
+            const lastRun = runs.data[0];
+
+            // Comprobamos si el último run sigue activo
+            if (lastRun && ['queued', 'in_progress', 'requires_action'].includes(lastRun.status)) {
+                console.warn(`Cancelando run activo ${lastRun.id} para el hilo ${threadId}.`);
+                // Cancelamos el run anterior para desbloquear el hilo
+                //@ts-ignore
+                await openai.beta.threads.runs.cancel(threadId, lastRun.id);
+            }
+        } catch (e: any) {
+            console.error("Error al cancelar run anterior:", e.message);
+        }
+
         // 2) Agregar mensaje del usuario al hilo
         await openai.beta.threads.messages.create(threadId, {
             role: "user",
@@ -103,15 +124,16 @@ export class AssistantThreadService {
                 order: "desc", // asegura el más reciente primero
                 limit: 10,
             });
-            const assistantMsg = msgs.data.find((m: any) => m.role === "assistant");
+            const assistantMsg = msgs.data.find((m) => m.role === "assistant");
 
             if (assistantMsg?.content?.length) {
-                const textPart = assistantMsg.content.find((c: any) => c.type === "text");
-                console.log("textPart", textPart);
-                responseText = textPart.type ?? "";
+                const textPart = assistantMsg.content.find((contentBlock) => contentBlock.type === "text");
+                if (textPart && textPart.type === 'text') {
+                    responseText = textPart.text.value ?? "";
+                }
             }
         }
 
-        return responseText || "⚠ No hubo respuesta de texto";
+        return responseText || "No hubo respuesta de texto";
     }
 }
