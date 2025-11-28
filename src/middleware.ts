@@ -11,6 +11,9 @@ export async function middleware(request: NextRequest) {
         '/_next/webpack-hmr',
         '/api/auth',
         '/api/health',
+        '/api/whatsapp/webhook', // Permitir webhook de Meta
+        '/api/whatsapp/process-leads', // Permitir procesamiento de leads externo
+        '/api/leads', // Permitir consulta de leads externa (si se usa proxy)
     ];
 
     const isPublicRoute = publicRoutes.some(route =>
@@ -57,7 +60,7 @@ export async function middleware(request: NextRequest) {
                     // ACTUALIZAR la variable user con el nuevo usuario
                     user = data.session.user;
                     token = data.session.access_token;
-                    
+
                     // Actualizar cookies con nuevos tokens
                     const newResponse = NextResponse.next();
                     newResponse.cookies.set('sb-access-token', data.session.access_token, {
@@ -112,7 +115,7 @@ export async function middleware(request: NextRequest) {
                     }
 
                     return newResponse;
-                    
+
                 } catch (refreshError) {
                     const response = NextResponse.redirect(new URL('/login', request.url));
                     response.cookies.delete('sb-access-token');
