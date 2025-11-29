@@ -51,10 +51,13 @@ export async function POST(request: NextRequest) {
   }, 120 * 1000);
 
 
-  processWebhookRequest(requestClone as NextRequest).catch(error => {
+  try {
+    await processWebhookRequest(requestClone as NextRequest);
+  } catch (error) {
     console.error('[WEBHOOK-ERROR] Error processing webhook:', error);
+  } finally {
     processingMessageIds.delete(messageId);
-  });
+  }
 
-  return NextResponse.json('OK (Processing)', { status: 200 });
+  return NextResponse.json('OK (Processed)', { status: 200 });
 }
