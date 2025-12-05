@@ -5,10 +5,10 @@ import { MessengerAccountsService } from "@/lib/messenger/accounts";
 export async function GET(request: NextRequest) {
   try {
     const pages = [];
-    
+
     // Buscar tokens de Facebook configurados
     const pageTokens = [];
-    
+
     // Buscar tokens específicos por página
     const pageSpecificTokens = Object.keys(process.env)
       .filter(key => key.startsWith('FACEBOOK_PAGE_TOKEN_'))
@@ -18,20 +18,20 @@ export async function GET(request: NextRequest) {
         return { pageId, token };
       })
       .filter(page => page.token && page.token !== 'TU_TOKEN_AQUI');
-    
+
     pageTokens.push(...pageSpecificTokens);
-    
+
     // Si hay un token general de página, intentar obtener páginas asociadas
     const generalPageToken = process.env.FACEBOOK_PAGE_TOKEN;
     const generalAccessToken = process.env.FACEBOOK_ACCESS_TOKEN;
-    
+
     if (generalPageToken && generalPageToken !== 'TU_TOKEN_AQUI') {
       // Intentar obtener información de la página usando el token general
       try {
         const pageInfoResponse = await fetch(
-          `https://graph.facebook.com/v18.0/me?access_token=${generalPageToken}`
+          `https://graph.facebook.com/${process.env.META_API_VERSION}/me?access_token=${generalPageToken}`
         );
-        
+
         if (pageInfoResponse.ok) {
           const pageInfo = await pageInfoResponse.json();
           if (pageInfo.id) {
@@ -48,12 +48,12 @@ export async function GET(request: NextRequest) {
       try {
         // Intentar obtener información de la página desde Facebook
         let pageName = `Página ${pageId.slice(-4)}`; // Nombre por defecto
-        
+
         try {
           const pageInfoResponse = await fetch(
-            `https://graph.facebook.com/v18.0/${pageId}?fields=name,category&access_token=${token}`
+            `https://graph.facebook.com/${process.env.META_API_VERSION}/${pageId}?fields=name,category&access_token=${token}`
           );
-          
+
           if (pageInfoResponse.ok) {
             const pageInfo = await pageInfoResponse.json();
             if (pageInfo.name) {
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     // Si no hay páginas configuradas, agregar páginas de ejemplo
     if (pages.length === 0) {
       const examplePages = ['102342781636477', '987654321098765'];
-      
+
       for (const pageId of examplePages) {
         const stats = MessengerAccountsService.getPageStats(pageId);
         pages.push({
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       pages,
       total: pages.length
     });

@@ -13,7 +13,7 @@ export interface TokenVerificationResult {
 }
 
 export class CompanyMessengerTokenService {
-    
+
     private static getEnvPageToken(pageId: string): string | null {
         const envKey = `FACEBOOK_PAGE_TOKEN_${pageId}`;
         return process.env[envKey] || process.env.FACEBOOK_PAGE_TOKEN || null;
@@ -26,11 +26,11 @@ export class CompanyMessengerTokenService {
             const envToken = this.getEnvPageToken(pageId);
             if (envToken) {
                 // Verificar que este token pertenece a la página solicitada
-                const version = process.env.META_API_VERSION || 'v18.0';
+                const version = process.env.META_API_VERSION;
                 const debugResponse = await fetch(
                     `https://graph.facebook.com/${version}/debug_token?input_token=${envToken}&access_token=${envToken}`
                 );
-                
+
                 if (debugResponse.ok) {
                     const debugData = await debugResponse.json();
                     if (debugData.data?.profile_id === pageId) {
@@ -41,18 +41,18 @@ export class CompanyMessengerTokenService {
 
             // Fallback a la configuración de la empresa
             const config = await getCompanyFacebookConfig(companyId);
-            
+
             if (!config.facebook_access_token) {
                 throw new Error('La empresa no tiene configuración de Facebook');
             }
 
             // Obtener todas las páginas de la empresa
-            const version = process.env.META_API_VERSION || 'v18.0';
+            const version = process.env.META_API_VERSION;
             const url = `https://graph.facebook.com/${version}/me/accounts?fields=id,access_token&access_token=${config.facebook_access_token}`;
-            
+
             const response = await fetch(url);
             const data = await response.json();
-            
+
             if (!response.ok || data.error) {
                 throw new Error(data.error?.message || 'Error al obtener páginas');
             }
@@ -60,7 +60,7 @@ export class CompanyMessengerTokenService {
             // Buscar el token para la página específica
             const page = data.data?.find((p: any) => p.id === pageId);
             return page?.access_token || null;
-            
+
         } catch (error) {
             console.error('Error obteniendo token de página:', error);
             return null;
@@ -71,7 +71,7 @@ export class CompanyMessengerTokenService {
     static async verifyPageToken(companyId: string, pageId: string): Promise<TokenVerificationResult> {
         try {
             const accessToken = await this.getPageAccessToken(companyId, pageId);
-            
+
             if (!accessToken) {
                 return {
                     success: false,
@@ -88,13 +88,13 @@ export class CompanyMessengerTokenService {
             }
 
             // Verificar el token con Facebook Graph API
-            const version = process.env.META_API_VERSION || 'v18.0';
+            const version = process.env.META_API_VERSION;
             const response = await fetch(`https://graph.facebook.com/${version}/${pageId}?fields=name&access_token=${accessToken}`);
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error('Error verificando token:', errorData);
-                
+
                 return {
                     success: false,
                     canSendMessages: false,
@@ -127,7 +127,7 @@ export class CompanyMessengerTokenService {
             const canSendMessages = missingPermissions.length === 0;
 
             let recommendations = [];
-            
+
             if (canSendMessages) {
                 recommendations = [
                     '✅ El token está correctamente configurado',

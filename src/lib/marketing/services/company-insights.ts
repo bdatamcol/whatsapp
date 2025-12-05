@@ -31,7 +31,7 @@ export async function getCompanyFacebookInsights(
         throw new Error('La empresa no tiene configuración de Facebook completa');
     }
 
-    const version = process.env.META_API_VERSION || 'v23.0';
+    const version = process.env.META_API_VERSION;
     const baseUrl = `https://graph.facebook.com/${version}/act_${config.facebook_ad_account_id}/insights`;
 
     const params = new URLSearchParams({
@@ -46,7 +46,7 @@ export async function getCompanyFacebookInsights(
         const accountResponse = await fetch(accountUrl);
         if (!accountResponse.ok) throw new Error('Error al obtener moneda de la empresa');
         const { currency: fromCurrency } = await accountResponse.json();
-    
+
         // Usar fechas proporcionadas o default a último mes
         const now = new Date();
         let since = optSince;
@@ -60,17 +60,17 @@ export async function getCompanyFacebookInsights(
             until = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
         }
         params.append('time_range', JSON.stringify({ since, until }));
-    
+
         const url = `${baseUrl}?${params.toString()}`;
         const response = await fetch(url);
         const raw = await response.json();
-    
+
         if (!response.ok || raw.error) {
             throw new Error(raw.error?.message || 'Error al obtener gasto total de la empresa');
         }
-    
+
         const totalSpend = raw.data?.[0]?.spend || '0';
-    
+
         return {
             totalSpend: parseFloat(totalSpend),
             currency: 'COP',

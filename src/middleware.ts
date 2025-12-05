@@ -12,8 +12,7 @@ export async function middleware(request: NextRequest) {
         '/api/auth',
         '/api/health',
         '/api/whatsapp/webhook', // Permitir webhook de Meta
-        '/api/whatsapp/process-leads', // Permitir procesamiento de leads externo
-        '/api/leads', // Permitir consulta de leads externa (si se usa proxy)
+        '/api/public', // Endpoints públicos para clientes externos
     ];
 
     const isPublicRoute = publicRoutes.some(route =>
