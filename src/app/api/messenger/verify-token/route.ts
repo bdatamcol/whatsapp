@@ -8,13 +8,13 @@ export async function GET(request: NextRequest) {
     const pageId = searchParams.get('pageId');
 
     if (!pageId) {
-      return NextResponse.json({ 
-        error: 'pageId es requerido' 
+      return NextResponse.json({
+        error: 'pageId es requerido'
       }, { status: 400 });
     }
 
     const accessToken = MessengerAccountsService.getPageAccessToken(pageId);
-    
+
     if (!accessToken) {
       return NextResponse.json({
         success: false,
@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar el token con Facebook Graph API
-    const response = await fetch(`https://graph.facebook.com/v18.0/${pageId}?fields=name,access_token&access_token=${accessToken}`);
-    
+    const response = await fetch(`https://graph.facebook.com/${process.env.META_API_VERSION}/${pageId}?fields=name,access_token&access_token=${accessToken}`);
+
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Error verificando token:', errorData);
-      
+
       return NextResponse.json({
         success: false,
         canSendMessages: false,
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permisos específicos
-    const permissionsResponse = await fetch(`https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`);
+    const permissionsResponse = await fetch(`https://graph.facebook.com/${process.env.META_API_VERSION}/me/permissions?access_token=${accessToken}`);
     const permissionsData = await permissionsResponse.json();
 
     const requiredPermissions = [
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     const canSendMessages = missingPermissions.length === 0;
 
     let recommendations = [];
-    
+
     if (canSendMessages) {
       recommendations = [
         '✅ El token está correctamente configurado',

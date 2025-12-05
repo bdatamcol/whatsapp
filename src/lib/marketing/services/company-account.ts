@@ -32,38 +32,38 @@ export async function getCompanyFacebookAccount(companyId: string): Promise<{
 }> {
     // Obtener configuración de Facebook de la empresa
     const config = await getCompanyFacebookConfig(companyId);
-    
+
     if (!config.facebook_access_token) {
         throw new Error('La empresa no tiene configuración de Facebook');
     }
-    
-    const version = process.env.META_API_VERSION || 'v17.0';
+
+    const version = process.env.META_API_VERSION;
     const url = `https://graph.facebook.com/${version}/me?fields=id,name,picture&access_token=${config.facebook_access_token}`;
-    
+
     const response = await fetch(url);
     const data = await response.json();
-    
+
     if (!response.ok || data.error) {
         throw new Error(data.error?.message || 'Error al obtener cuenta de Facebook de la empresa');
     }
-    
+
     return data;
 }
 
 export async function getCompanyFacebookPages(companyId: string): Promise<FacebookPage[]> {
     // Obtener configuración de Facebook de la empresa
     const config = await getCompanyFacebookConfig(companyId);
-    
+
     if (!config.facebook_access_token) {
         throw new Error('La empresa no tiene configuración de Facebook');
     }
-    
-    const version = process.env.META_API_VERSION || 'v17.0';
+
+    const version = process.env.META_API_VERSION;
     const url = `https://graph.facebook.com/${version}/me/accounts?fields=id,name,category,category_list,link,picture,access_token&access_token=${config.facebook_access_token}`;
-    
+
     const response = await fetch(url);
     const data = await response.json();
-    
+
     if (!response.ok || data.error) {
         throw new Error(data.error?.message || 'Error al obtener páginas de Facebook de la empresa');
     }
@@ -88,6 +88,6 @@ export async function getCompanyFacebookPages(companyId: string): Promise<Facebo
             }
         })
     );
-    
+
     return pagesWithFanCount || [];
 }

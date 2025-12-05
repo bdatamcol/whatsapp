@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
                         );
                     }
 
-                    const apiVersion = process.env.META_GRAPH_API_VERSION || "v20.0";
+                    const apiVersion = process.env.META_API_VERSION;
                     const appId = process.env.FACEBOOK_APP_ID || process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
                     if (!appId) {
                         return NextResponse.json(
@@ -196,12 +196,12 @@ export async function POST(req: NextRequest) {
                                 file_length: headerFile.size,
                                 file_type: headerFile.type || (String(header.format).toLowerCase() === 'image' ? 'image/jpeg' :
                                     String(header.format).toLowerCase() === 'video' ? 'video/mp4' :
-                                    'application/pdf'),
+                                        'application/pdf'),
                                 file_name: (headerFile as any).name || `header.${String(header.format).toLowerCase()}`
                             })
                         });
                         const sessionJson = await createSessionRes.json();
-                        
+
                         console.log("📋 Sesión de upload:", {
                             status: createSessionRes.status,
                             sessionId: sessionJson?.id,
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
                         // Paso 2: subir binario a la sesión
                         const sessionId = sessionJson.id as string;
                         const buffer = Buffer.from(await headerFile.arrayBuffer());
-                        
+
                         console.log("⬆️ Subiendo archivo binario...", {
                             sessionId,
                             bufferSize: buffer.length
@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
                             body: buffer
                         });
                         const upload2Json = await uploadRes2.json();
-                        
+
                         console.log("📋 Upload binario:", {
                             status: uploadRes2.status,
                             handle: upload2Json?.h,
@@ -254,9 +254,9 @@ export async function POST(req: NextRequest) {
                         console.log("✅ Media upload completado, handle:", handle);
                     } catch (uploadError: any) {
                         console.error("❌ Error en Resumable Upload:", uploadError);
-                        return NextResponse.json({ 
-                            ok: false, 
-                            error: `Error en upload de media: ${uploadError.message}` 
+                        return NextResponse.json({
+                            ok: false,
+                            error: `Error en upload de media: ${uploadError.message}`
                         }, { status: 500 });
                     }
                 }
@@ -269,14 +269,14 @@ export async function POST(req: NextRequest) {
         });
 
         const result = await createTemplate(wabaId, normalizedTemplate, tokenOverride);
-        
+
         console.log("✅ Template creado exitosamente:", result);
         return NextResponse.json({ ok: true, result });
     } catch (err: any) {
         console.error("❌ Error completo:", err);
         console.error("Stack trace:", err.stack);
-        return NextResponse.json({ 
-            ok: false, 
+        return NextResponse.json({
+            ok: false,
             error: err.message || "Error interno del servidor",
             details: process.env.NODE_ENV === 'development' ? err.stack : undefined
         }, { status: 500 });

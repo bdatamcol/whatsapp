@@ -9,7 +9,7 @@ async function fetchFromMeta(url: string, accessToken: string) {
 }
 
 export async function POST(request: Request) {
-  const version = process.env.META_API_VERSION || 'v17.0';
+  const version = process.env.META_API_VERSION;
   const { pageId, pageAccessToken, formId, cursor, limit = 50, getSummary = false } = await request.json();
   const baseUrl = 'https://graph.facebook.com';
 

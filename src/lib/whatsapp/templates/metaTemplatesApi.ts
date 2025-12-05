@@ -83,7 +83,7 @@ export interface ListTemplatesResponse {
 }
 
 function getConfig(tokenOverride?: string) {
-  const apiVersion = process.env.META_GRAPH_API_VERSION || "v20.0";
+  const apiVersion = process.env.META_API_VERSION;
   const fallback = process.env.META_SYSTEM_USER_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
   const token = tokenOverride || fallback;
   if (!token) {

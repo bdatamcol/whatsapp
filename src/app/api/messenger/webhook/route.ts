@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
     const challenge = searchParams.get('hub.challenge');
     const verify_token = searchParams.get('hub.verify_token');
 
-    if(mode && verify_token) {
-        if(mode === 'subscribe' && verify_token === process.env.VERYFY_WEBHOOK_SECRET){
+    if (mode && verify_token) {
+        if (mode === 'subscribe' && verify_token === process.env.VERYFY_WEBHOOK_SECRET) {
             // Webhook verificado
             return new NextResponse(challenge, { status: 200 });
         } else {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         // Procesar cada entrada (puede ser de diferentes páginas/cuentas)
         for (const entry of body.entry) {
             const pageId = entry.id; // ID de la página que recibió el mensaje
-            
+
             // Procesar mensajes de Messenger
             if (entry.messaging) {
                 for (const messagingEvent of entry.messaging) {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
                     }
                 }
             }
-            
+
             // Procesar cambios en feed (comentarios, publicaciones, etc.)
             if (entry.changes) {
                 for (const change of entry.changes) {
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({ message: 'EVENT_RECEIVED' }, { status: 200 });
-        
+
     } catch (error) {
         return NextResponse.json({ message: 'Error processing webhook' }, { status: 500 });
     }
@@ -71,12 +71,12 @@ export async function POST(request: NextRequest) {
 async function handleMessage(messagingEvent: any, pageId: string) {
     const senderId = messagingEvent.sender.id;
     const message = messagingEvent.message;
-    
+
     // Mensaje procesado
-    
+
     // Importar dinámicamente el servicio para evitar problemas de SSR
     const { MessengerAccountsService } = await import('@/lib/messenger/accounts');
-    
+
     // Intentar obtener el nombre del remitente
     let senderName = '';
     try {
@@ -87,7 +87,7 @@ async function handleMessage(messagingEvent: any, pageId: string) {
             // Intentar obtener el nombre del remitente desde la API de Facebook
             const pageAccessToken = MessengerAccountsService.getPageAccessToken(pageId);
             if (pageAccessToken) {
-                const response = await fetch(`https://graph.facebook.com/v18.0/${senderId}?fields=name&access_token=${pageAccessToken}`);
+                const response = await fetch(`https://graph.facebook.com/${process.env.META_API_VERSION}/${senderId}?fields=name&access_token=${pageAccessToken}`);
                 const data = await response.json();
                 if (data.name) {
                     senderName = data.name;
@@ -95,22 +95,22 @@ async function handleMessage(messagingEvent: any, pageId: string) {
             }
         }
     } catch (error) {
-            // Error obteniendo nombre del remitente
-          }
-    
+        // Error obteniendo nombre del remitente
+    }
+
     // Guardar mensaje entrante
     const incomingMessage = {
-      id: messagingEvent.message.mid || Date.now().toString(),
-      senderId,
-      pageId,
-      text: message.text || '',
-      timestamp: messagingEvent.timestamp,
-      type: 'incoming' as const,
-      senderName: senderName || `Usuario ${senderId.slice(-4)}` // Usar nombre o fallback
+        id: messagingEvent.message.mid || Date.now().toString(),
+        senderId,
+        pageId,
+        text: message.text || '',
+        timestamp: messagingEvent.timestamp,
+        type: 'incoming' as const,
+        senderName: senderName || `Usuario ${senderId.slice(-4)}` // Usar nombre o fallback
     };
-    
+
     MessengerAccountsService.saveMessage(incomingMessage);
-    
+
     // Mostrar estadísticas en consola
     const stats = MessengerAccountsService.getPageStats(pageId);
     // Stats actualizadas
@@ -119,28 +119,28 @@ async function handleMessage(messagingEvent: any, pageId: string) {
 // Función para manejar cambios en el feed (comentarios, publicaciones, etc.)
 async function handleFeedChange(value: any, pageId: string) {
     // Cambio en feed procesado
-    
+
     // Importar dinámicamente el servicio para evitar problemas de SSR
     const { MessengerAccountsService } = await import('@/lib/messenger/accounts');
     const { notifyNewMessage } = await import('@/lib/messenger/notifications');
-    
+
     // Verificar si tenemos información del remitente
     if (value.from && value.from.id) {
         const senderId = value.from.id;
         const senderName = value.from.name || '';
-        
+
         // Detectar reacciones (likes, etc.) - Las reacciones ya se procesan en el webhook principal
         if (value.item === 'reaction') {
             // No enviar notificación aquí para evitar duplicados
             // La notificación ya se envía desde el webhook principal
             return; // No hacer nada más para las reacciones
         }
-        
+
         // Para comentarios y publicaciones, procesar normalmente
         if (value.item === 'comment' || value.item === 'post') {
             // Para comentarios y publicaciones, sí guardar como mensaje
             let messageText = '';
-            
+
             if (value.item === 'comment') {
                 if (value.verb === 'add') {
                     messageText = 'Nuevo comentario en una publicación';
@@ -161,7 +161,7 @@ async function handleFeedChange(value: any, pageId: string) {
                     messageText = 'Nueva actividad en una publicación';
                 }
             }
-            
+
             // Guardar como mensaje solo si es comentario o publicación
             if (messageText) {
                 const incomingMessage = {
@@ -173,13 +173,13 @@ async function handleFeedChange(value: any, pageId: string) {
                     type: 'incoming' as const,
                     senderName
                 };
-                
+
                 MessengerAccountsService.saveMessage(incomingMessage);
-                
+
                 // Mostrar estadísticas en consola
                 const stats = MessengerAccountsService.getPageStats(pageId);
-                 // Stats actualizadas después de cambio en feed
-             }
-         }
+                // Stats actualizadas después de cambio en feed
+            }
+        }
     }
 }
