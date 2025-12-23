@@ -8,7 +8,7 @@ export async function GET(
 ) {
     try {
         const profile = await getUserProfile();
-        const { adId } = params;
+        const { adId } = await params;
         
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '50');

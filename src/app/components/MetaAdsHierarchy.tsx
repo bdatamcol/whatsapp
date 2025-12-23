@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/app/components/ui/scroll-area';
 import Button from './ui/Button';
 import { ArrowLeft, Download, Loader2, Layers, Grid, FileText, Users } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
@@ -100,6 +101,16 @@ export default function MetaAdsHierarchy() {
         enabled: view === 'leads' && !!selectedAd?.id
     });
 
+    // Extract unique field names for table headers
+    const leadHeaders = useMemo(() => {
+        if (!leadsData?.data) return [];
+        const allFields = new Set<string>();
+        leadsData.data.forEach((lead: Lead) => {
+            lead.field_data?.forEach(field => allFields.add(field.name));
+        });
+        return Array.from(allFields);
+    }, [leadsData]);
+
     const handleSelectCampaign = (campaign: Campaign) => {
         setSelectedCampaign(campaign);
         setView('adsets');
@@ -138,7 +149,7 @@ export default function MetaAdsHierarchy() {
             return fields;
         });
 
-        exportToCSV(flattenedLeads, `leads_ad_${selectedAd?.name}_${new Date().toISOString()}.csv`);
+        exportToCSV(flattenedLeads, { filename: `leads_ad_${selectedAd?.name}_${new Date().toISOString()}.csv` });
         toast.success('Leads descargados correctamente');
     };
 
@@ -193,11 +204,12 @@ export default function MetaAdsHierarchy() {
 
             <Breadcrumbs />
 
-            <div className="bg-white rounded-lg border shadow-sm">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {view === 'campaigns' && (
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                <ScrollArea className="h-[600px] w-full">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                {view === 'campaigns' && (
                                 <>
                                     <TableHead>Nombre</TableHead>
                                     <TableHead>Estado</TableHead>
@@ -225,9 +237,13 @@ export default function MetaAdsHierarchy() {
                             )}
                             {view === 'leads' && (
                                 <>
-                                    <TableHead>ID</TableHead>
-                                    <TableHead>Fecha</TableHead>
-                                    <TableHead>Datos</TableHead>
+                                    <TableHead className="w-[150px]">ID</TableHead>
+                                    <TableHead className="w-[180px]">Fecha</TableHead>
+                                    {leadHeaders.map(header => (
+                                        <TableHead key={header} className="capitalize whitespace-nowrap min-w-[200px]">
+                                            {header.replace(/_/g, ' ')}
+                                        </TableHead>
+                                    ))}
                                 </>
                             )}
                         </TableRow>
@@ -290,19 +306,22 @@ export default function MetaAdsHierarchy() {
                         )}
                         {view === 'leads' && leadsData?.data?.map((lead: Lead) => (
                             <TableRow key={lead.id}>
-                                <TableCell>{lead.id}</TableCell>
-                                <TableCell>{new Date(lead.created_time).toLocaleString()}</TableCell>
-                                <TableCell>
-                                    <div className="text-sm">
-                                        {lead.field_data?.map(f => (
-                                            <div key={f.name}><span className="font-semibold">{f.name}:</span> {f.values.join(', ')}</div>
-                                        ))}
-                                    </div>
-                                </TableCell>
+                                <TableCell className="font-mono text-xs">{lead.id}</TableCell>
+                                <TableCell className="whitespace-nowrap text-xs">{new Date(lead.created_time).toLocaleString()}</TableCell>
+                                {leadHeaders.map(header => {
+                                    const field = lead.field_data?.find(f => f.name === header);
+                                    return (
+                                        <TableCell key={`${lead.id}-${header}`} className="text-sm max-w-[300px] truncate" title={field ? field.values.join(', ') : ''}>
+                                            {field ? field.values.join(', ') : '-'}
+                                        </TableCell>
+                                    );
+                                })}
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
+                <ScrollBar orientation="horizontal" />
+                </ScrollArea>
             </div>
         </div>
     );
