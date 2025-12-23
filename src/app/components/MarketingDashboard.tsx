@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { PieChart, BarChart, UserCheck, ArrowLeft } from 'lucide-react';
+import { PieChart, BarChart, UserCheck, ArrowLeft, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import MetricsDashboard from '@/app/components/MetricsDashboard';
 import AccountManager from './AccountManager';
 import AdsManager from './AdsManager';
+import MetaAdsHierarchy from './MetaAdsHierarchy';
 
 const sections = [
   {
@@ -27,6 +28,13 @@ const sections = [
     component: 'MetricsDashboard',
     color: 'bg-purple-100 text-purple-800'
   },
+  {
+    name: 'Meta Explorer',
+    description: 'Explorador de Campañas Meta',
+    icon: <Layers size={24} />,
+    component: 'MetaAdsHierarchy',
+    color: 'bg-indigo-100 text-indigo-800'
+  },
 ];
 
 const MarketingDashboard = () => {
@@ -37,6 +45,7 @@ const MarketingDashboard = () => {
       case 'AccountManager': return <AccountManager />;
       case 'AdsManage': return <AdsManager />;
       case 'MetricsDashboard': return <MetricsDashboard />;
+      case 'MetaAdsHierarchy': return <MetaAdsHierarchy />;
       default: return null;
     }
   };
