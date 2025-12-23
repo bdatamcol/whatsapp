@@ -22,6 +22,10 @@ export function middleware(request: NextRequest) {
     const accessToken = request.cookies.get('sb-access-token')?.value;
     const refreshToken = request.cookies.get('sb-refresh-token')?.value;
 
+    if (pathname === '/' && !accessToken && !refreshToken) {
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
+
     if (!accessToken && !refreshToken) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
