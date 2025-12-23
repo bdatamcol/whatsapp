@@ -1,10 +1,7 @@
-// next.config.ts
-import type { NextConfig } from 'next';
+import { NextConfig } from "next";
 
-const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+const nextConfig: NextConfig = {
+  turbopack: {},
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -38,10 +35,7 @@ const nextConfig = {
       ];
     }
     return config;
-  },
-  experimental: {
-    serverActions: {},
-  },
+  }
 };
 
 export default nextConfig;
