@@ -51,82 +51,34 @@ function LoginFormContent() {
         setLoading(true);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error || !data.session) throw error || new Error('Credenciales inválidas');
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-            const cookieOptions = {
-                path: '/',
-                maxAge: 60 * 60 * 24 * 7,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const
-            };
-
-            document.cookie = `sb-access-token=${data.session.access_token}; ${Object.entries(cookieOptions).map(([k, v]) => `${k}=${v}`).join('; ')}`;
-            document.cookie = `sb-refresh-token=${data.session.refresh_token}; ${Object.entries(cookieOptions).map(([k, v]) => `${k}=${v}`).join('; ')}`;
-
-            const user = data.session.user;
-
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('role, company_id, is_active')
-                .eq('id', user.id)
-                .maybeSingle();
-
-            if (profileError || !profile?.role) throw new Error("Perfil no encontrado");
-
-            // Verificar si el usuario está desactivado
-            if (profile.is_active === false) {
-                await supabase.auth.signOut();
-                setError(
-                    `🔒 Cuenta temporalmente desactivada\n\n` +
-                    `Tu cuenta ha sido desactivada por un administrador del sistema.\n\n` +
-                    `Esto puede deberse a:\n` +
-                    `• Revisión de seguridad en curso\n` +
-                    `• Cambios en la configuración de acceso\n` +
-                    `• Finalización de tu período de servicio\n\n` +
-                    `Para más información o para solicitar la reactivación de tu cuenta,\n` +
-                    `por favor contacta al equipo de soporte técnico.`
-                );
-                setLoading(false);
-                return;
+            if (error || !data.session) {
+                throw error || new Error('Credenciales inválidas');
             }
 
-            if (profile.role !== 'superadmin' && profile.company_id) {
-                const { data: company, error: companyError } = await supabase
-                    .from('companies')
-                    .select('is_active, email_verified')
-                    .eq('id', profile.company_id)
-                    .maybeSingle();
+            // Guardar cookies (necesarias para middleware + api/me)
+            const isSecure = window.location.protocol === 'https:';
+            const cookieOptions = `path=/; max-age=${60 * 60 * 24 * 7}; ${isSecure ? 'Secure;' : ''
+                } SameSite=Lax`;
 
-                if (companyError || !company) {
-                    throw new Error("Error al verificar el estado de la empresa");
-                }
+            document.cookie = `sb-access-token=${data.session.access_token}; ${cookieOptions}`;
+            document.cookie = `sb-refresh-token=${data.session.refresh_token}; ${cookieOptions}`;
 
-                if (!company.email_verified) {
-                    await supabase.auth.signOut();
-                    setError(
-                        `⚠️ Verificación de correo electrónico pendiente\n\n` +
-                        `Hemos enviado un correo de verificación a ${email}. Por favor:\n` +
-                        `1. Revisa tu bandeja de entrada (incluyendo spam)\n` +
-                        `2. Haz clic en el enlace de verificación\n` +
-                        `3. Vuelve a intentar iniciar sesión\n\n` +
-                        `¿No recibiste el correo? Contacta al administrador del sistema.`
-                    );
-                    setLoading(false);
-                    return;
-                }
+            // 🔑 Fuente ÚNICA de verdad
+            const res = await fetch('/api/auth/me');
 
-                if (!company.is_active) {
-                    await supabase.auth.signOut();
-                    setError(
-                        `❌ Empresa temporalmente desactivada\n\n` +
-                        `Tu empresa ha sido desactivada. Por favor contacta al administrador del sistema para más información.`
-                    );
-                    setLoading(false);
-                    return;
-                }
+            if (!res.ok) {
+                const { error } = await res.json();
+                throw new Error(error || 'No autorizado');
             }
 
+            const { profile } = await res.json();
+
+            // Redirección centralizada
             if (profile.role === 'admin') {
                 router.replace('/dashboard');
             } else if (profile.role === 'assistant') {
@@ -134,15 +86,16 @@ function LoginFormContent() {
             } else if (profile.role === 'superadmin') {
                 router.replace('/superadmin-dashboard');
             } else {
-                throw new Error('Rol desconocido');
+                throw new Error('Rol no reconocido');
             }
 
-        } catch (error: any) {
-            setError(error.message || 'Error al iniciar sesión');
+        } catch (err: any) {
+            setError(err.message || 'Error al iniciar sesión');
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
