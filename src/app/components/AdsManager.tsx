@@ -65,7 +65,8 @@ export default function AdsManager() {
         params.append('until', appliedDateRange.to.toISOString().split('T')[0]);
       }
 
-      const res = await fetch(`/api/marketing/company/ads?\${params.toString()}`);
+      // const res = await fetch(`/api/marketing/company/ads?\${params.toString()}`);
+      const res = await fetch(`/api/marketing/company/ads?${params.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error al cargar campañas');
       return json;
@@ -74,12 +75,19 @@ export default function AdsManager() {
     initialPageParam: null,
   });
 
-  const campaigns = data?.pages.flatMap((page) => page.data) || [];
+  // const campaigns = data?.pages.flatMap((page) => page.data) || [];
+  const uniqueCampaigns = React.useMemo(() => {
+    const all = data?.pages.flatMap((page) => page.data) || [];
+    return Array.from(new Map(all.map(c => [c.id, c])).values());
+  }, [data]);
 
-  const filteredCampaigns = campaigns.filter((c) => {
+
+
+  const filteredCampaigns = uniqueCampaigns.filter((c) => {
     if (statusFilter === 'all') return true;
     return c.status.toLowerCase() === statusFilter;
   });
+
 
   // Check for Facebook configuration error
   const isFacebookConfigError = totalError?.message?.includes('configuración de Facebook completa') ||
@@ -95,21 +103,33 @@ export default function AdsManager() {
   }
 
   const loadAllCampaigns = async () => {
-    let allCampaigns = [...campaigns];
-    let currentCursor = data?.pages[data.pages.length - 1]?.paging?.cursors?.after;
+    let allCampaigns: any[] = [];
+
+    let currentCursor =
+      data?.pages[data.pages.length - 1]?.paging?.cursors?.after;
+
     while (currentCursor) {
       const params = new URLSearchParams({ after: currentCursor, limit: '25' });
       const res = await fetch(`/api/marketing/company/ads?${params.toString()}`);
       const json = await res.json();
-      allCampaigns = [...allCampaigns, ...json.data];
+
+      allCampaigns.push(...json.data);
+
       currentCursor = json.paging?.cursors?.after || null;
     }
+
+    // deduplicar AL FINAL
+    allCampaigns = Array.from(
+      new Map(allCampaigns.map(c => [c.id, c])).values()
+    );
+
     return allCampaigns;
+
   };
 
   const exportCampaigns = async () => {
     try {
-      let exportData = campaigns;
+      let exportData = filteredCampaigns;
       if (hasNextPage) {
         exportData = await loadAllCampaigns();
       }
@@ -141,7 +161,7 @@ export default function AdsManager() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">Campañas</h2>
-          {campaigns.length > 0 && (
+          {filteredCampaigns.length > 0 && (
             <p className="text-sm text-gray-500">
               Mostrando {filteredCampaigns.length} de {totalData?.total || 0} campañas
               {appliedDateRange?.from && (
@@ -174,7 +194,7 @@ export default function AdsManager() {
               <SelectItem value="inactive">Inactivo</SelectItem>
             </SelectContent>
           </Select>
-          {campaigns.length > 0 && (
+          {filteredCampaigns.length > 0 && (
             <Button
               onClick={exportCampaigns}
               variant="outline"

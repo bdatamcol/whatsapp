@@ -109,11 +109,11 @@ export async function getCompanyFacebookCampaigns(
     }
 
     // Para filtros de fecha, usar time_range
-    if (since && until) {
-        url += `&time_range=${encodeURIComponent(JSON.stringify({ since, until }))}`;
-    } else if (since) {
-        url += `&time_range=${encodeURIComponent(JSON.stringify({ since, until: new Date().toISOString().split('T')[0] }))}`;
-    }
+    // if (since && until) {
+    //     url += `&time_range=${encodeURIComponent(JSON.stringify({ since, until }))}`;
+    // } else if (since) {
+    //     url += `&time_range=${encodeURIComponent(JSON.stringify({ since, until: new Date().toISOString().split('T')[0] }))}`;
+    // }
     const response = await fetch(url);
     const data = await response.json();
 
@@ -123,6 +123,99 @@ export async function getCompanyFacebookCampaigns(
 
     if (getSummary) {
         return { total: data.summary?.total_count || 0 };
+    }
+
+    if (data.data && Array.isArray(data.data)) {
+        const uniqueCampaigns = Array.from(
+            new Map(data.data.map((c: any) => [c.id, c])).values()
+        );
+        data.data = uniqueCampaigns;
+    }
+
+    return data;
+}
+
+export async function getCompanyFacebookAdSets(
+    companyId: string,
+    campaignId: string,
+    options: { limit?: number; after?: string; filterStatus?: string } = {}
+): Promise<any> {
+    const { limit = 25, after, filterStatus } = options;
+    const config = await getCompanyFacebookConfig(companyId);
+    const version = process.env.META_API_VERSION;
+
+    let url = `https://graph.facebook.com/${version}/${campaignId}/adsets?`;
+    url += `fields=id,name,status,daily_budget,start_time,end_time,targeting&`;
+    url += `access_token=${config.facebook_access_token}`;
+    url += `&limit=${limit}`;
+
+    if (after) url += `&after=${after}`;
+
+    if (filterStatus) {
+        url += `&filtering=[{"field":"effective_status","operator":"IN","value":["${filterStatus}"]}]`;
+    }
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error?.message || 'Error al obtener conjuntos de anuncios');
+    }
+
+    return data;
+}
+
+export async function getCompanyFacebookAds(
+    companyId: string,
+    adSetId: string,
+    options: { limit?: number; after?: string; filterStatus?: string } = {}
+): Promise<any> {
+    const { limit = 25, after, filterStatus } = options;
+    const config = await getCompanyFacebookConfig(companyId);
+    const version = process.env.META_API_VERSION;
+
+    let url = `https://graph.facebook.com/${version}/${adSetId}/ads?`;
+    url += `fields=id,name,status,creative{id,name,thumbnail_url},preview_shareable_link&`;
+    url += `access_token=${config.facebook_access_token}`;
+    url += `&limit=${limit}`;
+
+    if (after) url += `&after=${after}`;
+
+    if (filterStatus) {
+        url += `&filtering=[{"field":"effective_status","operator":"IN","value":["${filterStatus}"]}]`;
+    }
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error?.message || 'Error al obtener anuncios');
+    }
+
+    return data;
+}
+
+export async function getCompanyFacebookLeadsFromAd(
+    companyId: string,
+    adId: string,
+    options: { limit?: number; after?: string } = {}
+): Promise<any> {
+    const { limit = 50, after } = options;
+    const config = await getCompanyFacebookConfig(companyId);
+    const version = process.env.META_API_VERSION;
+
+    let url = `https://graph.facebook.com/${version}/${adId}/leads?`;
+    url += `fields=id,created_time,field_data,campaign_name,adset_name,ad_name&`;
+    url += `access_token=${config.facebook_access_token}`;
+    url += `&limit=${limit}`;
+
+    if (after) url += `&after=${after}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error?.message || 'Error al obtener leads del anuncio');
     }
 
     return data;
