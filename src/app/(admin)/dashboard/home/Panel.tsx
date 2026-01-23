@@ -7,7 +7,6 @@ import {
   DollarSign,
   CalendarIcon,
   Filter,
-  AlertTriangle,
 } from 'lucide-react';
 import {
   BarChart as Chart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,

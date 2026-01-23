@@ -143,8 +143,9 @@ export default function MetaAdsHierarchy() {
                 id: lead.id,
                 created_time: new Date(lead.created_time).toLocaleString(),
             };
-            lead.field_data.forEach(field => {
-                fields[field.name] = field.values.join(', ');
+            lead.field_data?.forEach(field => {
+                const values = Array.isArray(field.values) ? field.values.join(', ') : '';
+                fields[field.name] = values || '-';
             });
             return fields;
         });
@@ -310,9 +311,10 @@ export default function MetaAdsHierarchy() {
                                 <TableCell className="whitespace-nowrap text-xs">{new Date(lead.created_time).toLocaleString()}</TableCell>
                                 {leadHeaders.map(header => {
                                     const field = lead.field_data?.find(f => f.name === header);
+                                    const values = Array.isArray(field?.values) ? field?.values.join(', ') : '';
                                     return (
-                                        <TableCell key={`${lead.id}-${header}`} className="text-sm max-w-[300px] truncate" title={field ? field.values.join(', ') : ''}>
-                                            {field ? field.values.join(', ') : '-'}
+                                        <TableCell key={`${lead.id}-${header}`} className="text-sm max-w-[300px] truncate" title={values}>
+                                            {values || '-'}
                                         </TableCell>
                                     );
                                 })}
