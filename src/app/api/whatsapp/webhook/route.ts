@@ -34,9 +34,21 @@ export async function POST(request: NextRequest) {
   }
 
   const messageId = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
+  const isLeadGen = body.entry?.[0]?.changes?.[0]?.field === 'leadgen';
+  console.log('[isLeadGen]', isLeadGen);
 
-  if (!messageId) {
-    return NextResponse.json('OK (Not a message)', { status: 200 });
+  if (!messageId && !isLeadGen) {
+    return NextResponse.json('OK (Not a message or lead event)', { status: 200 });
+  }
+
+  // Si es leadgen, no usamos deduplicación por messageId
+  if (isLeadGen) {
+    try {
+        await processWebhookRequest(requestClone as NextRequest);
+    } catch (error) {
+        console.error('[WEBHOOK-ERROR] Error processing leadgen webhook:', error);
+    }
+    return NextResponse.json('OK (Lead Processed)', { status: 200 });
   }
 
   if (processingMessageIds.has(messageId)) {

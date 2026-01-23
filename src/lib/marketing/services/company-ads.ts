@@ -220,3 +220,22 @@ export async function getCompanyFacebookLeadsFromAd(
 
     return data;
 }
+
+export async function getCompanyFacebookLead(
+    companyId: string,
+    leadId: string
+): Promise<any> {
+    const config = await getCompanyFacebookConfig(companyId);
+    const version = process.env.META_API_VERSION;
+
+    const url = `https://graph.facebook.com/${version}/${leadId}?fields=id,created_time,field_data,campaign_name,adset_name,ad_name,form_id&access_token=${config.facebook_access_token}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error?.message || 'Error al obtener detalle del lead');
+    }
+
+    return data;
+}
