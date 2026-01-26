@@ -23,14 +23,18 @@ export async function appendMessageToConversation(phone: string, message: string
 
     const { error: upsertError } = await supabase
         .from('conversations')
+        // ... Eliminado updated_at también aquí por precaución
         .upsert({
             phone,
             messages: updatedMessages,
             company_id: companyId,
-            updated_at: new Date().toISOString(),
+            // updated_at: new Date().toISOString(), // <-- ELIMINADO
         }, { onConflict: 'phone,company_id' });
 
-    if (upsertError) throw new Error('Error guardando mensaje');
+    if (upsertError) {
+        console.error('Error detallado guardando mensaje en DB:', upsertError);
+        throw new Error('Error guardando mensaje: ' + upsertError.message);
+    }
 }
 
 export async function appendImageMessageToConversation(phone: string, imageUrl: string, messageId: string, companyId: string, role: string = 'assistant', caption?: string) {
@@ -118,6 +122,8 @@ type ConversationSummary = {
         status?: string;
         timestamp?: string;
     } | null;
+    tags?: string[];
+    status?: string | null;
 };
 
 export async function getAllConversationsSummary(companyId: string): Promise<ConversationSummary[]> {
@@ -130,7 +136,9 @@ export async function getAllConversationsSummary(companyId: string): Promise<Con
       company_id,
       contacts (
         name,
-        avatar_url
+        avatar_url,
+        tags,
+        status
       )
     `)
         .eq('company_id', companyId)
@@ -151,6 +159,8 @@ export async function getAllConversationsSummary(companyId: string): Promise<Con
             name: contact?.name || conv.phone,
             avatar_url: contact?.avatar_url || null,
             company_id: conv.company_id, // 👈 asegúrate de devolverlo
+            tags: contact?.tags || [],
+            status: contact?.status || null,
         };
     });
 }

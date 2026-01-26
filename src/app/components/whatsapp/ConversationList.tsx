@@ -9,6 +9,8 @@ interface Conversation {
     avatar_url: string;
     lastMessage: { role: string; content: string } | null;
     updated_at: string;
+    tags?: string[];
+    status?: string;
 }
 
 interface Props {
@@ -18,6 +20,7 @@ interface Props {
 
 export default function ConversationList({ companyId, onSelectAction }: Props) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [filter, setFilter] = useState<'all' | 'lead'>('all');
 
     // Cargar inicialmente
     useEffect(() => {
@@ -62,17 +65,39 @@ export default function ConversationList({ companyId, onSelectAction }: Props) {
         <div className="h-full flex flex-col">
              <div className="p-4 border-b">
                  <h2 className="text-xl font-semibold">Chats</h2>
+                 <div className="flex gap-2 mt-2">
+                     <button onClick={() => setFilter('all')} className={`px-3 py-1 text-xs rounded-full transition-colors ${filter === 'all'
+                             ? 'bg-blue-600 text-white'
+                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                             }`}
+                     >Todos</button>
+                     <button onClick={() => setFilter('lead')} className={`px-3 py-1 text-xs rounded-full transition-colors ${filter === 'lead'
+                             ? 'bg-blue-600 text-white'
+                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                             }`}
+                     >Leads</button>
+                 </div>
              </div>
-            <div className="flex-1 p-4 space-y-4">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
                  {conversations.length === 0 && (
                      <p className="text-gray-500">No hay chats disponibles.</p>
                  )}
-                 {conversations.map(({ phone, name, avatar_url, lastMessage, updated_at }) => (
+                 {conversations
+                     .filter(c => {
+                         if (filter === 'lead') return c.tags?.includes('lead') || c.status === 'lead';
+                         return true;
+                     })
+                     .map(({ phone, name, avatar_url, lastMessage, updated_at, tags }) => (
                      <div
                          key={phone}
                          onClick={() => onSelectAction({ phone, companyId })}
-                         className="flex items-center gap-3 bg-white p-3 rounded-lg shadow hover:bg-gray-100 transition cursor-pointer"
+                         className="flex items-center gap-3 bg-white p-3 rounded-lg shadow hover:bg-gray-100 transition cursor-pointer relative"
                      >
+                         {/* Tag Badge */}
+                         {tags?.includes('lead') && (
+                             <span className="absolute top-2 right-2 h-2 w-2 bg-blue-500 rounded-full" title="Lead"></span>
+                         )}
+
                          {/* Avatar */}
                          <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
                              {avatar_url ? (
