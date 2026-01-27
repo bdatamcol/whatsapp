@@ -59,24 +59,35 @@ export async function handleLeadGenEvent(leadgenId: string, pageId: string) {
   const fieldData = leadData.field_data || [];
   const formatField = (name: string) => {
     const field = fieldData.find((f: any) => f.name === name);
-    return field ? field.values[0] : 'N/A';
+    return field ? field.values[0] : null;
   };
 
-  const fullName = formatField('full_name');
-  const phoneNumber = formatField('phone_number');
-  const email = formatField('email');
+  let fullName = formatField('full_name');
+  if (!fullName) {
+      const firstName = formatField('first_name') || '';
+      const lastName = formatField('last_name') || '';
+      if (firstName || lastName) {
+          fullName = `${firstName} ${lastName}`.trim();
+      } else {
+          fullName = 'N/A';
+      }
+  }
+
+  const phoneNumber = formatField('phone_number') || 'N/A';
+  const email = formatField('email') || 'N/A';
 
   // Procesar preguntas personalizadas (campos que no son nombre/email/teléfono)
-  const standardFields = ['full_name', 'phone_number', 'email'];
+  const standardFields = ['full_name', 'phone_number', 'email', 'first_name', 'last_name'];
   const customFields = fieldData.filter((f: any) => !standardFields.includes(f.name));
   
   let customQuestionsText = '';
   if (customFields.length > 0) {
       customQuestionsText = '\n📋 *Respuestas Adicionales:*\n';
       customFields.forEach((f: any) => {
-           const value = f.values.join(', ');
+           // Antes fallaba aquí si f.values era undefined
+           const value = Array.isArray(f.values) ? f.values.join(', ') : (f.values || 'N/A');
            // Limpiar un poco el nombre del campo si tiene guiones bajos
-           const label = f.name.replace(/_/g, ' ');
+           const label = f.name ? f.name.replace(/_/g, ' ') : 'Pregunta';
            customQuestionsText += `🔹 *${label}:* ${value}\n`;
       });
   }
@@ -114,9 +125,13 @@ export async function handleLeadGenEvent(leadgenId: string, pageId: string) {
       // Usaremos 'new' que es un estado válido en la BD
       const statusToUse = existingContact ? undefined : 'new'; 
       
+      // Personalizar nombre para incluir campaña (petición del usuario)
+      const campaignSuffix = leadData.campaign_name ? ` (${leadData.campaign_name})` : '';
+      const displayName = `${fullName}${campaignSuffix}`;
+
       const contactPayload: any = {
           phone: phoneNumber,
-          name: fullName,
+          name: displayName, // Actualizar nombre con campaña
           company_id: targetCompany.id,
           tags: newTags,
           // updated_at: new Date().toISOString() // REMOVED
@@ -137,11 +152,12 @@ export async function handleLeadGenEvent(leadgenId: string, pageId: string) {
       }
 
       // 3. Insertar Mensaje en Conversación
-      const crmMessage = `🔔 *Nuevo Lead Capturado*\n\n` +
+      const crmMessage = `🌟 *NUEVO LEAD OBTENIDO* 🌟\n\n` +
           `👤 *Nombre:* ${fullName}\n` +
-          `📞 *Teléfono:* ${phoneNumber}\n` +
+          `📱 *Teléfono:* ${phoneNumber}\n` +
           `📧 *Email:* ${email}\n` +
-          `📝 *Campaña:* ${leadData.campaign_name || 'N/A'}\n` +
+          `🎯 *Campaña:* ${leadData.campaign_name || 'N/A'}\n` +
+          `📅 *Fecha:* ${new Date().toLocaleString()}\n` +
           customQuestionsText;
 
       await appendMessageToConversation(
@@ -161,72 +177,18 @@ export async function handleLeadGenEvent(leadgenId: string, pageId: string) {
   // Estrategia:
   // 1. Si existe LEAD_NOTIFICATION_NUMBER explícito en .env, enviar notificación externa.
   // 2. Si NO existe, NO enviar notificación al número de la empresa...
-  
-  const notificationNumber = process.env.LEAD_NOTIFICATION_NUMBER; // Eliminado fallback a targetCompany.whatsapp_number
+  // ... Desactivando notificación externa
+  // *** CAMBIO: Se comenta la lógica de notificación externa porque ahora todo llega al CRM interno ***
+  /*
+  const notificationNumber = process.env.LEAD_NOTIFICATION_NUMBER; 
   
   if (notificationNumber) {
-    // 1. Intentar Template
-    try {
-        // Usar 'lead_notification' como default si el usuario lo creó, o fallback a 'menu_inicial'
-        const notificationTemplate = process.env.LEAD_NOTIFICATION_TEMPLATE_NAME || 'lead_notification';
-        const notificationLang = process.env.LEAD_NOTIFICATION_TEMPLATE_LANG || 'es';
-
-        if (notificationTemplate === 'hello_world' || notificationTemplate === 'menu_inicial') {
-            await sendTemplateMessage({
-                to: notificationNumber,
-                company: targetCompany,
-                templateName: notificationTemplate,
-                languageCode: notificationLang
-            });
-        } else {
-             // Soporte futuro para plantillas con variables
-             await sendTemplateMessage({
-                to: notificationNumber,
-                company: targetCompany,
-                templateName: notificationTemplate,
-                languageCode: notificationLang,
-                components: [
-                    {
-                        type: 'body',
-                        parameters: [
-                            { type: 'text', text: `Nuevo Lead: ${fullName} - ${phoneNumber}` }
-                        ]
-                    }
-                ]
-            });
-        }
-        console.log(`[LeadGen] Notificación (Plantilla ${notificationTemplate}) enviada a la empresa.`);
-    } catch (error) {
-        console.error('[LeadGen] Error enviando plantilla (no crítico si se envía el texto):', error);
-    }
-
-    // 2. Intentar Texto con Detalles Completos
-    try {
-        const companyMessage = `🔔 *Nuevo Lead Recibido* 🔔\n\n` +
-            `👤 *Nombre:* ${fullName}\n` +
-            `📞 *Teléfono:* ${phoneNumber}\n` +
-            `📧 *Email:* ${email}\n` +
-            `📋 *Campaña:* ${leadData.campaign_name || 'N/A'}\n` +
-            `📝 *Formulario:* ${leadData.form_id || 'N/A'}\n` +
-            `📅 *Fecha:* ${new Date(leadData.created_time).toLocaleString()}\n` +
-            customQuestionsText +
-            `\n_Enviado automáticamente por el sistema de leads_`;
-
-        await sendMessageToWhatsApp({
-            to: notificationNumber,
-            message: companyMessage,
-            company: {
-                phone_number_id: targetCompany.phone_number_id,
-                whatsapp_access_token: targetCompany.whatsapp_access_token
-            }
-        });
-        console.log(`[LeadGen] Notificación (Texto con detalles) enviada a la empresa.`);
-    } catch (error) {
-         console.error('[LeadGen] Error enviando texto con detalles (probablemente ventana 24h cerrada):', error);
-    }
+    // ... lógica de envío ...
   } else {
     console.warn('[LeadGen] No hay número de notificación configurado para la empresa');
   }
+  */
+  console.log('[LeadGen] Notificación externa deshabilitada (CRM integration activa).');
 
   const campaignName = leadData.campaign_name || '';
   const formId = leadData.form_id || '';
