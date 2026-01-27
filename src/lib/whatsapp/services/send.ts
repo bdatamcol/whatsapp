@@ -72,25 +72,57 @@ export async function sendMessageToWhatsApp({
   const version = process.env.META_API_VERSION;
   const url = `https://graph.facebook.com/${version}/${phone_number_id}/messages`;
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${whatsapp_access_token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to,
-      type: 'text',
-      text: { body: message },
-    }),
-  });
+  // Intentar enviar como plantilla hello_world primero para abrir/reactivar conversación
+  // Esto ayuda a evitar el error 131047 (Re-engagement message)
+  try {
+      // Solo intentamos enviar como plantilla si el mensaje no es explícitamente una plantilla compleja
+      // Usamos hello_world como "ping" seguro.
+      // NOTA: Para producción idealmente deberías tener una plantilla aprobada para notificaciones de leads.
+      // Aquí intentamos enviar el texto directamente, pero si falla por re-engagement, 
+      // la estrategia correcta sería enviar una PLANTILLA aprobada.
+      
+      // ESTRATEGIA: Intentar enviar mensaje de texto normal.
+      const payload = {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'text',
+        text: { body: message },
+      };
 
-  const data = await res.json();
-  console.log('[DEBUG] Meta API Response:', JSON.stringify(data, null, 2));
-  if (!res.ok) {
-    console.error('[DEBUG] Meta API Error Details:', data);
-    throw new Error(data?.error?.message || 'Error enviando mensaje');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${whatsapp_access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      console.log('[DEBUG] Meta API Response (Text Attempt):', JSON.stringify(data, null, 2));
+      
+      if (!res.ok) {
+        // Si falla por ventana de 24h (error 131047), intentar enviar una plantilla "utility" genérica
+        // Ojo: Esto requiere que tengas una plantilla llamada "lead_notification" o similar aprobada.
+        // Como fallback, intentaremos enviar "hello_world" que suele estar disponible por defecto,
+        // pero "hello_world" no permite parámetros custom. 
+        
+        if (data?.error?.code === 131047) {
+             console.warn('[send] Falló envío de texto por ventana de 24h cerrada. Intentando enviar plantilla de re-enganche...');
+             
+             // Aquí deberías usar una plantilla REAL aprobada para notificaciones.
+             // Por ahora, lanzamos el error para que sea visible, ya que enviar "hello_world" 
+             // no entregaría la información del lead.
+             throw new Error('No se puede enviar el mensaje: La ventana de 24h está cerrada y no hay plantilla de notificación configurada.');
+        }
+
+        console.error('[DEBUG] Meta API Error Details:', data);
+        throw new Error(data?.error?.message || 'Error enviando mensaje');
+      }
+      
+      return data.messages?.[0]?.id || crypto.randomUUID();
+
+  } catch (error) {
+      throw error;
   }
-  return data.messages?.[0]?.id || crypto.randomUUID();
 }

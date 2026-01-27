@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabase/client.supabase';
 import { useEffect, useState, useRef } from 'react';
-import { Send, ImagePlus, Loader2 } from 'lucide-react';
+import { Send, ImagePlus, Loader2, FileText, X } from 'lucide-react';
 
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -30,6 +30,119 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showShortcut, setShowShortcut] = useState(false);
+    
+    // Estados para asignación
+    const [assistants, setAssistants] = useState<{ id: string; email: string }[]>([]);
+    const [assignedTo, setAssignedTo] = useState<string | null>(null);
+    const [loadingAssign, setLoadingAssign] = useState(false);
+    const [isLead, setIsLead] = useState(false);
+
+    // Estados para plantillas
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+    // Cargar asistentes, asignación actual y verificar si es lead
+    useEffect(() => {
+        const loadAssignmentData = async () => {
+            // 1. Asistentes
+            const { data: asstData } = await supabase
+                .from('profiles')
+                .select('id, email')
+                .eq('role', 'assistant')
+                .eq('company_id', companyId)
+                .eq('is_active', true);
+            setAssistants(asstData || []);
+
+            // 2. Asignación actual
+            const { data: currentAssign } = await supabase
+                .from('assistants_assignments')
+                .select('assigned_to')
+                .eq('contact_phone', contactId)
+                .eq('company_id', companyId)
+                .eq('active', true)
+                .maybeSingle();
+            
+            setAssignedTo(currentAssign?.assigned_to || null);
+
+            // 3. Verificar si es lead
+            const { data: contactData } = await supabase
+                .from('contacts')
+                .select('tags')
+                .eq('phone', contactId)
+                .eq('company_id', companyId)
+                .maybeSingle();
+            
+            if (contactData?.tags && Array.isArray(contactData.tags)) {
+                setIsLead(contactData.tags.includes('lead'));
+            } else {
+                setIsLead(false);
+            }
+        };
+
+        if (companyId && contactId) {
+            loadAssignmentData();
+        }
+    }, [contactId, companyId]);
+
+    const handleAssign = async (assistantId: string) => {
+        if (!assistantId) return;
+        setLoadingAssign(true);
+        try {
+            const res = await fetch('/api/admin/assign-contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: contactId, assistantId })
+            });
+            if (!res.ok) throw new Error('Error asignando');
+            
+            setAssignedTo(assistantId);
+            // Opcional: Mostrar toast de éxito
+        } catch (error) {
+            console.error(error);
+            alert('Error al asignar');
+        } finally {
+            setLoadingAssign(false);
+        }
+    };
+
+    const fetchTemplates = async () => {
+        setLoadingTemplates(true);
+        try {
+            const res = await fetch(`/api/templates/list?companyId=${companyId}&limit=100`);
+            const data = await res.json();
+            if (data.ok) {
+                const allTemplates = data.data.data || [];
+                // Filtrar solo las plantillas APROBADAS
+                const approvedTemplates = allTemplates.filter((t: any) => t.status === 'APPROVED');
+                setTemplates(approvedTemplates);
+            }
+        } catch (error) {
+            console.error('Error cargando plantillas', error);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    const handleSendTemplate = async (template: any) => {
+        try {
+            const res = await fetch('/api/whatsapp/templates/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone: contactId,
+                    templateName: template.name,
+                    language: template.language,
+                    companyId
+                })
+            });
+            if (!res.ok) throw new Error('Error enviando plantilla');
+            setShowTemplates(false);
+        } catch (error) {
+            alert('Error al enviar plantilla');
+            console.error(error);
+        }
+    };
 
     // Agregar atajo de teclado para adjuntar imagen
     useEffect(() => {
@@ -203,8 +316,32 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
 
     return (
         <div className="h-screen flex flex-col bg-gray-50">
-            <div className="p-4 border-b bg-white shadow">
-                <h2 className="font-semibold text-lg">{contactId}</h2>
+            {/* Header de Asignación - Visible solo si es Lead */}
+            <div className="bg-white border-b p-3 flex justify-between items-center shadow-sm z-10">
+                <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-700">{contactId}</span>
+                    {isLead && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Lead</span>}
+                </div>
+                {/* Solo mostrar asignación si NO es el asistente (es decir, si es admin) */}
+                {isLead && role !== 'assistant_humano' && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Asignar a:</span>
+                        <select
+                            className="text-sm border rounded px-2 py-1 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={assignedTo || ''}
+                            onChange={(e) => handleAssign(e.target.value)}
+                            disabled={loadingAssign}
+                        >
+                            <option value="">-- Sin asignar --</option>
+                            {assistants.map(a => (
+                                <option key={a.id} value={a.id}>
+                                    {a.email}
+                                </option>
+                            ))}
+                        </select>
+                        {loadingAssign && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -270,6 +407,38 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                         Presiona <kbd className="bg-gray-600 px-1 rounded">Ctrl</kbd> + <kbd className="bg-gray-600 px-1 rounded">Shift</kbd> + <kbd className="bg-gray-600 px-1 rounded">I</kbd> para adjuntar imagen
                     </div>
                 )}
+
+                {/* Modal de Plantillas */}
+                {showTemplates && (
+                    <div className="absolute bottom-full left-0 w-full md:w-96 bg-white border rounded-t-lg shadow-xl max-h-96 flex flex-col z-20">
+                        <div className="flex justify-between items-center p-3 border-b bg-gray-50 rounded-t-lg">
+                            <h3 className="font-medium text-gray-700">Seleccionar Plantilla</h3>
+                            <button onClick={() => setShowTemplates(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-2">
+                            {loadingTemplates ? (
+                                <div className="flex justify-center p-4"><Loader2 className="animate-spin text-blue-500" /></div>
+                            ) : templates.length === 0 ? (
+                                <p className="text-center text-gray-500 p-4">No hay plantillas disponibles.</p>
+                            ) : (
+                                <div className="space-y-1">
+                                    {templates.map((t) => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => handleSendTemplate(t)}
+                                            className="w-full text-left p-2 hover:bg-blue-50 rounded text-sm group border-b border-gray-100 last:border-0"
+                                        >
+                                            <div className="font-medium text-gray-800 group-hover:text-blue-600">{t.name}</div>
+                                            <div className="text-xs text-gray-500 truncate">{t.components?.find((c: any) => c.type === 'BODY')?.text || 'Sin texto previo'}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
                 
                 <div className="flex gap-2 items-center">
                     <input
@@ -293,6 +462,18 @@ export default function ChatView({ contactId, role = 'assistant', companyId }: P
                         ) : (
                             <ImagePlus className="h-4 w-4" />
                         )}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="default"
+                        onClick={() => {
+                            if (!showTemplates) fetchTemplates();
+                            setShowTemplates(!showTemplates);
+                        }}
+                        className={`shrink-0 ${showTemplates ? 'bg-blue-50 border-blue-200 text-blue-600' : ''}`}
+                        title="Enviar Plantilla"
+                    >
+                        <FileText className="h-4 w-4" />
                     </Button>
                     <Input
                         value={inputValue}

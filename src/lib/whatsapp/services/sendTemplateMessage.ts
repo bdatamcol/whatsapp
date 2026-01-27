@@ -44,6 +44,7 @@ export async function sendTemplateMessage({
   company,
   templateName = 'menu_inicial',
   languageCode = 'en',
+  components,
 }: {
   to: string;
   company: {
@@ -52,6 +53,7 @@ export async function sendTemplateMessage({
   };
   templateName?: string;
   languageCode?: string;
+  components?: any[];
 }) {
   // Descifrar datos si están cifrados
   let phone_number_id = company.phone_number_id;
@@ -86,6 +88,7 @@ export async function sendTemplateMessage({
       template: {
         name: templateName,
         language: { code: languageCode }, // ahora dinámico
+        components: components,
       },
     }),
   });

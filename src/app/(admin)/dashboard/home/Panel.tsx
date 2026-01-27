@@ -255,7 +255,7 @@ export default function Panel() {
   }
 
   // Procesamiento de datos - Agregar verificaciones de nulidad
-  const recentMessages = conversationsData?.slice(0, 5).map((c: any) => ({
+  const recentMessages = (Array.isArray(conversationsData) ? conversationsData : [])?.slice(0, 5).map((c: any) => ({
     phone: c.phone,
     lastMessage: c.lastMessage?.content || '',
     updated_at: c.updated_at,

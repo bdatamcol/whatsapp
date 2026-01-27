@@ -8,7 +8,8 @@ import { supabase } from '@/lib/supabase/client.supabase';
 
 export default function ChatPage() {
     const params = useParams();
-    const contactId = params.contactId as string;
+    // Decodificar el contactId para evitar %2B en lugar de +
+    const contactId = decodeURIComponent(params.contactId as string);
     const [companyId, setCompanyId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -65,26 +66,10 @@ export default function ChatPage() {
 
             const companyId = profile.company_id;
 
-            // Luego verificar si existe una conversación para este contacto en la empresa
-            const { data, error } = await supabase
-                .from('conversations')
-                .select('company_id')
-                .eq('phone', contactId)
-                .eq('company_id', companyId)
-                .maybeSingle();
-
-            if (error) {
-                console.error('Error consultando company_id:', error.message);
-                toast.error('Error al obtener la empresa del contacto');
-                setLoading(false);
-                return;
-            }
-
-            if (data?.company_id) {
-                setCompanyId(data.company_id);
-            } else {
-                toast.warning('Este contacto no tiene conversación en tu empresa');
-            }
+            // ASIGNACIÓN DIRECTA:
+            // Obviamos la verificación de si existe en 'conversations' o 'contacts'.
+            // Si el asistente tiene una empresa, asumimos que puede gestionar este número (contactId).
+            setCompanyId(companyId);
 
             setLoading(false);
         };

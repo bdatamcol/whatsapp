@@ -33,34 +33,50 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const messageId = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
-  const isLeadGen = body.entry?.[0]?.changes?.[0]?.field === 'leadgen';
+  const entry = body.entry?.[0];
+  const change = entry?.changes?.[0];
+  const messageId = change?.value?.messages?.[0]?.id;
+  const isLeadGen = change?.field === 'leadgen';
+
+  console.log('[Webhook] Received POST request');
+  console.log('[Webhook] Received POST request');
+  // Log completo del body para depuración profunda
+  console.log('[Webhook] RAW BODY:', JSON.stringify(body, null, 2));
+
+  console.log('[Webhook] Parsed Data:', {
+    object: body.object,
+    entryId: entry?.id,
+    field: change?.field,
+    pageId: change?.value?.page_id,
+    leadgenId: change?.value?.leadgen_id,
+    messageId,
+  });
   console.log('[isLeadGen]', isLeadGen);
 
   if (!messageId && !isLeadGen) {
     return NextResponse.json('OK (Not a message or lead event)', { status: 200 });
   }
 
-  // Si es leadgen, no usamos deduplicación por messageId
+  // Si es leadgen, procesamos en segundo plano (fire-and-forget) para evitar timeouts de Meta
   if (isLeadGen) {
-    try {
-        await processWebhookRequest(requestClone as NextRequest);
-    } catch (error) {
-        console.error('[WEBHOOK-ERROR] Error processing leadgen webhook:', error);
-    }
-    return NextResponse.json('OK (Lead Processed)', { status: 200 });
+    processWebhookRequest(requestClone as NextRequest)
+        .catch(error => console.error('[WEBHOOK-ERROR] Error processing leadgen webhook:', error));
+    
+    return NextResponse.json('OK (Lead Processing Started)', { status: 200 });
   }
 
-  if (processingMessageIds.has(messageId)) {
+  if (messageId && processingMessageIds.has(messageId)) {
     console.log(`Webhook duplicado ignorado: ${messageId}`);
     return NextResponse.json('OK (Duplicate)', { status: 200 });
   }
 
-  processingMessageIds.add(messageId);
+  if (messageId) {
+    processingMessageIds.add(messageId);
 
-  setTimeout(() => {
-    processingMessageIds.delete(messageId);
-  }, 120 * 1000);
+    setTimeout(() => {
+        processingMessageIds.delete(messageId);
+    }, 120 * 1000);
+  }
 
 
   try {
@@ -68,7 +84,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[WEBHOOK-ERROR] Error processing webhook:', error);
   } finally {
-    processingMessageIds.delete(messageId);
+    if (messageId) {
+        processingMessageIds.delete(messageId);
+    }
   }
 
   return NextResponse.json('OK (Processed)', { status: 200 });
