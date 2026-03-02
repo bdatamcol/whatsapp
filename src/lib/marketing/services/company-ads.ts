@@ -85,7 +85,7 @@ export async function getCompanyFacebookCampaigns(
     let url = `https://graph.facebook.com/${version}/${config.marketing_account_id}/campaigns?`;
 
     if (!getSummary) {
-        url += `fields=id,name,status,objective,daily_budget,start_time,stop_time&`;
+        url += `fields=id,name,status,effective_status,objective,daily_budget,start_time,stop_time&`;
     }
 
     url += `access_token=${config.facebook_access_token}`;
@@ -238,4 +238,98 @@ export async function getCompanyFacebookLead(
     }
 
     return data;
+}
+
+function extractLeadsFromActions(actions: Array<{ action_type?: string; value?: string | number }> = []): number {
+    return actions.reduce((acc, action) => {
+        const type = (action.action_type || '').toLowerCase();
+        const value = Number(action.value || 0);
+        if (!Number.isFinite(value)) return acc;
+        if (type.includes('lead')) return acc + value;
+        return acc;
+    }, 0);
+}
+
+export async function getCompanyFacebookCampaignInsights(
+    companyId: string,
+    campaignId: string,
+    options: { since?: string; until?: string } = {}
+): Promise<any> {
+    const { since, until } = options;
+    const config = await getCompanyFacebookConfig(companyId);
+    const version = process.env.META_API_VERSION;
+
+    let url = `https://graph.facebook.com/${version}/${campaignId}/insights?fields=spend,impressions,reach,clicks,cpc,ctr,frequency,actions&access_token=${config.facebook_access_token}`;
+
+    if (since && until) {
+        url += `&time_range=${encodeURIComponent(JSON.stringify({ since, until }))}`;
+    }
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error?.message || 'Error al obtener insights de la campaña');
+    }
+
+    const row = data.data?.[0] || {};
+    const leads = extractLeadsFromActions(row.actions || []);
+
+    return {
+        spend: Number(row.spend || 0),
+        impressions: Number(row.impressions || 0),
+        reach: Number(row.reach || 0),
+        clicks: Number(row.clicks || 0),
+        cpc: Number(row.cpc || 0),
+        ctr: Number(row.ctr || 0),
+        frequency: Number(row.frequency || 0),
+        leads,
+    };
+}
+
+export async function getCompanyFacebookCampaignAds(
+    companyId: string,
+    campaignId: string,
+    options: { limit?: number; after?: string } = {}
+): Promise<any> {
+    const { limit = 50, after } = options;
+    const config = await getCompanyFacebookConfig(companyId);
+    const version = process.env.META_API_VERSION;
+
+    let url = `https://graph.facebook.com/${version}/${campaignId}/ads?fields=id,name,status,effective_status,creative{id,name,thumbnail_url},preview_shareable_link,insights{impressions,reach,clicks,spend,ctr,cpc,actions}&limit=${limit}&access_token=${config.facebook_access_token}`;
+    if (after) url += `&after=${after}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error?.message || 'Error al obtener anuncios de la campaña');
+    }
+
+    const ads = (data.data || []).map((ad: any) => {
+        const insight = ad.insights?.data?.[0] || {};
+        const leads = extractLeadsFromActions(insight.actions || []);
+        return {
+            id: ad.id,
+            name: ad.name,
+            status: ad.status,
+            effective_status: ad.effective_status,
+            creative: ad.creative,
+            preview_shareable_link: ad.preview_shareable_link,
+            metrics: {
+                impressions: Number(insight.impressions || 0),
+                reach: Number(insight.reach || 0),
+                clicks: Number(insight.clicks || 0),
+                spend: Number(insight.spend || 0),
+                ctr: Number(insight.ctr || 0),
+                cpc: Number(insight.cpc || 0),
+                leads,
+            },
+        };
+    });
+
+    return {
+        data: ads,
+        paging: data.paging,
+    };
 }
