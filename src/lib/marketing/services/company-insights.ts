@@ -1,5 +1,33 @@
 import { getCompanyFacebookConfig } from './company-ads';
 
+async function fetchWithRetry(url: string, options: RequestInit = {}, timeoutMs = 15000, retries = 1): Promise<Response> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error: any) {
+            clearTimeout(timeoutId);
+            lastError = error;
+
+            if (attempt < retries) {
+                await new Promise((resolve) => setTimeout(resolve, 350));
+                continue;
+            }
+        }
+    }
+
+    throw lastError;
+}
+
 type Metric = {
     dateStart: string;
     dateStop: string;
@@ -43,9 +71,19 @@ export async function getCompanyFacebookInsights(
     if (getTotalSpend) {
         // Obtener moneda de la cuenta
         const accountUrl = `https://graph.facebook.com/${version}/act_${config.facebook_ad_account_id}?fields=currency&access_token=${config.facebook_access_token}`;
-        const accountResponse = await fetch(accountUrl);
-        if (!accountResponse.ok) throw new Error('Error al obtener moneda de la empresa');
-        const { currency: fromCurrency } = await accountResponse.json();
+        let fromCurrency = 'COP';
+
+        try {
+            const accountResponse = await fetchWithRetry(accountUrl, {}, 15000, 1);
+            if (accountResponse.ok) {
+                const accountJson = await accountResponse.json();
+                fromCurrency = accountJson?.currency || 'COP';
+            } else {
+                console.warn('[company-insights] No se pudo obtener currency de la cuenta. Se usará COP.');
+            }
+        } catch (error) {
+            console.warn('[company-insights] Timeout/error obteniendo currency. Se usará COP.');
+        }
 
         // Usar fechas proporcionadas o default a último mes
         const now = new Date();
@@ -62,7 +100,7 @@ export async function getCompanyFacebookInsights(
         params.append('time_range', JSON.stringify({ since, until }));
 
         const url = `${baseUrl}?${params.toString()}`;
-        const response = await fetch(url);
+        const response = await fetchWithRetry(url, {}, 20000, 1);
         const raw = await response.json();
 
         if (!response.ok || raw.error) {
@@ -89,7 +127,7 @@ export async function getCompanyFacebookInsights(
     }
 
     const url = `${baseUrl}?${params.toString()}`;
-    const response = await fetch(url);
+    const response = await fetchWithRetry(url, {}, 20000, 1);
     const raw = await response.json();
 
     if (!response.ok || raw.error) {
