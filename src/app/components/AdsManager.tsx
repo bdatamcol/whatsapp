@@ -26,6 +26,7 @@ export default function AdsManager() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange | undefined>();
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [selectedAdForLeads, setSelectedAdForLeads] = useState<string | null>(null);
 
   const { data: totalData, error: totalError } = useQuery({
     queryKey: ['totalCampaigns'],
@@ -95,6 +96,18 @@ export default function AdsManager() {
     enabled: !!selectedCampaignId,
   });
 
+  const { data: adLeadsData, isLoading: isLoadingAdLeads } = useQuery({
+    queryKey: ['ad-leads', selectedAdForLeads],
+    queryFn: async () => {
+      if (!selectedAdForLeads) return { data: [] };
+      const res = await fetch(`/api/marketing/company/ads/${selectedAdForLeads}/leads?limit=100`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Error cargando leads del anuncio');
+      return json;
+    },
+    enabled: !!selectedAdForLeads,
+  });
+
   // const campaigns = data?.pages.flatMap((page) => page.data) || [];
   const uniqueCampaigns = React.useMemo(() => {
     const all = data?.pages.flatMap((page) => page.data) || [];
@@ -132,6 +145,24 @@ export default function AdsManager() {
     return currentStatus !== 'ACTIVE';
   });
 
+  const sortedCampaigns = React.useMemo(() => {
+    const statusWeight = (campaign: any) => {
+      const status = getCurrentStatus(campaign);
+      if (status === 'ACTIVE') return 3;
+      if (status === 'COMPLETED') return 2;
+      return 1;
+    };
+
+    return [...filteredCampaigns].sort((a, b) => {
+      const weightDiff = statusWeight(b) - statusWeight(a);
+      if (weightDiff !== 0) return weightDiff;
+
+      const startA = a.start_time ? new Date(a.start_time).getTime() : 0;
+      const startB = b.start_time ? new Date(b.start_time).getTime() : 0;
+      return startB - startA;
+    });
+  }, [filteredCampaigns]);
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value || 0);
 
@@ -139,6 +170,53 @@ export default function AdsManager() {
 
   const toggleCampaignDetails = (campaignId: string) => {
     setSelectedCampaignId((current) => (current === campaignId ? null : campaignId));
+    setSelectedAdForLeads(null);
+  };
+
+  const toggleAdLeads = (adId: string) => {
+    setSelectedAdForLeads((current) => (current === adId ? null : adId));
+  };
+
+  const getAdPriority = (ad: any) => {
+    const status = String(ad.effective_status || ad.status || '').toUpperCase();
+    const impressions = Number(ad.metrics?.impressions || 0);
+    const clicks = Number(ad.metrics?.clicks || 0);
+    const spend = Number(ad.metrics?.spend || 0);
+    const hasDelivery = impressions > 0 || clicks > 0 || spend > 0;
+
+    if (status === 'ACTIVE' && hasDelivery) return 3;
+    if (status === 'ACTIVE') return 2;
+    return 1;
+  };
+
+  const sortedAds = React.useMemo(() => {
+    const ads = selectedCampaignDetails?.ads || [];
+    return [...ads].sort((a: any, b: any) => {
+      const priorityDiff = getAdPriority(b) - getAdPriority(a);
+      if (priorityDiff !== 0) return priorityDiff;
+
+      const spendDiff = Number(b.metrics?.spend || 0) - Number(a.metrics?.spend || 0);
+      if (spendDiff !== 0) return spendDiff;
+
+      return Number(b.metrics?.impressions || 0) - Number(a.metrics?.impressions || 0);
+    });
+  }, [selectedCampaignDetails]);
+
+  const activeDeliveringAdsCount = React.useMemo(
+    () => sortedAds.filter((ad: any) => getAdPriority(ad) === 3).length,
+    [sortedAds]
+  );
+
+  const getLeadField = (lead: any, fieldNames: string[]): string => {
+    const fields = Array.isArray(lead?.field_data) ? lead.field_data : [];
+    for (const field of fields) {
+      const name = String(field?.name || '').toLowerCase();
+      if (fieldNames.some((f) => name.includes(f))) {
+        const values = Array.isArray(field?.values) ? field.values : [];
+        if (values.length > 0) return String(values[0]);
+      }
+    }
+    return '-';
   };
 
 
@@ -217,7 +295,7 @@ export default function AdsManager() {
           <h2 className="text-2xl font-bold">Campañas</h2>
           {filteredCampaigns.length > 0 && (
             <p className="text-sm text-gray-500">
-              Mostrando {filteredCampaigns.length} de {totalData?.total || 0} campañas
+            Mostrando {sortedCampaigns.length} de {totalData?.total || 0} campañas
               {appliedDateRange?.from && (
                 <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
                   Filtrado por fecha
@@ -278,7 +356,7 @@ export default function AdsManager() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCampaigns.map((campaign) => (
+            {sortedCampaigns.map((campaign) => (
               <React.Fragment key={campaign.id}>
                 <TableRow>
                   <TableCell>{campaign.name}</TableCell>
@@ -354,7 +432,7 @@ export default function AdsManager() {
                           <div className="rounded-lg border bg-white">
                             <div className="px-4 py-3 border-b flex items-center justify-between">
                               <h4 className="font-semibold text-sm">Anuncios de la campana ({selectedCampaignDetails?.totalAds || 0})</h4>
-                              <span className="text-xs text-gray-500">Activos: {selectedCampaignDetails?.activeAds || 0}</span>
+                              <span className="text-xs text-gray-500">Activos con entrega: {activeDeliveringAdsCount} | Activos: {selectedCampaignDetails?.activeAds || 0}</span>
                             </div>
 
                             <div className="overflow-x-auto">
@@ -371,23 +449,93 @@ export default function AdsManager() {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {(selectedCampaignDetails?.ads || []).length === 0 && (
+                                  {sortedAds.length === 0 && (
                                     <tr>
                                       <td colSpan={7} className="px-4 py-4 text-gray-500 text-center">No se encontraron anuncios para esta campana.</td>
                                     </tr>
                                   )}
-                                  {(selectedCampaignDetails?.ads || []).map((ad: any) => {
+                                  {sortedAds.map((ad: any) => {
                                     const adStatus = String(ad.effective_status || ad.status || '').toUpperCase();
+                                    const isAdExpanded = selectedAdForLeads === ad.id;
+                                    const insightLeads = Number(ad.metrics?.leads || 0);
+                                    const realLeads = Array.isArray(adLeadsData?.data) ? adLeadsData.data.length : 0;
                                     return (
-                                      <tr key={ad.id} className="border-b">
-                                        <td className="px-4 py-2 font-medium">{ad.name}</td>
-                                        <td className="px-4 py-2">{adStatus}</td>
-                                        <td className="px-4 py-2">{formatNumber(ad.metrics?.impressions || 0)}</td>
-                                        <td className="px-4 py-2">{formatNumber(ad.metrics?.clicks || 0)}</td>
-                                        <td className="px-4 py-2">{Number(ad.metrics?.ctr || 0).toFixed(2)}%</td>
-                                        <td className="px-4 py-2">{formatCurrency(ad.metrics?.spend || 0)}</td>
-                                        <td className="px-4 py-2">{formatNumber(ad.metrics?.leads || 0)}</td>
-                                      </tr>
+                                      <React.Fragment key={ad.id}>
+                                        <tr className="border-b">
+                                          <td className="px-4 py-2 font-medium">{ad.name}</td>
+                                          <td className="px-4 py-2">{adStatus}</td>
+                                          <td className="px-4 py-2">{formatNumber(ad.metrics?.impressions || 0)}</td>
+                                          <td className="px-4 py-2">{formatNumber(ad.metrics?.clicks || 0)}</td>
+                                          <td className="px-4 py-2">{Number(ad.metrics?.ctr || 0).toFixed(2)}%</td>
+                                          <td className="px-4 py-2">{formatCurrency(ad.metrics?.spend || 0)}</td>
+                                          <td className="px-4 py-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => toggleAdLeads(ad.id)}
+                                              className="text-blue-700 hover:text-blue-900 underline font-medium"
+                                            >
+                                              {formatNumber(insightLeads)} ver leads
+                                            </button>
+                                          </td>
+                                        </tr>
+
+                                        {isAdExpanded && (
+                                          <tr className="border-b bg-slate-100">
+                                            <td colSpan={7} className="px-4 py-3">
+                                              {isLoadingAdLeads ? (
+                                                <div className="text-sm text-gray-600 flex items-center gap-2">
+                                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                                  Cargando leads reales del anuncio...
+                                                </div>
+                                              ) : (
+                                                <div className="space-y-3">
+                                                  <div className="text-sm text-gray-700">
+                                                    Leads reales del formulario: <span className="font-semibold">{formatNumber(realLeads)}</span>
+                                                    {insightLeads !== realLeads && (
+                                                      <span className="ml-2 text-xs text-amber-700">
+                                                        (Meta Insights reporta {formatNumber(insightLeads)} por atribucion)
+                                                      </span>
+                                                    )}
+                                                  </div>
+
+                                                  {realLeads === 0 ? (
+                                                    <div className="text-sm text-gray-600">
+                                                      No hay leads descargables para este anuncio en este momento.
+                                                    </div>
+                                                  ) : (
+                                                    <div className="overflow-x-auto rounded border bg-white">
+                                                      <table className="min-w-full text-sm">
+                                                        <thead>
+                                                          <tr className="text-left border-b bg-gray-50">
+                                                            <th className="px-3 py-2">Fecha</th>
+                                                            <th className="px-3 py-2">Nombre</th>
+                                                            <th className="px-3 py-2">Telefono</th>
+                                                            <th className="px-3 py-2">Email</th>
+                                                            <th className="px-3 py-2">Lead ID</th>
+                                                          </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                          {adLeadsData.data.map((lead: any) => (
+                                                            <tr key={lead.id} className="border-b">
+                                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                                {lead.created_time ? new Date(lead.created_time).toLocaleString() : '-'}
+                                                              </td>
+                                                              <td className="px-3 py-2">{getLeadField(lead, ['full_name', 'nombre', 'name'])}</td>
+                                                              <td className="px-3 py-2">{getLeadField(lead, ['phone', 'telefono', 'celular', 'mobile'])}</td>
+                                                              <td className="px-3 py-2">{getLeadField(lead, ['email', 'correo'])}</td>
+                                                              <td className="px-3 py-2 font-mono text-xs">{lead.id}</td>
+                                                            </tr>
+                                                          ))}
+                                                        </tbody>
+                                                      </table>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        )}
+                                      </React.Fragment>
                                     );
                                   })}
                                 </tbody>
