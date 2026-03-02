@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase/server.supabase';
 import { getAllCitiesCached } from '@/lib/utils/cityCache';
 import { findCityIdInText } from '@/lib/utils/cityMatcher';
 import { getConversation, updateConversation } from '@/lib/ia/memory';
-import IAService from '@/lib/ia/IAService';
 import { CreditBotService } from '@/lib/ia/CreditBotService';
 import { sendTemplateMessage } from './sendTemplateMessage';
 import { needsHumanAgent } from '@/lib/utils/humanDetector';
@@ -156,7 +155,9 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
             templateName: 'menu_inicial',
             company,
         });
+        const convAfterTemplate = await getConversation(from, company.id);
         await updateConversation(from, [
+            ...convAfterTemplate,
             {
                 id: `template-${Date.now()}`,
                 role: 'system-template',
@@ -195,13 +196,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         return;
     }
 
-    const history = await getConversation(from, company.id);
     const enrichedPrompt = userInput;
-
-    const updatedMessages = [
-        ...history,
-        { id: message.id, role: 'user', content: enrichedPrompt, timestamp },
-    ];
 
     // Usar el bot de créditos con creación automática del Assistant
     let iaResponse: string;
@@ -214,21 +209,11 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         iaResponse = 'Lo siento, estoy experimentando dificultades técnicas. Por favor, intenta de nuevo en unos momentos.';
     }
 
-    const messageId = await sendMessageToWhatsApp(
-        {
-            to: from,
-            message: iaResponse,
-            company
-        }
-    );
-
-    updatedMessages.push({
-        id: messageId,
-        role: 'assistant',
-        content: iaResponse,
-        timestamp: new Date().toISOString(),
-        status: 'sent',
+    await sendMessageToWhatsApp({
+        to: from,
+        message: iaResponse,
+        company
     });
 
-    await updateConversation(from, updatedMessages, company);
+    // La persistencia de conversación para este flujo queda centralizada en CreditBotService.
 };

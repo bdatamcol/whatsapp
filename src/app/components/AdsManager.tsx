@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-  CheckCircle2, AlertTriangle, Download, Loader2, Calendar, Settings,
+  CheckCircle2, AlertTriangle, Download, Loader2, Calendar, Eye, MousePointerClick, Wallet, Users, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
 import Button from './ui/Button';
@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/select';
 import { DateRange } from 'react-day-picker';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { useRouter } from 'next/navigation';
 import { FacebookConfigError } from './FacebookConfigError';
 
 export default function AdsManager() {
@@ -26,7 +25,7 @@ export default function AdsManager() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange | undefined>();
-  const router = useRouter();
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
   const { data: totalData, error: totalError } = useQuery({
     queryKey: ['totalCampaigns'],
@@ -75,6 +74,27 @@ export default function AdsManager() {
     initialPageParam: null,
   });
 
+  const { data: selectedCampaignDetails, isLoading: isLoadingCampaignDetails } = useQuery({
+    queryKey: ['campaign-details', selectedCampaignId, appliedDateRange?.from?.toISOString(), appliedDateRange?.to?.toISOString()],
+    queryFn: async () => {
+      if (!selectedCampaignId) return null;
+      const params = new URLSearchParams();
+      params.append('limit', '50');
+      if (appliedDateRange?.from) {
+        params.append('since', appliedDateRange.from.toISOString().split('T')[0]);
+      }
+      if (appliedDateRange?.to) {
+        params.append('until', appliedDateRange.to.toISOString().split('T')[0]);
+      }
+
+      const res = await fetch(`/api/marketing/company/campaigns/${selectedCampaignId}/details?${params.toString()}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Error cargando detalle de campaña');
+      return json;
+    },
+    enabled: !!selectedCampaignId,
+  });
+
   // const campaigns = data?.pages.flatMap((page) => page.data) || [];
   const uniqueCampaigns = React.useMemo(() => {
     const all = data?.pages.flatMap((page) => page.data) || [];
@@ -83,10 +103,43 @@ export default function AdsManager() {
 
 
 
+  const getCurrentStatus = (campaign: any) => {
+    const baseStatus = (campaign.effective_status || campaign.status || '').toUpperCase();
+    if (!baseStatus) return 'UNKNOWN';
+
+    const now = new Date();
+    const start = campaign.start_time ? new Date(campaign.start_time) : null;
+    const stop = campaign.stop_time ? new Date(campaign.stop_time) : null;
+
+    const hasStarted = !start || start <= now;
+    const notEnded = !stop || stop >= now;
+
+    if (baseStatus === 'ACTIVE' && hasStarted && notEnded) {
+      return 'ACTIVE';
+    }
+
+    if (baseStatus === 'ACTIVE' && stop && stop < now) {
+      return 'COMPLETED';
+    }
+
+    return baseStatus;
+  };
+
   const filteredCampaigns = uniqueCampaigns.filter((c) => {
     if (statusFilter === 'all') return true;
-    return c.status.toLowerCase() === statusFilter;
+    const currentStatus = getCurrentStatus(c);
+    if (statusFilter === 'active') return currentStatus === 'ACTIVE';
+    return currentStatus !== 'ACTIVE';
   });
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value || 0);
+
+  const formatNumber = (value: number) => new Intl.NumberFormat('es-CO').format(value || 0);
+
+  const toggleCampaignDetails = (campaignId: string) => {
+    setSelectedCampaignId((current) => (current === campaignId ? null : campaignId));
+  };
 
 
   // Check for Facebook configuration error
@@ -138,7 +191,8 @@ export default function AdsManager() {
       const formatted = exportData.map(c => ({
         ID: c.id,
         Nombre: c.name,
-        Estado: c.status,
+        Estado: getCurrentStatus(c),
+        'Estado Meta': (c.effective_status || c.status || '').toUpperCase(),
         Objetivo: c.objective || '',
         'Presupuesto Diario': c.daily_budget ? `${(+c.daily_budget / 100).toFixed(2)}` : '',
         'Fecha Inicio': c.start_time ? new Date(c.start_time).toLocaleDateString() : '',
@@ -190,8 +244,8 @@ export default function AdsManager() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="active">Activo</SelectItem>
-              <SelectItem value="inactive">Inactivo</SelectItem>
+              <SelectItem value="active">Activo (vigente)</SelectItem>
+              <SelectItem value="inactive">No activo</SelectItem>
             </SelectContent>
           </Select>
           {filteredCampaigns.length > 0 && (
@@ -220,28 +274,132 @@ export default function AdsManager() {
               <TableHead>Fecha Inicio</TableHead>
               <TableHead>Fecha Fin</TableHead>
               <TableHead>ID</TableHead>
+              <TableHead>Detalle</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredCampaigns.map((campaign) => (
-              <TableRow key={campaign.id}>
-                <TableCell>{campaign.name}</TableCell>
-                <TableCell className="flex items-center gap-2">
-                  {campaign.status.toLowerCase() === 'active' ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                  )}
-                  {campaign.status}
-                </TableCell>
-                <TableCell>{campaign.objective || 'Sin objetivo definido'}</TableCell>
-                <TableCell>
-                  {campaign.daily_budget ? `${(+campaign.daily_budget / 100).toFixed(2)}/día` : ''}
-                </TableCell>
-                <TableCell>{campaign.start_time ? new Date(campaign.start_time).toLocaleDateString() : ''}</TableCell>
-                <TableCell>{campaign.stop_time ? new Date(campaign.stop_time).toLocaleDateString() : ''}</TableCell>
-                <TableCell>{campaign.id}</TableCell>
-              </TableRow>
+              <React.Fragment key={campaign.id}>
+                <TableRow>
+                  <TableCell>{campaign.name}</TableCell>
+                  <TableCell className="flex items-center gap-2">
+                    {getCurrentStatus(campaign) === 'ACTIVE' ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                    )}
+                    {getCurrentStatus(campaign)}
+                  </TableCell>
+                  <TableCell>{campaign.objective || 'Sin objetivo definido'}</TableCell>
+                  <TableCell>
+                    {campaign.daily_budget ? `${(+campaign.daily_budget / 100).toFixed(2)}/día` : ''}
+                  </TableCell>
+                  <TableCell>{campaign.start_time ? new Date(campaign.start_time).toLocaleDateString() : ''}</TableCell>
+                  <TableCell>{campaign.stop_time ? new Date(campaign.stop_time).toLocaleDateString() : ''}</TableCell>
+                  <TableCell>{campaign.id}</TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => toggleCampaignDetails(campaign.id)}
+                      className="flex items-center gap-1"
+                    >
+                      {selectedCampaignId === campaign.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      {selectedCampaignId === campaign.id ? 'Ocultar' : 'Ver detalle'}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+
+                {selectedCampaignId === campaign.id && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="bg-slate-50">
+                      {isLoadingCampaignDetails ? (
+                        <div className="py-6 text-center text-gray-500 flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Cargando detalle de campana...
+                        </div>
+                      ) : (
+                        <div className="space-y-4 py-2">
+                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                            <div className="rounded-lg border bg-white p-3">
+                              <div className="text-xs text-gray-500 flex items-center gap-1"><Wallet className="w-3 h-3" /> Gasto</div>
+                              <div className="text-sm font-semibold">{formatCurrency(selectedCampaignDetails?.insights?.spend || 0)}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white p-3">
+                              <div className="text-xs text-gray-500 flex items-center gap-1"><Eye className="w-3 h-3" /> Impresiones</div>
+                              <div className="text-sm font-semibold">{formatNumber(selectedCampaignDetails?.insights?.impressions || 0)}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white p-3">
+                              <div className="text-xs text-gray-500 flex items-center gap-1"><Users className="w-3 h-3" /> Alcance</div>
+                              <div className="text-sm font-semibold">{formatNumber(selectedCampaignDetails?.insights?.reach || 0)}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white p-3">
+                              <div className="text-xs text-gray-500 flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> Clicks</div>
+                              <div className="text-sm font-semibold">{formatNumber(selectedCampaignDetails?.insights?.clicks || 0)}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white p-3">
+                              <div className="text-xs text-gray-500">CTR</div>
+                              <div className="text-sm font-semibold">{Number(selectedCampaignDetails?.insights?.ctr || 0).toFixed(2)}%</div>
+                            </div>
+                            <div className="rounded-lg border bg-white p-3">
+                              <div className="text-xs text-gray-500">CPC</div>
+                              <div className="text-sm font-semibold">{formatCurrency(selectedCampaignDetails?.insights?.cpc || 0)}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white p-3">
+                              <div className="text-xs text-gray-500">Leads</div>
+                              <div className="text-sm font-semibold">{formatNumber(selectedCampaignDetails?.insights?.leads || 0)}</div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-lg border bg-white">
+                            <div className="px-4 py-3 border-b flex items-center justify-between">
+                              <h4 className="font-semibold text-sm">Anuncios de la campana ({selectedCampaignDetails?.totalAds || 0})</h4>
+                              <span className="text-xs text-gray-500">Activos: {selectedCampaignDetails?.activeAds || 0}</span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full text-sm">
+                                <thead>
+                                  <tr className="text-left border-b bg-gray-50">
+                                    <th className="px-4 py-2">Anuncio</th>
+                                    <th className="px-4 py-2">Estado</th>
+                                    <th className="px-4 py-2">Impresiones</th>
+                                    <th className="px-4 py-2">Clicks</th>
+                                    <th className="px-4 py-2">CTR</th>
+                                    <th className="px-4 py-2">Gasto</th>
+                                    <th className="px-4 py-2">Leads</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(selectedCampaignDetails?.ads || []).length === 0 && (
+                                    <tr>
+                                      <td colSpan={7} className="px-4 py-4 text-gray-500 text-center">No se encontraron anuncios para esta campana.</td>
+                                    </tr>
+                                  )}
+                                  {(selectedCampaignDetails?.ads || []).map((ad: any) => {
+                                    const adStatus = String(ad.effective_status || ad.status || '').toUpperCase();
+                                    return (
+                                      <tr key={ad.id} className="border-b">
+                                        <td className="px-4 py-2 font-medium">{ad.name}</td>
+                                        <td className="px-4 py-2">{adStatus}</td>
+                                        <td className="px-4 py-2">{formatNumber(ad.metrics?.impressions || 0)}</td>
+                                        <td className="px-4 py-2">{formatNumber(ad.metrics?.clicks || 0)}</td>
+                                        <td className="px-4 py-2">{Number(ad.metrics?.ctr || 0).toFixed(2)}%</td>
+                                        <td className="px-4 py-2">{formatCurrency(ad.metrics?.spend || 0)}</td>
+                                        <td className="px-4 py-2">{formatNumber(ad.metrics?.leads || 0)}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </React.Fragment>
             ))}
           </TableBody>
         </Table>

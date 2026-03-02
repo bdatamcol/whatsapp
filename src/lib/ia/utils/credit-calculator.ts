@@ -35,7 +35,7 @@ export function calcularCuota(
     }
 
     // Parámetros fijos
-    const interesMensual = 0.018;      // 1.8% mensual
+    const interesMensual = 0.019;      // 1.9% mensual
     const sgvdPorcentaje = 0.01;       // 1%
     const garantiaPorcentaje = 0.10;   // 10%
     const iva = 0.19;                  // 19%

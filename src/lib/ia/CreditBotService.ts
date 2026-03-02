@@ -1,268 +1,363 @@
 import OpenAI from "openai";
-import { supabase } from '../supabase/server.supabase';
+import { supabase } from "../supabase/server.supabase";
 import { getConversation, updateConversation } from "./memory";
 import { calcularCuota, formatearPesos } from "./utils/credit-calculator";
-import { searchProducts, getRandomProducts, formatProducts } from "./utils/catalog-service";
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     baseURL: "https://api.openai.com/v1",
 });
 
-// System prompt para el bot
-const SYSTEM_PROMPT = `Eres JapolandiaMovil, un asistente experto en créditos y motocicletas.
+const FINANCE_TERMS = [
+    "credito",
+    "crédito",
+    "financiar",
+    "financiacion",
+    "financiación",
+    "cuota",
+    "cuotas",
+    "plazo",
+    "mes",
+    "meses",
+    "moto",
+    "motos",
+    "millon",
+    "millones",
+    "pesos",
+];
 
-Tu trabajo se divide en tres tareas principales. Es vital que uses la herramienta correcta para cada tarea.
+const GREETINGS = [
+    "hola",
+    "buenas",
+    "buenos dias",
+    "buenas tardes",
+    "buenas noches",
+    "hey",
+    "que mas",
+    "qué más",
+];
 
----
+const START_FINANCING_TERMS = [
+    "iniciar",
+    "iniciar financiacion",
+    "iniciar financiación",
+    "como inicio",
+    "como empezar",
+    "que debo hacer",
+    "que sigue",
+    "siguiente paso",
+    "tramite",
+    "trámite",
+    "proceso",
+    "aplicar",
+    "solicitar",
+];
 
-## REGLA CRÍTICA: Contexto y Memoria de Conversación
+const ALLOWED_TERMS = new Set([6, 12, 18, 24, 36, 48]);
 
-**SIEMPRE revisa el historial de la conversación antes de responder.** Los usuarios a menudo usan pronombres, referencias implícitas, o respuestas cortas. Debes:
+const SYSTEM_PROMPT = `Eres JapolandiaMovil, asistente de financiamiento de motocicletas.
 
-1. **Identificar Referencias:**
-   * "la", "esta", "esa", "esa moto" → Se refieren al último producto mencionado
-   * "si", "sí", "yes", "dale", "ok", "claro" → Afirmaciones al último ofrecimiento
-   * "no", "nop", "nope" → Negaciones
-   
-2. **Extraer Información del Historial:**
-   * Si el usuario dice "a 12 meses" pero ya mencionaste un producto con precio, extrae ese precio
-   * Si el usuario dice "la quiero" o "me interesa", identifica qué producto mostró previamente
-   * Si preguntaste "¿quieres calcular financiación?" y responden "si", procede a pedir los meses o calcular si ya tienes toda la info
+REGLAS OBLIGATORIAS:
+1) Solo atiendes consultas de créditos/financiación de motos.
+2) Si el usuario pregunta algo fuera de ese alcance, responde breve y claro que no tienes conocimiento de ese tema y redirígelo a financiación.
+3) Nunca digas frases sobre "documentos", "archivos subidos", "herramientas", "prompts" ni procesos internos.
+4) Si ya tienes el nombre del cliente, no lo vuelvas a pedir.
+5) Si ya tienes precio y plazo, calcula sin repreguntar.
+6) Si falta información, pregunta solo el dato faltante.
+7) Usa tono amable, profesional y breve.
 
-3. **Mantener el Contexto:**
-   * Si mostraste productos de catálogo, recuerda cuáles fueron y sus precios
-   * Si el usuario selecciona uno (por nombre o pronombre), usa ese precio para cálculos
-   * NO reinicies la conversación con "¡Hola! ¿En qué puedo ayudarte?" si ya estás en medio de una
+CÁLCULO:
+- Para calcular cuotas usa SIEMPRE la función calcular_cuota.
+- Plazos válidos: 6, 12, 18, 24, 36, 48 meses.
+`;
 
-4. **Manejo de Respuestas Ambiguas:**
-   * Si el usuario dice solo "si" después de que ofreciste calcular financiación, pregunta por el plazo en meses
-   * Si dice "a X meses" y ya mencionaste un producto, calcula inmediatamente con ese precio
-   * Si dice "me interesa la victory" después de mostrar varias Victory, muestra las opciones Victory específicamente
+const ASSISTANT_TOOLS: OpenAI.Beta.Assistants.AssistantTool[] = [
+    {
+        type: "function",
+        function: {
+            name: "calcular_cuota",
+            description: "Calcula la cuota mensual de financiación de una moto.",
+            parameters: {
+                type: "object",
+                properties: {
+                    precio_producto: {
+                        type: "number",
+                        description: "Precio total en pesos colombianos.",
+                    },
+                    plazo_meses: {
+                        type: "integer",
+                        description: "Plazo en meses (6, 12, 18, 24, 36, 48).",
+                    },
+                    cuota_inicial: {
+                        type: "number",
+                        description: "Cuota inicial en pesos. Si no existe, usar 0.",
+                    },
+                },
+                required: ["precio_producto", "plazo_meses"],
+            },
+        },
+    },
+];
 
-5. **Preguntar por el nombre del cliente:**
-   * La primera vez que el usuario envíe un mensaje, preguntar por el nombre del cliente.
+type ConversationMessage = {
+    role?: string;
+    content?: string;
+};
 
----
+type MemorySlots = {
+    name?: string;
+    totalPrice?: number;
+    financeAmount?: number;
+    termMonths?: number;
+};
 
-## Tarea 1: Cálculo de Créditos (Function Calling)
-
-Para CUALQUIER solicitud de cálculo de cuotas, simulación o financiación, DEBES seguir estas reglas:
-
-1. **Herramienta Obligatoria:** DEBES usar la función \`calcular_cuota\` INMEDIATAMENTE.
-2. **Prohibición:** Está ESTRICTAMENTE PROHIBIDO intentar calcular la cuota manualmente, adivinar el resultado, o usar fórmulas. La única respuesta válida es la que devuelve la función \`calcular_cuota\`.
-3. **Ejecución DIRECTA con Contexto:**
-   * Si el usuario YA proporcionó el precio y los meses (ejemplo: "quiero financiar 8 millones a 12 meses"), llama INMEDIATAMENTE a \`calcular_cuota\` sin preguntar nada más. Usa cuota_inicial = 0 si no la menciona.
-   * **NUEVO:** Si el usuario dice "a 12 meses" (o cualquier plazo) y en mensajes anteriores mostraste un producto específico que él seleccionó (con "la quiero", "esta", "me interesa"), extrae el precio de ese producto y llama a \`calcular_cuota\` INMEDIATAMENTE.
-   * **NUEVO:** Si el usuario dice "si" a tu pregunta de calcular financiación, pregunta SOLO por el plazo en meses (no reinicies la conversación).
-   * Si falta información que no puedes extraer del historial, pregunta SOLO lo que falta.
-   * NO des vueltas, NO expliques el proceso, SOLO calcula.
-4. **Respuesta:** Entrega el resultado final (el valor de la cuota) al cliente de forma amable y directa. Nunca reveles la fórmula, los porcentajes (1.8%, 13%, etc.) ni detalles técnicos internos.
-
----
-
-## Tarea 2: Búsqueda de Catálogo (Function Calling)
-
-Cuando el usuario pregunte por modelos, motos disponibles, o quiera ver opciones:
-
-1. **Herramienta OBLIGATORIA:** SIEMPRE usa la función \`buscar_catalogo\`. NUNCA digas que no tienes acceso al catálogo.
-2. **Búsqueda Específica:** Si el usuario menciona un modelo, marca, o característica, pasa ese término como \`termino_busqueda\`.
-3. **Búsqueda General:** Si solo dice "quiero ver motos" o "qué tienen disponible", usa \`termino_busqueda\` vacío ("") para obtener productos aleatorios.
-4. **Presentación:** Muestra las motos que retorne la función con sus precios y disponibilidad. Siempre pregunta si desean calcular financiación.
-5. **Si la función retorna 0 productos:** Solo entonces di que no encontraste resultados y ofrece buscar algo diferente.
-6. **NUEVO - Recordar Productos Mostrados:** Después de mostrar productos, recuerda sus nombres y precios para cuando el usuario los mencione después.
-
----
-
-## Tarea 3: Información General
-
-Para consultas generales:
-
-1. **Respuesta:** Responde de manera amigable y profesional.
-2. **Si no sabes algo específico,** recomienda visitar https://japolandiamotos.com/ para más información.
-3. **Al mencionar precios,** SIEMPRE pregunta al usuario si desea un cálculo de financiación.
-
----
-
-## Reglas Generales de Estilo y Seguridad
-
-* **Tono:** Profesional, amable y cercano. Usa emojis (🏍️, 💳, 🔧, 📞) con moderación.
-* **Límites:** Nunca menciones procesos técnicos, "herramientas", "archivos", "prompts", "funciones", o detalles internos. Para el usuario, tú haces la magia.
-* **Asesor Humano:** Si el cliente pide un asesor, responde EXACTAMENTE: "Si requieres un asesor, indícame con un mensaje *Necesito un asesor*".
-* **Clientes Enojados:** Dirígelos a los canales oficiales (email, WhatsApp, web).
-* **Enlaces:** Cuando compartas la web, usa siempre: https://japolandiamotos.com
-
----
-
-## Plazos Disponibles
-
-Los plazos de financiación disponibles son: 6, 12, 18, 24, 36 y 48 meses.
-
----
-
-## Ejemplos de Interacción
-
-**Ejemplo 1 - Cálculo Directo:**
-**Usuario:** "Quiero financiar 8 millones a 12 meses"
-**Tú:** *Llamas INMEDIATAMENTE a calcular_cuota(8000000, 12, 0)* → "¡Perfecto! Para financiar $8.000.000 a 12 meses, la cuota mensual sería de $[resultado] 💳. ¿Te gustaría conocer otras opciones de plazo? 🏍️"
-
-**Ejemplo 2 - Catálogo General:**
-**Usuario:** "¿Qué motos tienen disponibles?"
-**Tú:** *Llamas a buscar_catalogo("")* → Muestras las 3 motos que retorna la función con sus precios.
-
-**Ejemplo 3 - Búsqueda Específica:**
-**Usuario:** "Busco una Victory MRX"
-**Tú:** *Llamas a buscar_catalogo("Victory MRX")* → Muestras las motos que coincidan.
-
-**Ejemplo 4 - Contexto con Pronombres (NUEVO):**
-**Usuario:** "Que motos tienes"
-**Tú:** *Llamas a buscar_catalogo("")* → "Aquí tienes algunas motos disponibles: 1. VICTORY NITRO 125 - $6.999.000..."
-**Usuario:** "me interesa la victory, a como me quedan las cuotas a 12 meses"
-**Tú:** *Identificas que "la victory" se refiere a VICTORY NITRO 125 ($6.999.000) y "12 meses" es el plazo. Llamas INMEDIATAMENTE a calcular_cuota(6999000, 12, 0)* → "¡Perfecto! Para la Victory Nitro 125 a 12 meses, la cuota mensual sería de $[resultado] 💳"
-
-**Ejemplo 5 - Respuesta Afirmativa (NUEVO):**
-**Usuario:** "quiero la victory nitro"
-**Tú:** *Llamas a buscar_catalogo("victory nitro")* → "Aquí está la Victory Nitro 125: Precio $6.599.000. ¿Te gustaría calcular la financiación? 💳"
-**Usuario:** "si"
-**Tú:** "¡Genial! ¿A cuántos meses te gustaría financiarla? Tenemos plazos de 6, 12, 18, 24, 36 y 48 meses 🏍️"
-**Usuario:** "a 12 meses"
-**Tú:** *Llamas INMEDIATAMENTE a calcular_cuota(6599000, 12, 0)* → "Para la Victory Nitro 125 a 12 meses, la cuota mensual sería de $[resultado] 💳"
-
-**Ejemplo 6 - Selección por Nombre Completo (NUEVO):**
-**Usuario:** "VICTORY NITRO 125 FACELIFT AZUL CUARZO GRIS NEGRO CALCA NARANJA 2026 esta"
-**Tú:** *Llamas a buscar_catalogo("VICTORY NITRO 125 FACELIFT AZUL CUARZO")* → "¡Genial! Tenemos la Victory Nitro 125 Facelift Azul Cuarzo... Precio: $6.599.000. ¿Te gustaría calcular la financiación? 💳"
-**Usuario:** "si"
-**Tú:** "¿A cuántos meses te gustaría financiarla?"
-**Usuario:** "a 12 meses"
-**Tú:** *Llamas a calcular_cuota(6599000, 12, 0)* → "Para la Victory Nitro 125 a 12 meses, la cuota mensual sería de $[resultado] 💳"`;
-
-// Variable global para cachear el Assistant ID
 let cachedAssistantId: string | null = null;
 
-/**
- * Servicio para el bot de cálculo de créditos con capacidades de búsqueda de catálogo
- * Crea automáticamente el Assistant si no existe
- */
+function normalizeText(input: string): string {
+    return (input || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+}
+
+function hasAnyTerm(text: string, terms: string[]): boolean {
+    const normalized = normalizeText(text);
+    return terms.some((term) => normalized.includes(normalizeText(term)));
+}
+
+function extractName(text: string): string | undefined {
+    const cleaned = normalizeText(text);
+    const patterns = [
+        /(?:mi nombre es|me llamo)\s+([a-z\s]{2,40})/i,
+        /(?:^|\s)soy\s+([a-z\s]{2,40})/i,
+    ];
+
+    for (const pattern of patterns) {
+        const match = cleaned.match(pattern);
+        if (match?.[1]) {
+            const candidate = match[1].trim().split(" ").slice(0, 2).join(" ");
+            return candidate
+                .split(" ")
+                .filter(Boolean)
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(" ");
+        }
+    }
+
+    return undefined;
+}
+
+function parseMoneyValue(rawNumber: string, isMillions: boolean): number | null {
+    const normalized = rawNumber.replace(/\s/g, "").replace(/\./g, "").replace(/,/g, ".");
+    const parsed = Number(normalized);
+    if (Number.isNaN(parsed) || parsed <= 0) return null;
+    if (isMillions) return Math.round(parsed * 1_000_000);
+    return Math.round(parsed);
+}
+
+function extractTermMonths(text: string): number | undefined {
+    const normalized = normalizeText(text);
+    const match = normalized.match(/(\d{1,2})\s*mes(?:es)?/i);
+    if (!match?.[1]) return undefined;
+    const term = Number(match[1]);
+    if (!ALLOWED_TERMS.has(term)) return undefined;
+    return term;
+}
+
+function extractMoneyMentions(text: string): Array<{ value: number; index: number }> {
+    const mentions: Array<{ value: number; index: number }> = [];
+    const normalized = normalizeText(text);
+
+    const regex = /(\d+(?:[\.,]\d+)?)\s*(millon(?:es)?|mil)?/gi;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(normalized)) !== null) {
+        const numRaw = match[1];
+        const unit = match[2] || "";
+        const isMillions = unit.startsWith("millon");
+
+        if (!numRaw) continue;
+
+        const value = parseMoneyValue(numRaw, isMillions);
+        if (!value) continue;
+
+        if (!isMillions && value < 100000) {
+            continue;
+        }
+
+        mentions.push({ value, index: match.index });
+    }
+
+    return mentions;
+}
+
+function mergeSlotsFromMessage(message: string, current: MemorySlots): MemorySlots {
+    const next = { ...current };
+    const normalized = normalizeText(message);
+
+    const maybeName = extractName(message);
+    if (maybeName) next.name = maybeName;
+
+    const termMonths = extractTermMonths(message);
+    if (termMonths) next.termMonths = termMonths;
+
+    const mentions = extractMoneyMentions(message);
+    if (mentions.length > 0) {
+        const financingMatch = normalized.match(/(?:financiar|credito|credito para|financiacion de|financiacion|prestar)\s+(\d+(?:[\.,]\d+)?)\s*(millon(?:es)?|mil)?/i);
+        if (financingMatch?.[1]) {
+            const value = parseMoneyValue(financingMatch[1], (financingMatch[2] || "").startsWith("millon"));
+            if (value) next.financeAmount = value;
+        }
+
+        const totalMatch = normalized.match(/(?:moto de|vale|cuesta|precio de|precio)\s+(\d+(?:[\.,]\d+)?)\s*(millon(?:es)?|mil)?/i);
+        if (totalMatch?.[1]) {
+            const value = parseMoneyValue(totalMatch[1], (totalMatch[2] || "").startsWith("millon"));
+            if (value) next.totalPrice = value;
+        }
+
+        if (!next.totalPrice && mentions[0]) {
+            next.totalPrice = mentions[0].value;
+        }
+    }
+
+    if (!next.totalPrice && next.financeAmount) {
+        next.totalPrice = next.financeAmount;
+    }
+
+    if (next.totalPrice && next.financeAmount && next.financeAmount > next.totalPrice) {
+        next.financeAmount = undefined;
+    }
+
+    return next;
+}
+
+function inferSlotsFromHistory(history: ConversationMessage[], latestMessage: string): MemorySlots {
+    const userMessages = history
+        .filter((m) => m.role === "user" && typeof m.content === "string")
+        .slice(-12)
+        .map((m) => m.content as string);
+
+    const allMessages = [...userMessages, latestMessage];
+    let slots: MemorySlots = {};
+
+    for (const msg of allMessages) {
+        slots = mergeSlotsFromMessage(msg, slots);
+    }
+
+    return slots;
+}
+
+function financeContextDetected(message: string, history: ConversationMessage[]): boolean {
+    if (hasAnyTerm(message, FINANCE_TERMS)) return true;
+    const recentUserText = history
+        .filter((m) => m.role === "user")
+        .slice(-4)
+        .map((m) => m.content || "")
+        .join(" ");
+
+    return hasAnyTerm(recentUserText, FINANCE_TERMS);
+}
+
+function isGreetingOnly(message: string): boolean {
+    const normalized = normalizeText(message);
+    if (!normalized) return false;
+    if (!hasAnyTerm(normalized, GREETINGS)) return false;
+
+    return normalized.split(" ").length <= 4;
+}
+
+function isStartFinancingIntent(message: string): boolean {
+    return hasAnyTerm(message, START_FINANCING_TERMS);
+}
+
+function buildFinanceResponse(slots: MemorySlots): string {
+    const totalPrice = slots.totalPrice as number;
+    const termMonths = slots.termMonths as number;
+    const financeAmount = slots.financeAmount;
+    const initialPayment = financeAmount ? Math.max(0, totalPrice - financeAmount) : 0;
+
+    const monthly = calcularCuota(totalPrice, termMonths, initialPayment);
+    const totalText = formatearPesos(totalPrice);
+    const financeText = financeAmount ? formatearPesos(financeAmount) : totalText;
+
+    return `Perfecto${slots.name ? `, ${slots.name}` : ""}. Para un valor de ${totalText} financiando ${financeText} a ${termMonths} meses, la cuota mensual aproximada es ${formatearPesos(monthly)}. Si quieres, te muestro tambien opcion a 12 y 24 meses para comparar.`;
+}
+
+function buildMissingDataPrompt(slots: MemorySlots): string {
+    if (!slots.totalPrice) {
+        return "Claro, te ayudo con eso. Para calcular la cuota necesito el valor de la moto en pesos. Ejemplo: 10 millones.";
+    }
+
+    if (!slots.termMonths) {
+        return "Perfecto. Ahora dime el plazo en meses (6, 12, 18, 24, 36 o 48) para calcular tu cuota.";
+    }
+
+    return "Listo, necesito un dato adicional para continuar con el calculo.";
+}
+
+function buildOutOfScopeResponse(): string {
+    return "En este momento solo tengo conocimiento para ayudarte con financiacion de motocicletas. Si quieres, te hago una simulacion: dime valor de la moto y plazo (6, 12, 18, 24, 36 o 48 meses).";
+}
+
+function buildStartProcessResponse(name?: string): string {
+    const greeting = name ? `Perfecto, ${name}.` : "Perfecto.";
+    return `${greeting} Para iniciar con la financiacion te voy a comunicar con un asesor humano. Escribe por favor: *Necesito un asesor* y continuamos con el proceso.`;
+}
+
 export class CreditBotService {
-    /**
-     * Obtiene o crea el Assistant de OpenAI
-     * El Assistant se crea automáticamente con las instrucciones y funciones necesarias
-     */
     private static async getOrCreateAssistant(): Promise<string> {
-        // Si ya tenemos el ID en caché, lo retornamos
         if (cachedAssistantId) {
             return cachedAssistantId;
         }
 
-        // Si hay un ID en variable de entorno, lo usamos y actualizamos
         if (process.env.OPENAI_ASSISTANT_ID) {
             cachedAssistantId = process.env.OPENAI_ASSISTANT_ID;
-            console.log(`✅ Usando Assistant existente: ${cachedAssistantId}`);
 
-            // Actualizar el Assistant con el prompt más reciente
             try {
                 await openai.beta.assistants.update(cachedAssistantId, {
                     instructions: SYSTEM_PROMPT,
                     model: "gpt-4o",
-                    temperature: 0.7,
+                    tools: ASSISTANT_TOOLS,
+                    temperature: 0.2,
                 });
-                console.log(`🔄 Assistant actualizado con las últimas instrucciones`);
             } catch (error) {
-                console.warn("Error actualizando assistant:", error);
+                console.warn("No se pudo actualizar el assistant por env:", error);
             }
 
             return cachedAssistantId;
         }
 
-        // Buscar si ya existe un Assistant con el nombre específico
         try {
             const assistants = await openai.beta.assistants.list({ limit: 100 });
-            const existingAssistant = assistants.data.find(
-                (a) => a.name === "JapolandiaMovil - Bot de Créditos"
-            );
+            const existing = assistants.data.find((a) => a.name === "JapolandiaMovil - Bot de Creditos");
 
-            if (existingAssistant) {
-                cachedAssistantId = existingAssistant.id;
-                console.log(`✅ Assistant encontrado: ${cachedAssistantId}`);
-
-                // Actualizar el Assistant con el prompt más reciente
+            if (existing) {
+                cachedAssistantId = existing.id;
                 await openai.beta.assistants.update(cachedAssistantId, {
                     instructions: SYSTEM_PROMPT,
                     model: "gpt-4o",
-                    temperature: 0.7,
+                    tools: ASSISTANT_TOOLS,
+                    temperature: 0.2,
                 });
-                console.log(`🔄 Assistant actualizado con las últimas instrucciones`);
-
                 return cachedAssistantId;
             }
         } catch (error) {
-            console.warn("Error buscando assistants existentes:", error);
+            console.warn("Error listando assistants:", error);
         }
 
-        // Crear nuevo Assistant
-        console.log("🔨 Creando nuevo Assistant...");
-
         const assistant = await openai.beta.assistants.create({
-            name: "JapolandiaMovil - Bot de Créditos",
+            name: "JapolandiaMovil - Bot de Creditos",
             instructions: SYSTEM_PROMPT,
             model: "gpt-4o",
-            tools: [
-                {
-                    type: "function",
-                    function: {
-                        name: "calcular_cuota",
-                        description: "Calcula la cuota mensual de un crédito para motocicletas. DEBE ser llamada para cualquier cálculo de financiación.",
-                        parameters: {
-                            type: "object",
-                            properties: {
-                                precio_producto: {
-                                    type: "number",
-                                    description: "Precio total del producto en pesos colombianos (sin puntos ni comas, solo el número)"
-                                },
-                                plazo_meses: {
-                                    type: "integer",
-                                    description: "Plazo de financiación en meses. Valores válidos: 6, 12, 18, 24, 36, 48"
-                                },
-                                cuota_inicial: {
-                                    type: "number",
-                                    description: "Cuota inicial en pesos colombianos (opcional, por defecto 0)"
-                                }
-                            },
-                            required: ["precio_producto", "plazo_meses"]
-                        }
-                    }
-                },
-                {
-                    type: "function",
-                    function: {
-                        name: "buscar_catalogo",
-                        description: "Busca productos en el catálogo de motocicletas. SIEMPRE debes llamar esta función cuando el usuario pregunte por motos, modelos, o productos disponibles. NUNCA digas que no tienes acceso al catálogo. Retorna máximo 3 productos que coincidan con el término de búsqueda.",
-                        parameters: {
-                            type: "object",
-                            properties: {
-                                termino_busqueda: {
-                                    type: "string",
-                                    description: "Término de búsqueda (marca, modelo, características). Si está vacío o es una cadena vacía, retorna productos aleatorios."
-                                }
-                            },
-                            required: []
-                        }
-                    }
-                }
-            ],
-            temperature: 0.7,
+            tools: ASSISTANT_TOOLS,
+            temperature: 0.2,
         });
 
         cachedAssistantId = assistant.id;
-        console.log(`✅ Assistant creado exitosamente: ${cachedAssistantId}`);
-        console.log(`💡 Tip: Agrega OPENAI_ASSISTANT_ID=${cachedAssistantId} a tu .env.local para reutilizarlo`);
-
         return cachedAssistantId;
     }
 
-    /**
-     * Obtiene o crea un thread para el usuario
-     */
     private static async getOrCreateThread(phone: string, companyId: string): Promise<string> {
         const { data } = await supabase
             .from("conversations")
@@ -279,262 +374,197 @@ export class CreditBotService {
 
             await supabase
                 .from("conversations")
-                .upsert({
-                    phone,
-                    company_id: companyId,
-                    thread_id: threadId,
-                    updated_at: new Date().toISOString()
-                }, {
-                    onConflict: "phone,company_id"
-                });
-
-            console.log(`✅ Nuevo thread creado: ${threadId} para ${phone}`);
+                .upsert(
+                    {
+                        phone,
+                        company_id: companyId,
+                        thread_id: threadId,
+                        updated_at: new Date().toISOString(),
+                    },
+                    {
+                        onConflict: "phone,company_id",
+                    }
+                );
         }
 
         return threadId;
     }
 
-    /**
-     * Maneja las llamadas a funciones solicitadas por el Assistant
-     */
-    private static async handleFunctionCall(functionName: string, args: any): Promise<string> {
-        try {
-            if (functionName === "calcular_cuota") {
-                const { precio_producto, plazo_meses, cuota_inicial } = args;
+    private static async saveTurn(
+        phone: string,
+        company: { id: string },
+        history: ConversationMessage[],
+        userMessage: string,
+        assistantMessage: string,
+        threadId?: string
+    ): Promise<void> {
+        const finalHistory = [
+            ...history,
+            {
+                id: `user-${Date.now()}`,
+                role: "user",
+                content: userMessage,
+                timestamp: new Date().toISOString(),
+            },
+            {
+                id: `assistant-${Date.now()}`,
+                role: "assistant",
+                content: assistantMessage,
+                timestamp: new Date().toISOString(),
+                status: "sent",
+            },
+        ];
 
-                // Validar que los parámetros sean números válidos
-                const precio = Number(precio_producto);
-                const plazo = Number(plazo_meses);
-                const inicial = cuota_inicial ? Number(cuota_inicial) : 0;
-
-                if (isNaN(precio) || isNaN(plazo) || isNaN(inicial)) {
-                    return JSON.stringify({
-                        error: "Los parámetros deben ser números válidos"
-                    });
-                }
-
-                // Calcular la cuota
-                const cuota = calcularCuota(precio, plazo, inicial);
-
-                return JSON.stringify({
-                    cuota_mensual: cuota,
-                    cuota_formateada: formatearPesos(cuota),
-                    precio_producto: precio,
-                    plazo_meses: plazo,
-                    cuota_inicial: inicial
-                });
-            }
-
-            if (functionName === "buscar_catalogo") {
-                const { termino_busqueda } = args;
-
-                console.log(`🔍 Buscando en catálogo: "${termino_busqueda || 'productos aleatorios'}"`);
-
-                // Si hay término de búsqueda, buscar productos específicos
-                // Si no, obtener productos aleatorios
-                const products = termino_busqueda
-                    ? await searchProducts(termino_busqueda, 3)
-                    : await getRandomProducts(3);
-
-                const formatted = formatProducts(products);
-
-                return JSON.stringify({
-                    productos: products,
-                    mensaje_formateado: formatted,
-                    total_encontrados: products.length
-                });
-            }
-
-            return JSON.stringify({ error: `Función desconocida: ${functionName}` });
-        } catch (error: any) {
-            console.error(`Error en función ${functionName}:`, error.message);
-            return JSON.stringify({ error: error.message });
-        }
+        await updateConversation(phone, finalHistory, company, threadId);
     }
 
-    /**
-     * Cancela runs activos en un thread para evitar bloqueos
-     */
+    private static async handleFunctionCall(functionName: string, args: any): Promise<string> {
+        if (functionName !== "calcular_cuota") {
+            return JSON.stringify({ error: `Funcion desconocida: ${functionName}` });
+        }
+
+        const precio = Number(args?.precio_producto);
+        const plazo = Number(args?.plazo_meses);
+        const inicial = args?.cuota_inicial ? Number(args.cuota_inicial) : 0;
+
+        if (Number.isNaN(precio) || Number.isNaN(plazo) || Number.isNaN(inicial)) {
+            return JSON.stringify({ error: "Parametros invalidos" });
+        }
+
+        const cuota = calcularCuota(precio, plazo, inicial);
+        return JSON.stringify({
+            cuota_mensual: cuota,
+            cuota_formateada: formatearPesos(cuota),
+            precio_producto: precio,
+            plazo_meses: plazo,
+            cuota_inicial: inicial,
+        });
+    }
+
     private static async cancelActiveRuns(threadId: string): Promise<void> {
         try {
             const runs = await openai.beta.threads.runs.list(threadId, { limit: 5 });
-
             for (const run of runs.data) {
-                if (['queued', 'in_progress', 'requires_action'].includes(run.status)) {
-                    console.warn(`Cancelando run activo ${run.id} para el hilo ${threadId}.`);
-                    try {
-                        // La API espera: cancel(threadId, runId)
-                        // @ts-ignore
-                        await openai.beta.threads.runs.cancel(threadId, run.id);
-                        // Esperar un momento para que se complete la cancelación
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        console.log(`✅ Run ${run.id} cancelado exitosamente`);
-                    } catch (cancelError: any) {
-                        console.error(`Error cancelando run ${run.id}:`, cancelError.message);
-                    }
+                if (["queued", "in_progress", "requires_action"].includes(run.status)) {
+                    // @ts-ignore sdk overloads
+                    await openai.beta.threads.runs.cancel(threadId, run.id);
+                    await new Promise((resolve) => setTimeout(resolve, 250));
                 }
             }
-        } catch (e: any) {
-            console.error("Error al listar/cancelar runs:", e.message);
+        } catch (error: any) {
+            console.warn("No se pudieron cancelar runs activos:", error?.message || error);
         }
     }
 
-    /**
-     * Envía un mensaje al bot de créditos y obtiene la respuesta
-     * 
-     * @param phone - Número de teléfono del usuario
-     * @param message - Mensaje del usuario
-     * @param company - Objeto con el ID de la empresa
-     * @returns Respuesta del bot
-     */
+    private static async runAssistant(
+        threadId: string,
+        assistantId: string,
+        userMessage: string
+    ): Promise<string> {
+        await openai.beta.threads.messages.create(threadId, {
+            role: "user",
+            content: userMessage,
+        });
+
+        let run = await openai.beta.threads.runs.create(threadId, {
+            assistant_id: assistantId,
+        });
+
+        for (let i = 0; i < 30; i++) {
+            if (run.status === "requires_action") {
+                const toolCalls = run.required_action?.submit_tool_outputs?.tool_calls || [];
+                const toolOutputs = await Promise.all(
+                    toolCalls.map(async (call: any) => {
+                        const output = await this.handleFunctionCall(
+                            call.function?.name,
+                            JSON.parse(call.function?.arguments || "{}")
+                        );
+                        return { tool_call_id: call.id, output };
+                    })
+                );
+
+                run = await openai.beta.threads.runs.submitToolOutputs(run.id, {
+                    thread_id: threadId,
+                    tool_outputs: toolOutputs,
+                });
+            } else if (run.status === "queued" || run.status === "in_progress") {
+                await new Promise((resolve) => setTimeout(resolve, 700));
+                run = await openai.beta.threads.runs.retrieve(run.id, { thread_id: threadId });
+            } else {
+                break;
+            }
+        }
+
+        if (run.status !== "completed") {
+            throw new Error(`Run incompleto: ${run.status}`);
+        }
+
+        const messages = await openai.beta.threads.messages.list(threadId, { order: "desc", limit: 10 });
+        const assistantMessage = messages.data.find((m: any) => m.role === "assistant");
+        const textPart = assistantMessage?.content?.find((p: any) => p?.type === "text") as any;
+        const responseText = textPart?.text?.value as string | undefined;
+
+        if (!responseText) {
+            throw new Error("No hubo respuesta de texto del assistant");
+        }
+
+        return responseText;
+    }
+
     public static async askCreditBot(
         phone: string,
         message: string,
         company: { id: string }
     ): Promise<string> {
-        const now = new Date().toISOString();
+        const history = (await getConversation(phone, company.id)) as ConversationMessage[];
+        const slots = inferSlotsFromHistory(history, message);
+        const isFinanceContext = financeContextDetected(message, history);
 
-        // 1. Obtener o crear el Assistant
-        const assistantId = await this.getOrCreateAssistant();
+        if (isStartFinancingIntent(message)) {
+            const startResponse = buildStartProcessResponse(slots.name);
+            await this.saveTurn(phone, company, history, message, startResponse);
+            return startResponse;
+        }
 
-        // 2. Obtener o crear thread
-        const threadId = await this.getOrCreateThread(phone, company.id);
+        if (!isFinanceContext && !isGreetingOnly(message)) {
+            const out = buildOutOfScopeResponse();
+            await this.saveTurn(phone, company, history, message, out);
+            return out;
+        }
 
-        // 3. Cancelar runs activos
-        await this.cancelActiveRuns(threadId);
-
-        // 4. Guardar mensaje del usuario en la base de datos
-        const history = await getConversation(phone, company.id);
-        const updatedHistory = [
-            ...history,
-            {
-                id: `user-${Date.now()}`,
-                role: 'user',
-                content: message,
-                timestamp: now,
+        if (isFinanceContext) {
+            if (slots.totalPrice && slots.termMonths) {
+                try {
+                    const response = buildFinanceResponse(slots);
+                    await this.saveTurn(phone, company, history, message, response);
+                    return response;
+                } catch (error) {
+                    const fallback = "Tuve un problema al calcular la cuota. Intenta de nuevo con valor de la moto y plazo en meses.";
+                    await this.saveTurn(phone, company, history, message, fallback);
+                    return fallback;
+                }
             }
-        ];
 
-        // 5. Agregar mensaje al thread
-        await openai.beta.threads.messages.create(threadId, {
-            role: "user",
-            content: message,
-        });
-
-        // 6. Ejecutar el run con streaming
-        let responseText = "";
-        let runId = "";
+            const missing = buildMissingDataPrompt(slots);
+            await this.saveTurn(phone, company, history, message, missing);
+            return missing;
+        }
 
         try {
-            const stream = await openai.beta.threads.runs.create(threadId, {
-                assistant_id: assistantId,
-                stream: true,
-            });
+            const assistantId = await this.getOrCreateAssistant();
+            const threadId = await this.getOrCreateThread(phone, company.id);
+            await this.cancelActiveRuns(threadId);
 
-            // 7. Procesar el stream
-            for await (const event of stream as any) {
-                // Capturar el run ID
-                if (event?.event === "thread.run.created") {
-                    runId = event.data.id;
-                }
+            const contextName = slots.name ? `Cliente: ${slots.name}. ` : "";
+            const enrichedInput = `${contextName}Mensaje actual del cliente: ${message}`;
 
-                // Detectar fallo
-                if (event?.event === "thread.run.failed") {
-                    console.error("❌ Run falló:", event.data);
-                    throw new Error(event.data.last_error?.message || "Error en la generación de respuesta");
-                }
-
-                // Texto que llega de a pedacitos
-                if (
-                    event?.event === "thread.message.delta" &&
-                    Array.isArray(event?.data?.delta?.content)
-                ) {
-                    for (const part of event.data.delta.content) {
-                        if (part.type === "text" && part.text?.value) {
-                            responseText += part.text.value;
-                        }
-                    }
-                }
-
-                // Detectar si requiere action (function calling)
-                if (event?.event === "thread.run.requires_action") {
-                    // Capturar el run ID del evento requires_action
-                    const currentRunId = event.data.id;
-                    const toolCalls = event.data.required_action?.submit_tool_outputs?.tool_calls || [];
-
-                    // Procesar cada llamada a función
-                    const toolOutputs = await Promise.all(
-                        toolCalls.map(async (toolCall: any) => {
-                            const functionName = toolCall.function.name;
-                            const functionArgs = JSON.parse(toolCall.function.arguments);
-
-                            console.log(`🔧 Ejecutando función: ${functionName}`, functionArgs);
-
-                            const output = await this.handleFunctionCall(functionName, functionArgs);
-
-                            return {
-                                tool_call_id: toolCall.id,
-                                output: output
-                            };
-                        })
-                    );
-
-                    // Enviar los resultados de las funciones
-                    if (toolOutputs.length > 0) {
-                        const submitStream = await openai.beta.threads.runs.submitToolOutputs(
-                            currentRunId,
-                            {
-                                thread_id: threadId,
-                                tool_outputs: toolOutputs,
-                                stream: true
-                            }
-                        );
-
-                        for await (const submitEvent of submitStream as any) {
-                            if (submitEvent?.event === "thread.run.failed") {
-                                console.error("❌ Run falló durante submitToolOutputs:", submitEvent.data);
-                                throw new Error(submitEvent.data.last_error?.message || "Error tras ejecutar función");
-                            }
-
-                            if (
-                                submitEvent?.event === "thread.message.delta" &&
-                                Array.isArray(submitEvent?.data?.delta?.content)
-                            ) {
-                                for (const part of submitEvent.data.delta.content) {
-                                    if (part.type === "text" && part.text?.value) {
-                                        responseText += part.text.value;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!responseText) {
-                console.warn("⚠️ Respuesta vacía del bot. Enviando mensaje genérico.");
-                responseText = "Lo siento, tuve un problema procesando tu solicitud. ¿Podrías intentarlo de nuevo?";
-            }
-
-            // 8. Guardar respuesta del bot en la base de datos
-            const finalHistory = [
-                ...updatedHistory,
-                {
-                    id: `assistant-${Date.now()}`,
-                    role: 'assistant',
-                    content: responseText,
-                    timestamp: new Date().toISOString(),
-                }
-            ];
-
-            await updateConversation(phone, finalHistory, company);
-
-            return responseText;
-
-        } catch (error: any) {
-            console.error("Error en askCreditBot:", error);
-            // Retornar mensaje de error amigable
-            return "Lo siento, estoy experimentando dificultades técnicas. Por favor intenta de nuevo en unos momentos.";
+            const answer = await this.runAssistant(threadId, assistantId, enrichedInput);
+            await this.saveTurn(phone, company, history, message, answer, threadId);
+            return answer;
+        } catch (error) {
+            const fallback = "Lo siento, estoy teniendo dificultades tecnicas. Si quieres, te ayudo con una simulacion: valor de la moto y plazo en meses.";
+            await this.saveTurn(phone, company, history, message, fallback);
+            return fallback;
         }
     }
 }
