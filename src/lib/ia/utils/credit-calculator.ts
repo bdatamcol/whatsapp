@@ -41,7 +41,7 @@ export function calcularCuota(
     const iva = 0.19;                  // 19%
 
     // Monto financiado
-    const montoFinanciado = precioProducto - cuotaInicial;
+    const montoFinanciado = precioProducto - cuotaInicial;  
 
     // SGVD total - calculado sobre el monto financiado
     const sgvdTotal = montoFinanciado * sgvdPorcentaje;

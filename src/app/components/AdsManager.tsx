@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-  CheckCircle2, AlertTriangle, Download, Loader2, Calendar, Eye, MousePointerClick, Wallet, Users, ChevronDown, ChevronUp,
+  CheckCircle2, AlertTriangle, Download, Loader2, Calendar, Eye, MousePointerClick, Wallet, Users, ChevronDown, ChevronUp, LayoutGrid,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/utils/csv';
 import Button from './ui/Button';
@@ -27,6 +27,7 @@ export default function AdsManager() {
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange | undefined>();
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [selectedAdForLeads, setSelectedAdForLeads] = useState<string | null>(null);
+  const [compactMode, setCompactMode] = useState(false);
 
   const { data: totalData, error: totalError } = useQuery({
     queryKey: ['totalCampaigns'],
@@ -207,6 +208,37 @@ export default function AdsManager() {
     [sortedAds]
   );
 
+  const summary = React.useMemo(() => {
+    const now = new Date();
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const activeCampaigns = sortedCampaigns.filter((c) => getCurrentStatus(c) === 'ACTIVE').length;
+    const endingSoon = sortedCampaigns.filter((c) => {
+      if (!c.stop_time) return false;
+      const stop = new Date(c.stop_time);
+      return stop >= now && stop <= in7Days;
+    }).length;
+
+    const totalDailyBudget = sortedCampaigns.reduce((acc, c) => {
+      const budget = Number(c.daily_budget || 0);
+      return acc + (Number.isFinite(budget) ? budget / 100 : 0);
+    }, 0);
+
+    return {
+      visibleCampaigns: sortedCampaigns.length,
+      activeCampaigns,
+      endingSoon,
+      totalDailyBudget,
+    };
+  }, [sortedCampaigns]);
+
+  const statusBadgeClass = (status: string) => {
+    if (status === 'ACTIVE') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (status === 'COMPLETED') return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (status === 'PAUSED') return 'bg-amber-50 text-amber-700 border-amber-200';
+    return 'bg-slate-50 text-slate-700 border-slate-200';
+  };
+
   const getLeadField = (lead: any, fieldNames: string[]): string => {
     const fields = Array.isArray(lead?.field_data) ? lead.field_data : [];
     for (const field of fields) {
@@ -289,6 +321,25 @@ export default function AdsManager() {
 
   return (
     <div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-xs text-gray-500">Campañas visibles</p>
+          <p className="text-2xl font-semibold">{formatNumber(summary.visibleCampaigns)}</p>
+        </div>
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-xs text-gray-500">Activas vigentes</p>
+          <p className="text-2xl font-semibold text-emerald-700">{formatNumber(summary.activeCampaigns)}</p>
+        </div>
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-xs text-gray-500">Presupuesto diario visible</p>
+          <p className="text-2xl font-semibold">{formatCurrency(summary.totalDailyBudget)}</p>
+        </div>
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-xs text-gray-500">Finalizan en 7 días</p>
+          <p className="text-2xl font-semibold">{formatNumber(summary.endingSoon)}</p>
+        </div>
+      </div>
+
       {/* Filtros y exportar */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -328,6 +379,17 @@ export default function AdsManager() {
           </Select>
           {filteredCampaigns.length > 0 && (
             <Button
+              onClick={() => setCompactMode((v) => !v)}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              {compactMode ? 'Vista cómoda' : 'Vista compacta'}
+            </Button>
+          )}
+          {filteredCampaigns.length > 0 && (
+            <Button
               onClick={exportCampaigns}
               variant="outline"
               size="sm"
@@ -345,37 +407,35 @@ export default function AdsManager() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Objetivo</TableHead>
-              <TableHead>Presupuesto Diario</TableHead>
-              <TableHead>Fecha Inicio</TableHead>
-              <TableHead>Fecha Fin</TableHead>
-              <TableHead>ID</TableHead>
-              <TableHead>Detalle</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">Nombre</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">Estado</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">Objetivo</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">Presupuesto Diario</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">Fecha Inicio</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">Fecha Fin</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">ID</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-white">Detalle</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedCampaigns.map((campaign) => (
               <React.Fragment key={campaign.id}>
                 <TableRow>
-                  <TableCell>{campaign.name}</TableCell>
-                  <TableCell className="flex items-center gap-2">
-                    {getCurrentStatus(campaign) === 'ACTIVE' ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                    )}
-                    {getCurrentStatus(campaign)}
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>{campaign.name}</TableCell>
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadgeClass(getCurrentStatus(campaign))}`}>
+                      {getCurrentStatus(campaign) === 'ACTIVE' ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                      {getCurrentStatus(campaign)}
+                    </span>
                   </TableCell>
-                  <TableCell>{campaign.objective || 'Sin objetivo definido'}</TableCell>
-                  <TableCell>
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>{campaign.objective || 'Sin objetivo definido'}</TableCell>
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>
                     {campaign.daily_budget ? `${(+campaign.daily_budget / 100).toFixed(2)}/día` : ''}
                   </TableCell>
-                  <TableCell>{campaign.start_time ? new Date(campaign.start_time).toLocaleDateString() : ''}</TableCell>
-                  <TableCell>{campaign.stop_time ? new Date(campaign.stop_time).toLocaleDateString() : ''}</TableCell>
-                  <TableCell>{campaign.id}</TableCell>
-                  <TableCell>
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>{campaign.start_time ? new Date(campaign.start_time).toLocaleDateString() : ''}</TableCell>
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>{campaign.stop_time ? new Date(campaign.stop_time).toLocaleDateString() : ''}</TableCell>
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>{campaign.id}</TableCell>
+                  <TableCell className={compactMode ? 'py-2' : 'py-3'}>
                     <Button
                       size="sm"
                       variant="outline"
