@@ -109,10 +109,10 @@ async function handleMessage(messagingEvent: any, pageId: string) {
         senderName: senderName || `Usuario ${senderId.slice(-4)}` // Usar nombre o fallback
     };
 
-    MessengerAccountsService.saveMessage(incomingMessage);
+    await MessengerAccountsService.saveMessage(incomingMessage);
 
     // Mostrar estadísticas en consola
-    const stats = MessengerAccountsService.getPageStats(pageId);
+    const stats = await MessengerAccountsService.getPageStats(pageId);
     // Stats actualizadas
 }
 
@@ -174,10 +174,10 @@ async function handleFeedChange(value: any, pageId: string) {
                     senderName
                 };
 
-                MessengerAccountsService.saveMessage(incomingMessage);
+                await MessengerAccountsService.saveMessage(incomingMessage);
 
                 // Mostrar estadísticas en consola
-                const stats = MessengerAccountsService.getPageStats(pageId);
+                const stats = await MessengerAccountsService.getPageStats(pageId);
                 // Stats actualizadas después de cambio en feed
             }
         }

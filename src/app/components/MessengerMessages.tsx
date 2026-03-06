@@ -52,6 +52,8 @@ export default function MessengerMessages() {
   const [selectedConversation, setSelectedConversation] = useState<Message[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string>('');
   const [selectedSenderId, setSelectedSenderId] = useState<string>('');
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [selectedPage, setSelectedPage] = useState<PageInfo | null>(null);
   const [stats, setStats] = useState<PageStats | null>(null);
@@ -101,6 +103,7 @@ export default function MessengerMessages() {
 
   // Obtener todas las conversaciones del query
   const conversations = conversationsData?.conversations || [];
+  const liveStats = conversationsData?.stats || selectedPage?.stats || { totalConversations: 0, totalMessages: 0 };
 
   useEffect(() => {
     loadPages();
@@ -259,13 +262,18 @@ export default function MessengerMessages() {
   const syncFacebookMessages = async (pageId: string) => {
     setSyncing(true);
     try {
-      const response = await fetch(`/api/messenger/sync?pageId=${pageId}`, {
+      const response = await fetch(`/api/messenger/sync?pageId=${pageId}&full=true`, {
         method: 'POST'
       });
       const data = await response.json();
 
       if (response.ok) {
         toast.success(`Sincronización completada: ${data.messagesSynced || 0} mensajes sincronizados`);
+        if (Array.isArray(data?.warnings) && data.warnings.length > 0) {
+          data.warnings.forEach((w: string) => toast.warning(w));
+        } else if (data?.warning) {
+          toast.warning(data.warning);
+        }
         // Refrescar las conversaciones después de sincronizar
         refetchConversations();
       } else {
@@ -275,6 +283,58 @@ export default function MessengerMessages() {
       toast.error('Error al sincronizar mensajes');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const sendMessengerMessage = async () => {
+    const text = newMessage.trim();
+
+    if (!text || !selectedPageId || !selectedSenderId) {
+      return;
+    }
+
+    setSendingMessage(true);
+
+    try {
+      const response = await fetch('/api/messenger/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pageId: selectedPageId,
+          recipientId: selectedSenderId,
+          text,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'No se pudo enviar el mensaje');
+      }
+
+      const sentMessage = data?.message;
+
+      setSelectedConversation((prev) => [
+        ...prev,
+        {
+          id: sentMessage?.id || `temp_${Date.now()}`,
+          senderId: selectedSenderId,
+          pageId: selectedPageId,
+          text,
+          timestamp: sentMessage?.timestamp || Date.now(),
+          type: 'outgoing',
+        },
+      ]);
+
+      setNewMessage('');
+      toast.success('Mensaje enviado');
+      refetchConversations();
+    } catch (error: any) {
+      toast.error(error?.message || 'Error enviando mensaje a Messenger');
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -323,8 +383,8 @@ export default function MessengerMessages() {
                 )}
               </div>
               <div className="text-sm text-blue-600 mt-1">
-                <span className="mr-4">📊 {selectedPage.stats.totalConversations} conversaciones</span>
-                <span className="mr-4">💬 {selectedPage.stats.totalMessages} mensajes totales</span>
+                <span className="mr-4">📊 {liveStats.totalConversations} conversaciones</span>
+                <span className="mr-4">💬 {liveStats.totalMessages} mensajes totales</span>
                 <span className={`px-2 py-1 rounded text-xs ${selectedPage.hasToken
                   ? 'bg-green-100 text-green-700'
                   : 'bg-yellow-100 text-yellow-700'
@@ -477,6 +537,34 @@ export default function MessengerMessages() {
                 </div>
               ))
             )}
+          </div>
+
+          <div className="border rounded-lg p-3 bg-white">
+            <div className="text-xs text-gray-500 mb-2">
+              {selectedSenderId
+                ? `Responder a usuario ${selectedSenderId.slice(-6)}`
+                : 'Selecciona una conversación para responder'}
+            </div>
+            <div className="flex gap-2">
+              <textarea
+                className="flex-1 border rounded-md p-2 text-sm min-h-[70px] disabled:bg-gray-100 disabled:text-gray-400"
+                placeholder="Escribe una respuesta..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                disabled={!selectedSenderId || sendingMessage}
+              />
+              <button
+                onClick={sendMessengerMessage}
+                disabled={!selectedSenderId || !newMessage.trim() || sendingMessage}
+                className={`px-4 py-2 rounded text-sm font-medium h-fit ${
+                  !selectedSenderId || !newMessage.trim() || sendingMessage
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {sendingMessage ? 'Enviando...' : 'Enviar'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
