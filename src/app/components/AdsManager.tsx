@@ -29,13 +29,26 @@ export default function AdsManager() {
   const [selectedAdForLeads, setSelectedAdForLeads] = useState<string | null>(null);
   const [compactMode, setCompactMode] = useState(false);
 
+  const fetchJson = async (url: string) => {
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (res.status === 401) {
+      window.location.href = '/login';
+      throw new Error('Sesión expirada');
+    }
+
+    if (!res.ok) {
+      throw new Error(json.error || 'Error en la solicitud');
+    }
+
+    return json;
+  };
+
   const { data: totalData, error: totalError } = useQuery({
     queryKey: ['totalCampaigns'],
     queryFn: async () => {
-      const res = await fetch('/api/marketing/company/ads?getSummary=true');
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Error fetching total');
-      return json;
+      return fetchJson('/api/marketing/company/ads?getSummary=true');
     },
   });
 
@@ -67,10 +80,7 @@ export default function AdsManager() {
       }
 
       // const res = await fetch(`/api/marketing/company/ads?\${params.toString()}`);
-      const res = await fetch(`/api/marketing/company/ads?${params.toString()}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Error al cargar campañas');
-      return json;
+      return fetchJson(`/api/marketing/company/ads?${params.toString()}`);
     },
     getNextPageParam: (lastPage) => lastPage.paging?.cursors?.after || undefined,
     initialPageParam: null,
@@ -89,10 +99,7 @@ export default function AdsManager() {
         params.append('until', appliedDateRange.to.toISOString().split('T')[0]);
       }
 
-      const res = await fetch(`/api/marketing/company/campaigns/${selectedCampaignId}/details?${params.toString()}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Error cargando detalle de campaña');
-      return json;
+      return fetchJson(`/api/marketing/company/campaigns/${selectedCampaignId}/details?${params.toString()}`);
     },
     enabled: !!selectedCampaignId,
   });
@@ -101,10 +108,7 @@ export default function AdsManager() {
     queryKey: ['ad-leads', selectedAdForLeads],
     queryFn: async () => {
       if (!selectedAdForLeads) return { data: [] };
-      const res = await fetch(`/api/marketing/company/ads/${selectedAdForLeads}/leads?limit=100`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Error cargando leads del anuncio');
-      return json;
+      return fetchJson(`/api/marketing/company/ads/${selectedAdForLeads}/leads?limit=100`);
     },
     enabled: !!selectedAdForLeads,
   });

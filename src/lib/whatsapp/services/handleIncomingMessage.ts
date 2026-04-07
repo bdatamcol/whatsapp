@@ -8,6 +8,7 @@ import { needsHumanAgent } from '@/lib/utils/humanDetector';
 import { upsertContact } from './contacts';
 import { sendMessageToWhatsApp } from './send';
 import { getCompanyByPhoneNumberId } from '../helpers/getCompanyByPhoneNumberId';
+import { isUsableCustomerName, sanitizeCustomerName } from '@/lib/utils/nameQuality';
 
 // --- Tipos ---
 type IncomingMetadata = {
@@ -48,6 +49,42 @@ async function getContactStatus(phone: string, companyId: string): Promise<'new'
         .maybeSingle();
 
     return contact?.status ?? null;
+}
+
+async function syncContactProfileName(phone: string, companyId: string, profileName: string) {
+    const cleanProfileName = sanitizeCustomerName(profileName || '');
+    if (!cleanProfileName || !isUsableCustomerName(cleanProfileName)) return;
+
+    const { data: existing } = await supabase
+        .from('contacts')
+        .select('name')
+        .eq('phone', phone)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+    if (!existing) return;
+
+    const currentName = sanitizeCustomerName(existing.name || '') || '';
+    const currentNameUsable = isUsableCustomerName(currentName);
+
+    const shouldReplaceName =
+        !currentNameUsable ||
+        currentName.toLowerCase() === 'desconocido';
+
+    const payload: Record<string, any> = {
+        last_interaction_at: new Date().toISOString(),
+    };
+
+    if (shouldReplaceName) {
+        payload.name = cleanProfileName;
+        payload.avatar_url = `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanProfileName)}&background=random`;
+    }
+
+    await supabase
+        .from('contacts')
+        .update(payload)
+        .eq('phone', phone)
+        .eq('company_id', companyId);
 }
 
 // --- Función principal ---
@@ -130,6 +167,10 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
     }
 
     const contactStatus = await getContactStatus(from, company.id);
+
+    if (contactStatus && contactStatus !== 'new') {
+        await syncContactProfileName(from, company.id, name);
+    }
 
     // Nuevo contacto
     if (!contactStatus || contactStatus === 'new') {

@@ -5,6 +5,10 @@ import { getUserProfile } from '@/lib/auth/services/getUserProfile';
 export async function GET(request: NextRequest) {
     try {
         const profile = await getUserProfile();
+
+        if (!profile?.company_id) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
         
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '25');
