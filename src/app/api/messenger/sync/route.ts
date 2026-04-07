@@ -1,231 +1,268 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MessengerAccountsService } from '@/lib/messenger/accounts';
 
+async function fetchJsonWithTimeout(url: string, timeoutMs = 30000): Promise<any> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    const json = await response.json();
+
+    if (!response.ok) {
+      throw new Error(json?.error?.message || `Facebook API error ${response.status}`);
+    }
+
+    return json;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function toGraphUrl(path: string, params: Record<string, string | number | undefined>) {
+  const base = `https://graph.facebook.com/${process.env.META_API_VERSION}/${path}`;
+  const qs = new URLSearchParams();
+
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') {
+      qs.append(k, String(v));
+    }
+  });
+
+  return `${base}?${qs.toString()}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const pageId = searchParams.get('pageId');
 
     if (!pageId) {
-      return NextResponse.json(
-        { error: 'pageId es requerido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'pageId es requerido' }, { status: 400 });
     }
 
-    // Obtener el token de acceso para la página
+    const deepSync = searchParams.get('full') === 'true';
+    const maxConversationPages = Number(searchParams.get('maxConversationPages') || (deepSync ? '20' : '8'));
+    const maxMessagesPerConversationPages = Number(searchParams.get('maxMessagesPages') || (deepSync ? '20' : '6'));
+    const maxSentPages = Number(searchParams.get('maxSentPages') || (deepSync ? '10' : '4'));
+    const conversationPageLimit = Number(searchParams.get('conversationLimit') || '50');
+    const messagesPageLimit = Number(searchParams.get('messagesLimit') || '100');
+
     const accessToken = MessengerAccountsService.getPageAccessToken(pageId);
-
     if (!accessToken) {
-      return NextResponse.json(
-        { error: 'No se encontró token de acceso para esta página' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'No se encontró token de acceso para esta página' }, { status: 404 });
     }
 
-    // NO limpiar mensajes existentes para evitar pérdida de datos
-    // MessengerAccountsService.clearPageMessages(pageId);
+    const conversations: any[] = [];
+    let conversationAfter: string | undefined;
 
-    // Obtener conversaciones desde la API de Facebook con límite optimizado
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+    for (let page = 0; page < maxConversationPages; page++) {
+      const conversationsUrl = toGraphUrl(`${pageId}/conversations`, {
+        fields: 'id,participants,updated_time',
+        limit: conversationPageLimit,
+        after: conversationAfter,
+        access_token: accessToken,
+      });
 
-    const conversationsResponse = await fetch(
-      `https://graph.facebook.com/${process.env.META_API_VERSION}/${pageId}/conversations?fields=id,participants,messages.limit(50){message,from,to,created_time,id,sticker,attachments}&limit=25&access_token=${accessToken}`,
-      { signal: controller.signal }
-    );
+      const conversationsData = await fetchJsonWithTimeout(conversationsUrl, 35000);
+      const pageItems = conversationsData.data || [];
+      conversations.push(...pageItems);
 
-    clearTimeout(timeoutId);
-
-    if (!conversationsResponse.ok) {
-      const errorData = await conversationsResponse.json();
-      return NextResponse.json(
-        { error: `Error de Facebook: ${errorData.error?.message || 'Error desconocido'}` },
-        { status: 400 }
-      );
+      conversationAfter = conversationsData?.paging?.cursors?.after;
+      if (!conversationAfter || pageItems.length === 0) {
+        break;
+      }
     }
 
-    const conversationsData = await conversationsResponse.json();
     let totalMessagesSynced = 0;
 
-    // Iniciando sincronización
-
-    // Obtener también mensajes enviados por la página directamente
-    let sentMessages = [];
+    const sentMessages: any[] = [];
     try {
-      const sentMessagesResponse = await fetch(
-        `https://graph.facebook.com/${process.env.META_API_VERSION}/${pageId}/messages?fields=message,from,to,created_time,id,sticker,attachments&limit=100&access_token=${accessToken}`
-      );
-      if (sentMessagesResponse.ok) {
-        const sentMessagesData = await sentMessagesResponse.json();
-        sentMessages = sentMessagesData.data || [];
-        // Mensajes enviados encontrados
+      let sentAfter: string | undefined;
+
+      for (let i = 0; i < maxSentPages; i++) {
+        const sentUrl = toGraphUrl(`${pageId}/messages`, {
+          fields: 'message,from,to,created_time,id,sticker,attachments',
+          limit: messagesPageLimit,
+          after: sentAfter,
+          access_token: accessToken,
+        });
+
+        const sentMessagesData = await fetchJsonWithTimeout(sentUrl, 30000);
+        const chunk = sentMessagesData.data || [];
+        sentMessages.push(...chunk);
+
+        sentAfter = sentMessagesData?.paging?.cursors?.after;
+        if (!sentAfter || chunk.length === 0) {
+          break;
+        }
       }
-    } catch (error) {
-      // Error obteniendo mensajes enviados
+    } catch {
+      // No bloquear sync por este endpoint opcional
     }
 
-    // Procesar cada conversación
-    const conversations = conversationsData.data || [];
-    // Conversaciones encontradas
-
+    const conversationsFound = conversations.length;
     let processedConversations = 0;
 
-    // Crear un conjunto de IDs de mensajes existentes para verificación rápida de duplicados
-    const existingMessageIds = new Set();
+    const existingMessageIds = new Set<string>();
     try {
-      const allExistingMessages = MessengerAccountsService.getAllMessages(pageId);
-      allExistingMessages.forEach(msg => existingMessageIds.add(msg.id));
-      // Mensajes existentes cargados
-    } catch (error) {
-      // Error obteniendo mensajes existentes
+      const allExistingMessages = await MessengerAccountsService.getAllMessages(pageId);
+      allExistingMessages.forEach((msg) => existingMessageIds.add(msg.id));
+    } catch {
+      // noop
     }
 
     for (const conversation of conversations) {
       try {
-        // Obtener mensajes de la conversación inicial
-        let messages = conversation.messages?.data || [];
+        const participants = conversation.participants?.data || [];
+        const participantNames = new Map<string, string>();
 
-        // Si no hay mensajes en la respuesta inicial, hacer llamada separada
-        if (messages.length === 0) {
-          try {
-            const messagesResponse = await fetch(
-              `https://graph.facebook.com/${process.env.META_API_VERSION}/${conversation.id}/messages?fields=message,from,to,created_time,id,sticker,attachments&limit=50&access_token=${accessToken}`
-            );
-            if (messagesResponse.ok) {
-              const messagesData = await messagesResponse.json();
-              messages = messagesData.data || [];
-            }
-          } catch (error) {
-            // Error obteniendo mensajes
-            continue;
+        for (const p of participants) {
+          if (p?.id && p?.name) {
+            participantNames.set(String(p.id), String(p.name));
           }
         }
 
-        if (!messages || messages.length === 0) {
-          // Conversación sin mensajes
+        const messages: any[] = [];
+        let messagesAfter: string | undefined;
+
+        for (let p = 0; p < maxMessagesPerConversationPages; p++) {
+          const convMessagesUrl = toGraphUrl(`${conversation.id}/messages`, {
+            fields: 'message,from,to,created_time,id,sticker,attachments',
+            limit: messagesPageLimit,
+            after: messagesAfter,
+            access_token: accessToken,
+          });
+
+          const messagesData = await fetchJsonWithTimeout(convMessagesUrl, 30000);
+          const chunk = messagesData.data || [];
+          messages.push(...chunk);
+
+          messagesAfter = messagesData?.paging?.cursors?.after;
+          if (!messagesAfter || chunk.length === 0) {
+            break;
+          }
+        }
+
+        if (!messages.length) {
           continue;
         }
 
-        // Procesando conversación
-
-        // Procesar todos los mensajes de la conversación
         for (const message of messages) {
           try {
-            // Verificar que el mensaje tenga datos válidos
             if (!message.id || !message.from?.id) {
               continue;
             }
 
-            // Determinar el tipo de mensaje y el ID del usuario
-            const isFromPage = message.from?.id === pageId;
+            const isFromPage = String(message.from?.id) === String(pageId);
             const type = isFromPage ? 'outgoing' : 'incoming';
 
-            // Para agrupar conversaciones correctamente, siempre usar el ID del usuario
-            // Si el mensaje es de la página, buscar el destinatario (usuario)
-            // Si el mensaje es del usuario, usar su ID
-            let userId;
+            let userId: string | undefined;
             if (isFromPage) {
-              // Mensaje enviado por la página, buscar el destinatario
-              userId = message.to?.data?.[0]?.id || conversation.participants?.data?.find(p => p.id !== pageId)?.id;
+              userId = message.to?.data?.[0]?.id || participants.find((part: any) => part.id !== pageId)?.id;
             } else {
-              // Mensaje enviado por el usuario
               userId = message.from?.id;
             }
 
-            if (userId) {
-              // Verificar si el mensaje ya existe para evitar duplicados
-              const messageExists = existingMessageIds.has(message.id);
+            if (!userId) continue;
 
-              if (!messageExists) {
-                // Agregar al conjunto para evitar duplicados en esta sesión
-                existingMessageIds.add(message.id);
-                // Guardar mensaje en el almacenamiento usando siempre el userId como senderId para agrupar conversaciones
-                MessengerAccountsService.saveMessage({
-                  id: message.id,
-                  senderId: userId, // Siempre usar el ID del usuario para agrupar conversaciones
-                  pageId: pageId,
-                  text: message.message || '',
-                  timestamp: new Date(message.created_time).getTime(),
-                  type: type as "outgoing" | "incoming"
-                });
-                totalMessagesSynced++;
-                // Mensaje guardado
-              } else {
-                // Mensaje duplicado omitido
-              }
+            const senderName =
+              participantNames.get(String(userId)) ||
+              message.from?.name ||
+              `Usuario ${String(userId).slice(-4)}`;
+
+            if (existingMessageIds.has(message.id)) {
+              continue;
             }
-          } catch (error) {
-            // Error al procesar mensaje
+
+            existingMessageIds.add(message.id);
+            await MessengerAccountsService.saveMessage({
+              id: message.id,
+              senderId: String(userId),
+              pageId,
+              text: message.message || '',
+              timestamp: new Date(message.created_time).getTime(),
+              type,
+              senderName,
+            });
+
+            totalMessagesSynced++;
+          } catch {
             continue;
           }
         }
 
         processedConversations++;
-
-        // Pausa más corta entre conversaciones
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-      } catch (error) {
-        // Error al procesar conversación
+        await new Promise((resolve) => setTimeout(resolve, 30));
+      } catch {
         continue;
       }
     }
 
-    // Procesar mensajes enviados por la página
     for (const message of sentMessages) {
       try {
         if (!message.id || !message.to?.data?.[0]?.id) {
           continue;
         }
 
-        const userId = message.to.data[0].id; // ID del usuario destinatario
+        const userId = String(message.to.data[0].id);
+        const senderName = message.to.data[0]?.name || `Usuario ${userId.slice(-4)}`;
 
-        // Verificar si el mensaje ya existe para evitar duplicados
-        const messageExists = existingMessageIds.has(message.id);
-
-        if (!messageExists) {
-          // Agregar al conjunto para evitar duplicados en esta sesión
-          existingMessageIds.add(message.id);
-          // Guardar mensaje enviado por la página usando el userId para agrupar conversaciones
-          MessengerAccountsService.saveMessage({
-            id: message.id,
-            senderId: userId, // Usar el ID del usuario para agrupar en la misma conversación
-            pageId: pageId,
-            text: message.message || '',
-            timestamp: new Date(message.created_time).getTime(),
-            type: 'outgoing'
-          });
-          totalMessagesSynced++;
-          // Mensaje automático guardado
-        } else {
-          // Mensaje automático duplicado omitido
+        if (existingMessageIds.has(message.id)) {
+          continue;
         }
-      } catch (error) {
-        // Error al procesar mensaje enviado
+
+        existingMessageIds.add(message.id);
+        await MessengerAccountsService.saveMessage({
+          id: message.id,
+          senderId: userId,
+          pageId,
+          text: message.message || '',
+          timestamp: new Date(message.created_time).getTime(),
+          type: 'outgoing',
+          senderName,
+        });
+
+        totalMessagesSynced++;
+      } catch {
         continue;
       }
     }
-    // Obtener estadísticas de conversaciones únicas por usuario
-    const conversationsByUser = MessengerAccountsService.getConversationsByPage(pageId);
-    const uniqueUsers = conversationsByUser.size;
 
-    // Sincronización completada
+    const stats = await MessengerAccountsService.getPageStats(pageId);
+    const warnings: string[] = [];
 
-    // Obtener estadísticas actualizadas
-    const stats = MessengerAccountsService.getPageStats(pageId);
+    if (MessengerAccountsService.getStorageMode() === 'local') {
+      const dbError = MessengerAccountsService.getLastDbError();
+      warnings.push(
+        `Se está usando almacenamiento local del servidor (sin Supabase) para Messenger.${dbError ? ` Error DB: ${dbError}` : ''}`
+      );
+    }
+
+    if (conversationsFound === 0) {
+      warnings.push('Facebook devolvió 0 conversaciones para esta página/token. Revisa permisos pages_messaging/pages_read_engagement y que el token sea de página.');
+    }
 
     return NextResponse.json({
       success: true,
+      conversationsFound,
+      conversationsProcessed: processedConversations,
       messagesSynced: totalMessagesSynced,
       totalMessages: stats.totalMessages,
-      totalConversations: stats.totalConversations
+      totalConversations: stats.totalConversations,
+      fetchConfig: {
+        deepSync,
+        maxConversationPages,
+        maxMessagesPerConversationPages,
+        maxSentPages,
+        conversationPageLimit,
+        messagesPageLimit,
+      },
+      storageMode: MessengerAccountsService.getStorageMode(),
+      warnings,
+      warning: warnings[0] || null,
     });
-
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

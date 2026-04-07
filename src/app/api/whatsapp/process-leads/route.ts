@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 import { LeadsProcessor } from '@/lib/whatsapp/services/leadsProcessor';
+import { getUserProfile } from '@/lib/auth/services/getUserProfile';
 
 export async function POST(request: Request) {
     try {
+        const profile = await getUserProfile();
+
+        if (!profile?.id) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+
+        if (profile.role !== 'admin' && profile.role !== 'superadmin' && profile.role !== 'assistant') {
+            return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+        }
+
         const { pageId, formId, pageAccessToken, cursor, companyId, templateName = 'menu_inicial', templateLanguage } = await request.json();
 
         if (!formId || !pageAccessToken || !companyId) {

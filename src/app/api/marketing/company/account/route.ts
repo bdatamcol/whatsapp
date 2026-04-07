@@ -5,6 +5,11 @@ import { getUserProfile } from '@/lib/auth/services/getUserProfile';
 export async function GET(request: NextRequest) {
     try {
         const profile = await getUserProfile();
+
+        if (!profile?.company_id) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+
         const [pages, account] = await Promise.all([
             getCompanyFacebookPages(profile.company_id),
             getCompanyFacebookAccount(profile.company_id)

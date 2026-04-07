@@ -77,12 +77,26 @@ export default function Panel() {
     queryKey: ['activeCampaigns'],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/marketing/company/ads?getSummary=true&filterStatus=ACTIVE');
+        const res = await fetch('/api/marketing/company/ads?filterStatus=ACTIVE&limit=500');
         if (!res.ok) {
           const error = await res.json();
           return handleApiError(error);
         }
-        return res.json();
+
+        const json = await res.json();
+        const campaigns = Array.isArray(json?.data) ? json.data : [];
+        const now = new Date();
+
+        const activeNow = campaigns.filter((campaign: any) => {
+          const status = String(campaign.effective_status || campaign.status || '').toUpperCase();
+          const start = campaign.start_time ? new Date(campaign.start_time) : null;
+          const stop = campaign.stop_time ? new Date(campaign.stop_time) : null;
+          const hasStarted = !start || start <= now;
+          const notEnded = !stop || stop >= now;
+          return status === 'ACTIVE' && hasStarted && notEnded;
+        }).length;
+
+        return { total: activeNow };
       } catch (error: any) {
         return handleApiError(error);
       }

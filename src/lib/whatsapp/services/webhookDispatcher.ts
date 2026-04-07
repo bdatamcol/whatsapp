@@ -3,6 +3,18 @@ import { handleStatusEvent } from './handleStatusEvent';
 import { handleIncomingMessage } from './handleIncomingMessage';
 import { handleLeadGenEvent } from './handleLeadGenEvent';
 
+function isStaleIncomingMessage(timestampSeconds?: string): boolean {
+    if (!timestampSeconds) return false;
+
+    const eventTimestampMs = Number(timestampSeconds) * 1000;
+    if (!Number.isFinite(eventTimestampMs)) return false;
+
+    const maxAgeMinutes = Number(process.env.WHATSAPP_MAX_EVENT_AGE_MINUTES || 720);
+    const maxAgeMs = Math.max(1, maxAgeMinutes) * 60 * 1000;
+
+    return Date.now() - eventTimestampMs > maxAgeMs;
+}
+
 export async function processWebhookRequest(request: NextRequest): Promise<NextResponse> {
     const data = await request.json();
 
@@ -34,6 +46,15 @@ export async function processWebhookRequest(request: NextRequest): Promise<NextR
 
     if (!message || !allowedTypes.includes(message.type)) {
         return NextResponse.json({ error: `Unsupported message type: ${message?.type}` }, { status: 200 });
+    }
+
+    if (isStaleIncomingMessage(message.timestamp)) {
+        console.warn('[Webhook] Mensaje ignorado por antigüedad:', {
+            id: message.id,
+            timestamp: message.timestamp,
+            from: message.from,
+        });
+        return NextResponse.json({ success: true, ignored: 'stale_message' }, { status: 200 });
     }
 
     await handleIncomingMessage(message, value);

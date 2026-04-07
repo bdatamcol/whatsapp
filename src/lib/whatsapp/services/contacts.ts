@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/server.supabase'
     import { getCompanyByPhoneNumberId } from '../helpers/getCompanyByPhoneNumberId'
+import { isUsableCustomerName, sanitizeCustomerName } from '@/lib/utils/nameQuality';
 
     interface Filters {
         phone?: string
@@ -67,14 +68,19 @@ import { supabase } from '@/lib/supabase/server.supabase'
     }) {
         try {
             const company = await getCompanyByPhoneNumberId(phone_number_id);
+            const cleanName = sanitizeCustomerName(name);
+            const finalName = cleanName && isUsableCustomerName(cleanName) ? cleanName : 'Desconocido';
+            const finalAvatar = finalName !== 'Desconocido'
+                ? `https://ui-avatars.com/api/?name=${encodeURIComponent(finalName)}&background=random`
+                : avatar_url;
 
             const { error } = await supabase
                 .from('contacts')
                 .upsert(
                     {
                         phone,
-                        name,
-                        avatar_url,
+                        name: finalName,
+                        avatar_url: finalAvatar,
                         status,
                         last_interaction_at,
                         company_id: company.id,

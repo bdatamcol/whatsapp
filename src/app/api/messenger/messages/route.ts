@@ -12,15 +12,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'pageId es requerido' }, { status: 400 });
     }
 
-    let messages = [];
+    let messages: any[] = [];
     let conversations = new Map();
 
     if (senderId) {
       // Obtener mensajes de una conversación específica
-      messages = MessengerAccountsService.getMessages(pageId, senderId);
+      messages = await MessengerAccountsService.getMessages(pageId, senderId);
     } else {
       // Obtener todas las conversaciones de una página
-      conversations = MessengerAccountsService.getConversationsByPage(pageId);
+      conversations = await MessengerAccountsService.getConversationsByPage(pageId);
       
       // Convertir a array para JSON con formato de chat por usuario
       const conversationsArray = Array.from(conversations.entries()).map(([senderId, msgs]) => {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ 
         pageId, 
         conversations: conversationsArray,
-        stats: MessengerAccountsService.getPageStats(pageId)
+        stats: await MessengerAccountsService.getPageStats(pageId)
       });
     }
 

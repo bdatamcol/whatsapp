@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Obtener estadísticas de mensajes locales
-        const stats = MessengerAccountsService.getPageStats(pageId);
+        const stats = await MessengerAccountsService.getPageStats(pageId);
 
         pages.push({
           pageId,
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       const examplePages = ['102342781636477', '987654321098765'];
 
       for (const pageId of examplePages) {
-        const stats = MessengerAccountsService.getPageStats(pageId);
+        const stats = await MessengerAccountsService.getPageStats(pageId);
         pages.push({
           pageId,
           pageName: `Página ${pageId.slice(-4)}`,

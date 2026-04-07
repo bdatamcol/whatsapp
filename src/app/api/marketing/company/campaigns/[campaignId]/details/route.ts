@@ -11,6 +11,11 @@ export async function GET(
 ) {
     try {
         const profile = await getUserProfile();
+
+        if (!profile?.company_id) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+
         const { campaignId } = await params;
 
         const { searchParams } = new URL(request.url);
