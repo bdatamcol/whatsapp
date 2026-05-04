@@ -1,0 +1,48 @@
+Tecnología TVS SmartXconnect™
+Conectividad, inteligencia y seguridad sobre dos ruedas.
+
+Beneficios Claves a Comunicar
+Conectividad Inteligente
+Emparejamiento vía Bluetooth con smartphones Android y iOS, Acceso en tiempo real a llamadas, mensajes, notificaciones y navegación.
+2. Asistencia para Navegación
+Turn-by-turn navigation (instrucciones giro a giro),  Indicador de ruta visual en el tablero (ideal para moteros urbanos o viajeros frecuentes).
+3. Seguridad y Prevención
+Alerta de llamadas entrantes sin desviar la atención de la vía, Notificación de accidentes (Crash Alert System)* en modelos compatibles y alertas de batería baja, velocidad y revisión.
+4. Telemetría en Tiempo Real
+Información en vivo del vehículo: Velocidad máxima y promedio, tiempo de recorrido análisis de frenado, calificación del viaje (Ride Analysis).
+5. Asistente de Mantenimiento
+Alertas programadas para cambio de aceite, revisión técnica, mantenimiento general, histórico de viajes y estado general del vehículo.
+6. Personalización de Experiencia
+Cambio de temas en el panel digital (según modelo),Información personalizable: nombre del piloto, idioma, unidad de medida.
+
+
+Modelos que integran SmartXconnect en Colombia
+TVS Apache RTR 160 4V
+TVS Ntorq 125 
+TVS Raider 125
+TVS Ronin 225 
+
+
+## TVS SmartXonnect: Conectividad Inteligente al Manillar de tu Moto
+
+La tecnología TVS SmartXonnect es un avanzado ecosistema de conectividad Bluetooth que integra las motocicletas de la marca india con el teléfono inteligente del piloto. A través de la aplicación "TVS Connect", esta plataforma enriquece la experiencia de conducción al ofrecer una amplia gama de funciones de navegación, seguridad, y análisis de recorrido directamente en el panel de instrumentos de la moto, minimizando las distracciones y maximizando la información y seguridad del usuario.
+
+En Colombia, esta tecnología se ha convertido en un diferenciador clave en varios de los modelos más populares de TVS, atrayendo a un público que busca no solo un medio de transporte eficiente, sino también una experiencia de conducción más moderna e interactiva.
+
+### Ventajas Clave para los Usuarios de Motos TVS
+
+La implementación de SmartXonnect en estas motocicletas se traduce en beneficios tangibles para el día a día del motociclista:
+
+**1. Navegación Asistida Turn-by-turn:** Una de las ventajas más destacadas es la capacidad de recibir indicaciones de navegación directamente en el tablero de la moto. El usuario simplemente necesita ingresar el destino en la aplicación TVS Connect y las instrucciones de giro aparecerán en la pantalla del vehículo, eliminando la necesidad de utilizar soportes para el celular y permitiendo mantener la vista en el camino.
+
+**2. Identificador de Llamadas y Alertas:** Para evitar distracciones peligrosas, el sistema muestra notificaciones de llamadas entrantes y mensajes SMS en el panel de instrumentos. Esto permite al piloto identificar quién está tratando de comunicarse y decidir si es necesario o no detenerse para responder, sin tener que sacar el teléfono del bolsillo.
+
+**3. Estadísticas de Conducción y Telemetría:** La aplicación registra y guarda detallados informes de cada trayecto. Los usuarios pueden analizar datos como la distancia recorrida, la velocidad máxima alcanzada, el tiempo de viaje y, en modelos como la serie Apache, datos de telemetría más avanzados como el ángulo de inclinación y las fuerzas G experimentadas en curvas. Esto no solo es útil para los entusiastas del rendimiento, sino también para cualquiera que desee entender mejor sus hábitos de conducción.
+
+**4. Asistente de Combustible Bajo:** Cuando el nivel de combustible es bajo, el sistema no solo alerta al conductor, sino que también puede, a través de la aplicación, mostrar la ubicación de las estaciones de servicio más cercanas para facilitar el reabastecimiento.
+
+**5. Localizador de Último Estacionamiento:** La aplicación guarda automáticamente la última ubicación conocida de la motocicleta antes de ser apagada. Esta función es extremadamente útil para encontrar la moto en estacionamientos grandes o en zonas poco familiares.
+
+**6. Alerta de Caída y Contactos de Emergencia:** En caso de que el sistema detecte una caída, puede enviar una alerta automática a los contactos de emergencia previamente configurados por el usuario, compartiendo la última ubicación conocida del vehículo. Esta es una característica de seguridad crucial que puede agilizar la asistencia en caso de un accidente.
+
+En definitiva, el sistema TVS SmartXonnect transforma la relación entre el piloto y su motocicleta, convirtiéndola en un dispositivo inteligente que ofrece un viaje más seguro, informado y conectado.

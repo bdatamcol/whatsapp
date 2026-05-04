@@ -1,0 +1,45 @@
+Dazz 110
+La Dazz 110 es una scooter automática diseñada para facilitar la movilidad en entornos urbanos gracias a su diseño compacto y ligero, ideal para quienes buscan eficiencia y practicidad en la ciudad. Es importante tener en cuenta que algunos usuarios la llaman por error “DAX”, pero su nombre correcto es Dazz 110.
+Cuenta con un motor monocilíndrico de 109.7 cc que genera 7.9 HP a 7,500 rpm y 8.3 Nm de torque a 5,500 rpm, ofreciendo una conducción ágil y eficiente para el tráfico urbano. Además, incorpora transmisión automática, lo que simplifica el manejo al eliminar los cambios manuales y facilita la conducción, especialmente para conductores principiantes.
+
+
+La Dazz 110 tiene un diseño compacto que incluye 1,810 mm de largo, 670 mm de ancho y 1,119 mm de alto, lo que la hace fácil de maniobrar y estacionar en espacios reducidos. También cuenta con una altura de asiento de 780 mm, que brinda una posición de conducción cómoda y un centro de gravedad bajo para mayor estabilidad.
+
+
+En comodidad y funcionalidad, la Dazz 110 ofrece espacio de almacenamiento bajo el asiento, una guantera sin tapa en el escudo delantero y un puerto de carga USB ubicado al lado izquierdo de la columna de dirección para cargar dispositivos móviles durante los trayectos. En seguridad incorpora freno delantero de disco y trasero de tambor, junto con suspensión delantera telescópica y monoamortiguador trasero, proporcionando una conducción suave y estable.
+
+
+La Dazz 110 ofrece garantía de 36 meses o 36,000 km, lo que ocurra primero. Se posiciona como una de las opciones más accesibles del mercado gracias a su transmisión automática, puerto USB y diseño compacto, disponible en los colores Azul Arlequín, Gris Carbono y Negro Nebulosa, convirtiéndose en una alternativa ideal para jóvenes, nuevos conductores o quienes buscan economía y funcionalidad diaria.
+
+Adicional La Dazz 110 cuenta con un servicio de grúa de Auteco es un beneficio de postventa que brinda asistencia en caso de que la motocicleta no pueda movilizarse. Si la falla es técnica y está dentro de la garantía de 36 meses o 36.000 km en TVS , el traslado al centro de servicio autorizado está cubierto. Además, cuenta con atención 24/7 para solicitar ayuda en casos como varadas, accidentes o incluso falta de gasolina, según el plan. Dependiendo de la marca y modelo, también puede incluir servicios adicionales como paso de corriente, cerrajería o transporte para el conductor
+
+### **FICHA TÉCNICA DAZZ 110**
+| Especificación | Valor |
+|----------------|--------|
+| **CILINDRAJE** | 109.7 CC |
+| **MOTOR** | 4 TIEMPOS, MONOCILÍNDRICO |
+| **TORQUE MÁXIMO** | 8.3 Nm @ 5500 rpm |
+| **POTENCIA MÁXIMA** | 7,9 HP @ 7500 rpm |
+| **SUSPENSIÓN DELANTERA** | TVS Telescópica |
+| **DIÁMETRO POR CARRERA** | 53,5 X 48,8 mm |
+| **RELACIÓN DE COMPRESIÓN** | 9.5:1 |
+| **SISTEMA DE ALIMENTACIÓN** | Carburador |
+| **SISTEMA DE ENCENDIDO** | TCI |
+| **COMBUSTIBLE** | Gasolina corriente |
+| **TRANSMISIÓN** | Automática |
+| **CAPACIDAD DEL TANQUE (Incluyendo la reserva)** | 5,3 L (1,4 GAL) |
+| **PESO NETO** | - |
+| **REFRIGERACIÓN** | Aire |
+| **ARRANQUE** | Eléctrico y pedal |
+| **SUSPENSIÓN TRASERA** | Mono amotiguador |
+| **FRENO DELANTERO** | DISCO |
+| **FRENO TRASERO** | TAMBOR O CAMPANA |
+| **RINES** | Aspas |
+| **LLANTA DELANTERA** | MA-3DN |
+| **LLANTA TRASERA** | MA-3DN |
+| **LARGO TOTAL** | 1810 mm |
+| **ALTURA TOTAL** | 1119 mm |
+| **ANCHO TOTAL** | 670 mm |
+| **DISTANCIA ENTRE EJES** | 1250 mm |
+| **ALTURA AL SILLÍN** | 780 mm |
+| **PESO EN SECO** | 92 kg |

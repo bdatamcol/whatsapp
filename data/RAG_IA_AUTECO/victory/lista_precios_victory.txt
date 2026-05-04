@@ -1,0 +1,689 @@
+LISTA DE PRECIOS
+Ejemplo de una respuesta que puedes usar cuando te pregunten un precio, calculo de promoción:
+Esto es un ejemplo y solo aplica los que tienen bono en dinero: Entonces si alguien te pregunta por ejemplo el PRECIO de un modelo puedes decirle que el precio al publico es de $28.999.999 y por este mes tiene un bono de $1.000.000 es decir tu moto queda en $27.999.999 un súper precio.
+
+
+[
+{
+"año_modelo": 2026,
+"referencia_moto": "CERONTE 200 (tricargo)",
+"precio_base": "$15.990.000",
+"bono_descuento": "$500.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "CERONTE 200 (tricargo)",
+"precio_base": "$16.140.000",
+"bono_descuento": "$500.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "CERONTE 300 (tricargo)",
+"precio_base": "$23.990.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "CERONTE 300 (tricargo)",
+"precio_base": "$24.649.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "CERONTE 300 HIDRAULICO (tricargo)",
+"precio_base": "$25.649.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY ADVANCE R 125",
+"precio_base": "$6.299.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY ADVANCE R 125",
+"precio_base": "$6.369.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY ADVANCE R 125 CBS",
+"precio_base": "$6.399.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY ADVANCE R 125 CBS",
+"precio_base": "$6.499.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY ADVANCE R 125 TRAKKU",
+"precio_base": "$6.499.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY ADVANCE R 125 TRAKKU",
+"precio_base": "$6.569.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY ADVANCE R 125 TRAKKU CBS",
+"precio_base": "$6.599.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY ADVANCE R 125 TRAKKU CBS",
+"precio_base": "$6.699.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY X1 FI",
+"precio_base": "$7.499.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY X1 FI",
+"precio_base": "$7.540.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY X1 FI TK",
+"precio_base": "$7.699.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY X1 FI TK CBS",
+"precio_base": "$7.849.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY X1 FI TK CBS",
+"precio_base": "$7.949.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "KYMCO AGILITY FUSION",
+"precio_base": "$9.399.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "KYMCO AGILITY FUSION CBS",
+"precio_base": "$9.699.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "KYMCO AGILITY FUSION TK",
+"precio_base": "$9.599.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "KYMCO AGILITY FUSION TK",
+"precio_base": "$9.599.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "KYMCO AGILITY FUSION TK CBS",
+"precio_base": "$9.899.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "KYMCO AGILITY FUSION TK CBS",
+"precio_base": "$9.899.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY BET ABS",
+"precio_base": "$12.999.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY BET ABS",
+"precio_base": "$13.090.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY BOMBER 125",
+"precio_base": "$5.599.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY BOMBER 125 TK CBS",
+"precio_base": "$5.999.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY BOMBER 125 TK CBS",
+"precio_base": "$5.899.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY BOMBER 125 TRAKKU",
+"precio_base": "$5.799.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY COMBAT 100",
+"precio_base": "$4.390.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY COMBAT 100",
+"precio_base": "$4.390.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX ARIZONA",
+"precio_base": "$11.790.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX ARIZONA ABS",
+"precio_base": "$11.990.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX ARIZONA ABS",
+"precio_base": "$12.090.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX ARIZONA XPLORE",
+"precio_base": "$12.590.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 125 TRAKKU",
+"precio_base": "$9.139.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX125 TK CBS",
+"precio_base": "$9.189.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX125 TK CBS",
+"precio_base": "$9.290.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 125 FOX",
+"precio_base": "$9.389.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 125S FOX",
+"precio_base": "$9.289.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 125 S TK CBS",
+"precio_base": "$9.139.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX 125 S TK CBS",
+"precio_base": "$9.290.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 150 FOX",
+"precio_base": "$9.990.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 150 FOX CBS",
+"precio_base": "$10.140.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 150 TRAKKU",
+"precio_base": "$9.740.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 150 CBS",
+"precio_base": "$9.740.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX 150 TK CBS",
+"precio_base": "$9.840.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 200",
+"precio_base": "$11.290.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 200 ABS",
+"precio_base": "$11.490.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX 200 ABS",
+"precio_base": "$11.590.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX 125 GOPRO",
+"precio_base": "$9.790.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX 150 GOPRO",
+"precio_base": "$10.340.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX ARIZONA GOPRO",
+"precio_base": "$12.590.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX 125 S GOPRO",
+"precio_base": "$9.740.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY MRX 200 GOPRO",
+"precio_base": "$12.090.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY MRX 200 FOX",
+"precio_base": "$11.940.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY NEW LIFE CBS",
+"precio_base": "$7.549.000",
+"bono_descuento": "$300.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY NEW LIFE CBS",
+"precio_base": "$7.449.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY NEW LIFE TK CBS",
+"precio_base": "$7.749.000",
+"bono_descuento": "$300.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY NEW LIFE TK CBS",
+"precio_base": "$7.649.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY NITRO 125 CBS",
+"precio_base": "$6.699.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY NITRO 125 TK CBS",
+"precio_base": "$6.899.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY NITRO 125 TK CBS",
+"precio_base": "$6.899.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY ONE MP TK CBS",
+"precio_base": "$5.749.000",
+"bono_descuento": "$200.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY ONE MP CBS",
+"precio_base": "$5.549.000",
+"bono_descuento": "$200.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY ONE MP TK CBS",
+"precio_base": "$5.790.000",
+"bono_descuento": "$200.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY ONE MP CBS",
+"precio_base": "$5.590.000",
+"bono_descuento": "$200.000",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY SWITCH 125 CBS",
+"precio_base": "$7.799.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY SWITCH 125 TK CBS",
+"precio_base": "$7.999.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY SWITCH 125 CBS",
+"precio_base": "$7.899.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY SWITCH 125 TK CBS",
+"precio_base": "$8.099.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "KYMCO TWIST",
+"precio_base": "$7.499.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY VENOM 14",
+"precio_base": "$8.399.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2027,
+"referencia_moto": "VICTORY VENOM 14",
+"precio_base": "$8.399.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "VICTORY VENOM 18",
+"precio_base": "$9.149.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+}
+]

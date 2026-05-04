@@ -1,0 +1,264 @@
+Esta es la lista de precios oficial de TVS
+
+[
+{
+"marca": "TVS",
+"referencia_moto": "APACHE 160 CARBURADA ABS",
+"año_modelo": 2027,
+"precio_base": 9649999,
+"bono_descuento": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE RTR 160 4V XC FI ABS",
+"año_modelo": 2027,
+"precio_base": 10999999,
+"bono_descuento": 600000,
+"bono_descuento": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE RTR 160 4V XC FI ABS RACING",
+"año_modelo": 2027,
+"precio_base": 11249999,
+"bono_descuento": 0,
+"bono_financiando_progreser": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE RTR 160 4V XC FI ABS RACING DUO TONO",
+"año_modelo": 2027,
+"precio_base": 11549999,
+"bono_descuento": 0,
+"bono_financiando_progreser": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE 200 CARBURADA ABS",
+"año_modelo": 2027,
+"precio_base": 12199999,
+"bono_descuento": 0,
+"bono_financiando_progreser": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE RTR 200 4V XC FI ABS",
+"año_modelo": 2027,
+"precio_base": 12999999,
+"bono_descuento": "Bajó de precio 900000",
+"bono_financiando_progreser": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE 200 FI EDICION ESPECIAL",
+"año_modelo": 2027,
+"precio_base": 12299999,
+"bono_descuento": "Bajó de precio 900000",
+"bono_financiando_progreser": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE RTR 310",
+"año_modelo": 2026,
+"precio_base": 27799999,
+"bono_descuento": 1000000
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE RTR 310 PRM",
+"año_modelo": 2026,
+"precio_base": 29499999,
+"bono_descuento": 1000000
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "SPORT 100 ELS TRAKKU",
+"año_modelo": 2027,
+"precio_base": 5999999,
+"bono_descuento": 200000,
+"bono_financiando_progreser": 0,
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "SPORT 100 ELS",
+"año_modelo": 2027,
+"precio_base": 5749999,
+"bono_descuento":0,
+},
+
+
+
+{
+"marca": "TVS",
+"referencia_moto": "SPORT 100 KLS SPOKE",
+"año_modelo": 2027,
+"precio_base": 5549999,
+"bono_descuento": 350000,
+"bono_descuento":0,
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "SPORT 100 KLS SPOKE TRAKKU",
+"año_modelo": 2026,
+"precio_base": 5699999,
+"bono_descuento": 350000,
+"bono_financiando_progreser":0, 
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "SPORT 100 ELS SPOKE TRAKKU",
+"año_modelo": 2027,
+"precio_base": 5999999,
+"bono_descuento": 0,
+"bono_financiando_progreser": 0,
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "RAIDER 125",
+"año_modelo": 2027,
+"precio_base": 7799999,
+"bono_descuento": 100000,
+"bono_financiando_progreser": " "Bono de 450000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC""
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "RAIDER 125 RACING",
+"año_modelo": 2027,
+"precio_base": 8049999,
+"bono_descuento": 100000,
+"bono_financiando_progreser": " "Bono de 450000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC""
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "RAIDER 125 FI",
+"año_modelo": 2027,
+"precio_base": 8749999,
+"bono_descuento":  0,
+"bono_financiando_progreser": " "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC""
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "STRYKER 125",
+"año_modelo": 2026,
+"precio_base": 7199999,
+"bono_descuento": 0
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "NEO NX 110",
+"año_modelo": 2027,
+"precio_base": 6699999,
+"bono_descuento": 300000,
+"bono_financiando_progreser":" "Bono de 300000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "DAZZ 110",
+"año_modelo": 2027,
+"precio_base": 6499999,
+"bono_descuento":0,
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "NTORQ 125 XCONNECT",
+"año_modelo": 2027,
+"precio_base": 8199999,
+"bono_descuento": 0,
+"bono_financiando_progreser": "Bono de 300000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC",
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "NTORQ 125 XCONNECT FI",
+"año_modelo": 2027,
+"precio_base": 10199999,
+"bono_descuento": 0,
+"bono_financiando_progreser": "Bono de 300000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC",
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "RONIN 225 TD",
+"año_modelo": 2025,
+"precio_base": 13999999,
+"bono_descuento": 0
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "MOTOCARRO TVS KING DELUX",
+"año_modelo": 2026,
+"variante": "PLUS GS+ ESPECIAL",
+"precio_base": 18599999,
+"bono_descuento": 750000
+},
+
+{
+"marca": "TVS",
+"referencia_moto": "MOTOCARRO TVS KING DELUX",
+"año_modelo": 2026,
+"variante": "PLUS GS+ FULL",
+"precio_base": 19399999,
+"bono_descuento": 750000
+},
+
+{
+"marca": "TVS",
+"referencia_moto": "MOTOCARRO TVS KING DELUX",
+"año_modelo": 2026,
+"variante": "PLUS GS+",
+"precio_base": 17799999,
+"bono_descuento": 750000
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "IQUBE",
+"año_modelo": 2026,
+"variante": "ELECTRICA",
+"beneficios": "La IQUBE cuenta con beneficios adicinales como que no tiene pico y placa, si el recorrido es en promedio de 250 kilometros por semana ahorra aproximadamente 2.200 pesos,cuenta con una garantía de 24 meses o 24 mil kilometros, ademas Contribuyes al cuidado del medio ambiente y siempre esta´ras conectado con SmartXonnect"
+"precio_base": 15499999,
+ 
+}
+]

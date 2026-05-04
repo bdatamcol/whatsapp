@@ -33,19 +33,25 @@ export default function AssignmentsPage() {
             const userData = await getCurrentUserClient();
             setUser(userData);
 
+            if (!userData?.company_id) {
+                setContacts([]);
+                setAssistants([]);
+                setLoading(false);
+                return;
+            }
+
             const { data: contactsData } = await supabase
                 .from('contacts')
                 .select(`phone, name, created_at, last_interaction_at, needs_human, assignments:assistants_assignments!left(id, assigned_to, assigned_at, active, profile:assigned_to (email))`)
                 .eq('needs_human', true)
                 .eq('company_id', userData.company_id);
 
-            // Update the assistants query to filter only active ones
             const { data: assistantsData } = await supabase
                 .from('profiles')
                 .select('id, email')
                 .eq('role', 'assistant')
                 .eq('company_id', userData.company_id)
-                .eq('is_active', true); // Only active assistants
+                .eq('is_active', true);
 
             setContacts(contactsData || []);
             setAssistants(assistantsData || []);

@@ -1,0 +1,22 @@
+Esta es la lista de precios oficial de TVS
+
+[
+{
+"marca": "TVS",
+"referencia_moto": "APACHE 160 CARBURADA ABS",
+"año_modelo": 2027,
+"precio_base": 9649999,
+"bono_descuento": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+
+{
+"marca": "TVS",
+"referencia_moto": "APACHE RTR 160 4V XC FI ABS",
+"año_modelo": 2027,
+"precio_base": 10999999,
+"bono_descuento": 600000,
+"bono_descuento": "Bono de 350000 financiando con progreser hasta el 30 de Abril del 2026 aplican TYC"
+},
+
+]

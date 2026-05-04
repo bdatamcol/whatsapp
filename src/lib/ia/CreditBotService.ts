@@ -3,6 +3,124 @@ import { supabase } from "../supabase/server.supabase";
 import { getConversation, updateConversation } from "./memory";
 import { calcularCuota, formatearPesos } from "./utils/credit-calculator";
 import { isUsableCustomerName, sanitizeCustomerName } from "../utils/nameQuality";
+import { resolveRagMotoByText, searchRagMotoCatalog } from "./utils/rag-local-catalog";
+
+const MOTO_CATEGORIES = {
+  enduro: ["enduro", "trail", "adventure", "off-road"],
+  scooter: ["scooter", " urbano", "city"],
+  sport: ["sport", "deportiva", "deportivo", "cbr", "yzf", "ninja"],
+  trabajo: ["trabajo", "trabajo", "mensajeria", "delivery"],
+};
+
+const MOTO_SEARCH_TERMS = [
+  "moto", "motos", "quiero una moto", "busco moto", "que moto",
+  "qué moto", "recomendame", "recomiéndame", "tipos de moto",
+  "enduro", "scooter", "sport", "deportiva", "urbana", "para trabajar",
+];
+
+const SPECIFIC_MODEL_TERMS = [
+  "agility", "fusion", "agility fusion", "akt", "honda", "yamaha",
+  "suzuki", "kawasaki", "bmw", "ducati", "kymco", "sym", "tvs",
+];
+
+type MotoCategory = "scooter" | "trabajo" | "sport" | "enduro" | "semiautomatica" | "alta_gama";
+
+type MotoItem = {
+  name: string;
+  price: number;
+  category: MotoCategory;
+  brand?: string;
+  summary?: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
+  localImagePath?: string;
+  localTxtPath?: string;
+};
+
+const CATEGORY_ALIASES: Record<MotoCategory, string[]> = {
+  enduro: ["enduro", "trail", "adventure", "off-road", "todo terreno", "doble proposito", "mrx", "klx"],
+  scooter: ["scooter", "automatica", "automáticas", "urbano", "city", "agility", "ntorq", "new life", "bet"],
+  sport: ["sport", "deportiva", "deportivo", "raider", "apache", "venom", "ninja", "rr"],
+  trabajo: ["trabajo", "mensajeria", "delivery", "transporte", "combat", "nitro", "switch", "bomber"],
+  semiautomatica: ["semiautomatica", "semi automatica", "semiautomática"],
+  alta_gama: ["alta gama", "touring", "naked", "kawasaki", "zontes", "benelli", "versys", "z", "leoncino"],
+};
+
+export const AUTECO_SEED_CATALOG: MotoItem[] = [
+  { name: "VICTORY NEW LIFE", price: 7449000, category: "scooter", brand: "Victory" },
+  { name: "VICTORY NEW LIFE TRAKKU", price: 7649000, category: "scooter", brand: "Victory" },
+  { name: "TVS NTORQ 125 XCONNECT", price: 8199999, category: "scooter", brand: "TVS" },
+  { name: "KYMCO AGILITY FUSION", price: 9699000, category: "scooter", brand: "Kymco" },
+  { name: "KYMCO AGILITY FUSION TRAKKU", price: 9899000, category: "scooter", brand: "Kymco" },
+  { name: "TVS NTORQ 125 XCONNECT FI", price: 10199999, category: "scooter", brand: "TVS" },
+  { name: "VICTORY BET ABS", price: 13090000, category: "scooter", brand: "Victory" },
+  { name: "VICTORY COMBAT 100", price: 4390000, category: "trabajo", brand: "Victory" },
+  { name: "VICTORY BOMBER 125 TK", price: 5999000, category: "trabajo", brand: "Victory" },
+  { name: "VICTORY NITRO 125", price: 6699000, category: "trabajo", brand: "Victory" },
+  { name: "VICTORY NITRO 125 TRAKKU", price: 6899000, category: "trabajo", brand: "Victory" },
+  { name: "VICTORY SWITCH 125", price: 7899000, category: "trabajo", brand: "Victory" },
+  { name: "VICTORY SWITCH 125 TK", price: 8099000, category: "trabajo", brand: "Victory" },
+  { name: "VICTORY VENOM 14", price: 7899000, category: "sport", brand: "Victory" },
+  { name: "VICTORY VENOM 250S", price: 8250000, category: "sport", brand: "Victory" },
+  { name: "VICTORY VENOM 18", price: 9149000, category: "sport", brand: "Victory" },
+  { name: "TVS RAIDER 125", price: 7799999, category: "sport", brand: "TVS" },
+  { name: "TVS RAIDER 125 RACING", price: 8049999, category: "sport", brand: "TVS" },
+  { name: "TVS RAIDER 125 FI", price: 8749999, category: "sport", brand: "TVS" },
+  { name: "TVS APACHE 160 CARBURADA ABS", price: 9649999, category: "sport", brand: "TVS" },
+  { name: "TVS APACHE RTR 160 4V XC FI", price: 10999999, category: "sport", brand: "TVS" },
+  { name: "TVS APACHE RTR 160 4V XC FI RACING", price: 11249999, category: "sport", brand: "TVS" },
+  { name: "VICTORY MRX 125 S", price: 9290000, category: "enduro", brand: "Victory" },
+  { name: "VICTORY MRX 125 S GOPRO", price: 9740000, category: "enduro", brand: "Victory" },
+  { name: "VICTORY MRX 125 GOPRO", price: 9790000, category: "enduro", brand: "Victory" },
+  { name: "VICTORY MRX 150 GOPRO", price: 10340000, category: "enduro", brand: "Victory" },
+  { name: "VICTORY MRX 200 GOPRO", price: 12090000, category: "enduro", brand: "Victory" },
+  { name: "VICTORY MRX ARIZONA GOPRO", price: 12590000, category: "enduro", brand: "Victory" },
+];
+
+type SearchMotoParams = {
+  query: string;
+  category?: MotoCategory | null;
+  maxPrice?: number;
+  limit?: number;
+};
+
+function searchMotoCatalog(
+  catalog: MotoItem[],
+  { query, category, maxPrice, limit = 3 }: SearchMotoParams
+): MotoItem[] {
+  const q = normalizeText(query);
+
+  let results = catalog.filter((m) => {
+    if (category && m.category !== category) return false;
+    if (maxPrice && m.price > maxPrice) return false;
+
+    const haystack = normalizeText(`${m.name} ${m.brand ?? ""} ${m.category}`);
+    return !q || haystack.includes(q);
+  });
+
+  if (!results.length && category) {
+    results = catalog.filter((m) => m.category === category);
+    if (maxPrice) results = results.filter((m) => m.price <= maxPrice);
+  }
+
+  return results
+    .sort((a, b) => a.price - b.price)
+    .slice(0, limit);
+}
+
+function mapRagMotoToMotoItem(item: Awaited<ReturnType<typeof searchRagMotoCatalog>>[number]): MotoItem | null {
+    if (!item.price) return null;
+    return {
+        name: item.name,
+        price: item.price,
+        category: item.category,
+        brand: item.brand,
+        summary: item.summary,
+        sourceLabel: "RAG local",
+        localTxtPath: item.txtPath,
+        localImagePath: item.imagePaths[0],
+    };
+}
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -143,6 +261,8 @@ type MemorySlots = {
     totalPrice?: number;
     financeAmount?: number;
     termMonths?: number;
+    lastMotoOptions?: MotoItem[];
+    lastMotoSelectionIndex?: number;
 };
 
 type NameDetection = {
@@ -202,7 +322,11 @@ function extractName(text: string): string | undefined {
 }
 
 function parseMoneyValue(rawNumber: string, isMillions: boolean): number | null {
-    const normalized = rawNumber.replace(/\s/g, "").replace(/\./g, "").replace(/,/g, ".");
+    const compact = rawNumber.replace(/\s/g, "");
+    const isThousandGrouped = /^\d{1,3}(?:[\.,]\d{3})+$/.test(compact);
+    const normalized = isThousandGrouped
+        ? compact.replace(/[\.,]/g, "")
+        : compact.replace(/\./g, "").replace(/,/g, ".");
     const parsed = Number(normalized);
     if (Number.isNaN(parsed) || parsed <= 0) return null;
     if (isMillions) return Math.round(parsed * 1_000_000);
@@ -222,7 +346,7 @@ function extractMoneyMentions(text: string): Array<{ value: number; index: numbe
     const mentions: Array<{ value: number; index: number }> = [];
     const normalized = normalizeText(text);
 
-    const regex = /(\d+(?:[\.,]\d+)?)\s*(millon(?:es)?|mil)?/gi;
+    const regex = /(\d{1,3}(?:[\.,]\d{3})+|\d+(?:[\.,]\d+)?)\s*(millon(?:es)?|mil)?/gi;
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(normalized)) !== null) {
@@ -245,7 +369,76 @@ function extractMoneyMentions(text: string): Array<{ value: number; index: numbe
     return mentions;
 }
 
-function mergeSlotsFromMessage(message: string, current: MemorySlots, isLatestMessage = false): MemorySlots {
+function detectMotoSelection(message: string, currentSlots?: MemorySlots, recentAssistantMessages?: string[]): { price: number; name: string; index?: number } | null {
+    const normalized = normalizeText(message);
+    
+    const optionPatterns = [
+        /(?:opcion|opción|option)\s*(\d+)(?=\D|$)/i,
+        /(?:la|el|un|una)\s*(\d+)(?=\D|$)/i,
+        /^(\d+)$/i,
+    ];
+    
+    for (const pattern of optionPatterns) {
+        const match = normalized.match(pattern);
+        if (match) {
+            const num = Number(match[1]);
+            if (num >= 1 && num <= 9) {
+                if (currentSlots?.lastMotoOptions && num <= currentSlots.lastMotoOptions.length) {
+                    const idx = num - 1;
+                    const moto = currentSlots.lastMotoOptions[idx];
+                    return { price: moto.price, name: moto.name, index: idx };
+                }
+                
+                if (recentAssistantMessages) {
+                    for (const msg of recentAssistantMessages) {
+                        const options = parseMotoOptionsFromMessage(msg);
+                        if (options.length >= num) {
+                            return options[num - 1];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    for (const moto of AUTECO_SEED_CATALOG) {
+        const motoNameLower = normalizeText(moto.name);
+        const keywords = motoNameLower.split(" ").filter((w) => w.length > 3);
+
+        if (keywords.length >= 2 && keywords.slice(0, 3).every((kw) => normalized.includes(kw))) {
+            return { price: moto.price, name: moto.name };
+        }
+
+        if (keywords.length >= 2) {
+            const shortName = keywords.slice(0, 2).join(" ");
+            if (shortName.length > 5 && normalized.includes(shortName)) {
+                return { price: moto.price, name: moto.name };
+            }
+        }
+    }
+    
+    return null;
+}
+
+function parseMotoOptionsFromMessage(message: string): Array<{ price: number; name: string; index: number }> {
+    const options: Array<{ price: number; name: string; index: number }> = [];
+    const lines = message.split("\n");
+
+    for (const line of lines) {
+        const match = line.match(/^\s*(\d+)[\)\.]\s*(.+?)\s*-\s*\$([\d\.,]+)/i);
+        if (match) {
+            const index = Number(match[1]) - 1;
+            const name = match[2].trim();
+            const price = parseMoneyValue(match[3], false);
+            if (!price) continue;
+            options.push({ price, name, index });
+        }
+    }
+
+    return options.sort((a, b) => a.index - b.index);
+}
+
+function mergeSlotsFromMessage(message: string, current: MemorySlots, isLatestMessage = false, recentAssistantMessages?: string[]): MemorySlots {
     const next = { ...current };
     const normalized = normalizeText(message);
 
@@ -254,6 +447,14 @@ function mergeSlotsFromMessage(message: string, current: MemorySlots, isLatestMe
 
     const termMonths = extractTermMonths(message);
     if (termMonths) next.termMonths = termMonths;
+
+    const motoSelection = detectMotoSelection(message, next, recentAssistantMessages);
+    if (motoSelection) {
+        next.totalPrice = motoSelection.price;
+        if (motoSelection.index !== undefined) {
+            next.lastMotoSelectionIndex = motoSelection.index;
+        }
+    }
 
     const mentions = extractMoneyMentions(message);
     let latestFinanceValue: number | undefined;
@@ -304,13 +505,18 @@ function inferSlotsFromHistory(history: ConversationMessage[], latestMessage: st
         .slice(-12)
         .map((m) => m.content as string);
 
+    const recentAssistantMessages = history
+        .filter((m) => m.role === "assistant" && typeof m.content === "string")
+        .slice(-6)
+        .map((m) => m.content as string);
+
     let slots: MemorySlots = {};
 
     for (const msg of userMessages) {
-        slots = mergeSlotsFromMessage(msg, slots, false);
+        slots = mergeSlotsFromMessage(msg, slots, false, recentAssistantMessages);
     }
 
-    slots = mergeSlotsFromMessage(latestMessage, slots, true);
+    slots = mergeSlotsFromMessage(latestMessage, slots, true, recentAssistantMessages);
 
     return slots;
 }
@@ -457,20 +663,81 @@ function buildGreetingResponse(name: string | undefined, hasPreviousConversation
     return "Hola, bienvenido. Soy tu asistente de financiacion de motos. Para atenderte mejor, me compartes tu nombre por favor?";
 }
 
-export class CreditBotService {
-    private static async getContactName(phone: string, companyId: string): Promise<string | undefined> {
-        const { data } = await supabase
-            .from("contacts")
-            .select("name")
-            .eq("phone", phone)
-            .eq("company_id", companyId)
-            .maybeSingle();
-
-        const rawName = (data?.name || "").trim();
-        const cleanName = sanitizeCustomerName(rawName);
-        if (!cleanName || !isUsableCustomerName(cleanName)) return undefined;
-        return cleanName;
+function detectMotoCategory(message: string): MotoCategory | null {
+  const normalized = normalizeText(message);
+  
+  for (const [category, aliases] of Object.entries(CATEGORY_ALIASES)) {
+    if (aliases.some(term => normalized.includes(term))) {
+      return category as MotoCategory;
     }
+  }
+  return null;
+}
+
+function motoRecommendationIntent(message: string): boolean {
+  const normalized = normalizeText(message);
+  const hasMotoTerm = MOTO_SEARCH_TERMS.some(term => normalized.includes(term));
+  const hasSpecificModel = SPECIFIC_MODEL_TERMS.some(term => normalized.includes(term));
+  return hasMotoTerm || hasSpecificModel;
+}
+
+function hasModelLikeSignal(message: string): boolean {
+  const normalized = normalizeText(message);
+  if (!normalized) return false;
+  if (/(?:opcion|opción|option)\s*\d+/.test(normalized)) return true;
+  if (/(?:la|el|un|una)\s*\d+/.test(normalized)) return true;
+  if (/\b[a-z]{2,}\s*\d{2,4}\b/.test(normalized)) return true;
+  if (SPECIFIC_MODEL_TERMS.some((term) => normalized.includes(term))) return true;
+  if (/\b(victory|tvs|kymco|benelli|kawasaki|zontes|starker|segway|ceronte)\b/.test(normalized)) return true;
+  return false;
+}
+
+function buildMotoOptionsResponse(motos: MotoItem[], name?: string): string {
+  const intro = name ? `${name}, estas son buenas opciones de Auteco:` : "Estas son buenas opciones de Auteco:";
+  const lines = motos.map((m, i) => {
+    const summary = m.summary ? `\n   ${m.summary}` : "";
+    return `${i + 1}. ${m.name} - ${formatearPesos(m.price)}${summary}`;
+  });
+  return `${intro}\n${lines.join("\n")}\n\nSi quieres, te calculo la cuota de cualquiera a 12, 24 o 48 meses.`;
+}
+
+function buildMotoDiscoveryMenu(name?: string): string {
+  const prefix = name ? `${name}, ` : "";
+  return `${prefix}claro, te ayudo a elegir mejor. Te puedo recomendar por linea:\n` +
+    `1. Trabajo (economicas y rendidoras)\n` +
+    `2. Scooter (comodas para ciudad)\n` +
+    `3. Sport (mas potencia y estilo)\n\n` +
+    `Dime el numero de la linea o tu presupuesto y te muestro opciones concretas con precio.`;
+}
+
+function buildMotoCategoryPrompt(category: string, name?: string): string {
+  const greeting = name ? `${name}, ` : "";
+  const categoryInfo: Record<string, string> = {
+    enduro: "enduro/trail para aventuras",
+    scooter: "scooter para ciudad",
+    sport: "deportiva para velocidad",
+    trabajo: "para trabajo y uso diario",
+    semiautomatica: "semi automática",
+    alta_gama: "alta gama"
+  };
+  
+  return `${greeting}¿Qué presupuesto máximo tienes para tu moto ${categoryInfo[category] || category}? Así te doy opciones más exactas.`;
+}
+
+export class CreditBotService {
+  private static async getContactName(phone: string, companyId: string): Promise<string | undefined> {
+    const { data } = await supabase
+      .from("contacts")
+      .select("name")
+      .eq("phone", phone)
+      .eq("companyId", companyId)
+      .maybeSingle();
+
+    const rawName = (data?.name || "").trim();
+    const cleanName = sanitizeCustomerName(rawName);
+    if (!cleanName || !isUsableCustomerName(cleanName)) return undefined;
+    return cleanName;
+  }
 
     private static async updateContactName(phone: string, companyId: string, name: string): Promise<void> {
         const cleanName = sanitizeCustomerName(name);
@@ -715,11 +982,13 @@ export class CreditBotService {
 
         const isFinanceContext = financeContextDetected(message, history);
         const hasPreviousConversation = history.some((m) => m.role === "user" || m.role === "assistant");
-        const freshSimulationSignal = hasFreshSimulationSignal(message);
-        const continuationSignal = hasAnyTerm(message, SIMULATION_CONTINUATION_TERMS);
-        const isProductContext = productContextDetected(message, history);
-        const recommendationIntent = hasRecommendationIntent(message);
-        const repeatedCatalogRedirect = lastAssistantWasCatalogRedirect(history);
+    const freshSimulationSignal = hasFreshSimulationSignal(message);
+    const continuationSignal = hasAnyTerm(message, SIMULATION_CONTINUATION_TERMS);
+    const isProductContext = productContextDetected(message, history);
+    const recommendationIntent = hasRecommendationIntent(message);
+    const repeatedCatalogRedirect = lastAssistantWasCatalogRedirect(history);
+    const motoIntent = motoRecommendationIntent(message);
+    const detectedCategory = detectMotoCategory(message);
 
         if (isGreetingOnly(message)) {
             const greeting = buildGreetingResponse(slots.name, hasPreviousConversation);
@@ -733,13 +1002,123 @@ export class CreditBotService {
             return startResponse;
         }
 
-        if (isProductContext && !freshSimulationSignal) {
-            const response = (recommendationIntent || repeatedCatalogRedirect)
-                ? buildGuidedRecommendationResponse(slots.name)
-                : buildNoCatalogResponse(slots.name);
+        const recentAssistantMessages = history
+            .filter((m) => m.role === "assistant" && typeof m.content === "string")
+            .slice(-5)
+            .map((m) => m.content as string);
+
+        const currentMoneyMentions = extractMoneyMentions(message);
+        const currentTermMonths = extractTermMonths(message);
+        const hasCurrentNumericSignal = currentMoneyMentions.length > 0 || Boolean(currentTermMonths);
+        const hasConversationFinanceSignal =
+          freshSimulationSignal ||
+          continuationSignal ||
+          hasAnyTerm(message, FINANCE_TERMS);
+
+        if (currentMoneyMentions.length > 0) {
+          slots.totalPrice = currentMoneyMentions[currentMoneyMentions.length - 1].value;
+        }
+
+        if (currentTermMonths) {
+          slots.termMonths = currentTermMonths;
+        }
+
+        const motoSelection = detectMotoSelection(message, slots, recentAssistantMessages);
+        let selectedMotoName: string | undefined = motoSelection?.name;
+        if (motoSelection) {
+          if (slots.lastMotoOptions && motoSelection.index !== undefined) {
+            const selectedMoto = slots.lastMotoOptions[motoSelection.index];
+            if (selectedMoto) {
+              slots.totalPrice = selectedMoto.price;
+              selectedMotoName = selectedMoto.name;
+            }
+          } else if (motoSelection.price) {
+            slots.totalPrice = motoSelection.price;
+            selectedMotoName = motoSelection.name;
+          }
+        }
+
+        const shouldTryRagModelResolution =
+          !isProductDiscoveryIntent(message) &&
+          hasModelLikeSignal(message) &&
+          !hasCurrentNumericSignal;
+
+        if ((!selectedMotoName || !slots.totalPrice) && shouldTryRagModelResolution) {
+          const ragMatchedMoto = await resolveRagMotoByText(message);
+          if (ragMatchedMoto?.price) {
+            slots.totalPrice = ragMatchedMoto.price;
+            selectedMotoName = ragMatchedMoto.name;
+          }
+        }
+
+        if (motoIntent && !hasCurrentNumericSignal && !hasConversationFinanceSignal) {
+          if (!detectedCategory && !hasModelLikeSignal(message)) {
+            const guided = buildMotoDiscoveryMenu(slots.name);
+            await this.saveTurn(phone, company, history, message, guided);
+            return guided;
+          }
+
+          slots.totalPrice = undefined;
+          slots.termMonths = undefined;
+          slots.financeAmount = undefined;
+
+          const category = detectedCategory;
+          const ragMatches = await searchRagMotoCatalog(message, {
+            category,
+            limit: 3,
+          });
+          const ragMappedMatches = ragMatches
+            .map((item) => mapRagMotoToMotoItem(item))
+            .filter((item): item is MotoItem => Boolean(item));
+
+          const fallbackMatches = searchMotoCatalog(AUTECO_SEED_CATALOG, {
+            query: message,
+            category,
+            limit: 3,
+          });
+          const matches = ragMappedMatches.length > 0 ? ragMappedMatches : fallbackMatches;
+
+          if (matches.length > 0) {
+            slots.lastMotoOptions = matches;
+            const response = buildMotoOptionsResponse(matches, slots.name);
             await this.saveTurn(phone, company, history, message, response);
             return response;
+          }
+
+          const fallbackResponse = `${slots.name ? `${slots.name}, ` : ""}no encontré una coincidencia exacta. ` +
+            `Puedo ayudarte por tipo de moto: scooter, trabajo, sport o enduro, y también por presupuesto. ` +
+            `También puedes ver el catálogo completo en https://japolandiamotos.com/`;
+          await this.saveTurn(phone, company, history, message, fallbackResponse);
+          return fallbackResponse;
         }
+
+        if (slots.totalPrice && slots.termMonths && (hasCurrentNumericSignal || hasConversationFinanceSignal || Boolean(motoSelection))) {
+          try {
+            const response = buildFinanceResponse(slots);
+            await this.saveTurn(phone, company, history, message, response);
+            return response;
+          } catch {}
+        }
+
+        if (slots.totalPrice && !slots.termMonths) {
+          const monthsPrompt = `${slots.name ? `${slots.name}, ` : ""}Perfecto. ${selectedMotoName || "La moto"} a ${formatearPesos(slots.totalPrice)}. ¿A cuántos meses quieres financiarla?`;
+          await this.saveTurn(phone, company, history, message, monthsPrompt);
+          return monthsPrompt;
+        }
+
+        if (!slots.totalPrice && slots.termMonths) {
+          const pricePrompt = `${slots.name ? `${slots.name}, ` : ""}Claro. ¿Cuál es el valor de la moto que quieres financiar a ${slots.termMonths} meses?`;
+          await this.saveTurn(phone, company, history, message, pricePrompt);
+          return pricePrompt;
+        }
+
+    if (isProductContext && !freshSimulationSignal) {
+      const response = (recommendationIntent || repeatedCatalogRedirect)
+        ? buildGuidedRecommendationResponse(slots.name)
+        : buildNoCatalogResponse(slots.name);
+      await this.saveTurn(phone, company, history, message, response);
+      return response;
+    }
 
         if (!isFinanceContext && !isGreetingOnly(message)) {
             const out = buildOutOfScopeResponse();

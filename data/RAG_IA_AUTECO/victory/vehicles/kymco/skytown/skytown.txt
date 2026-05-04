@@ -1,0 +1,41 @@
+**Kymco Sky Town** se presenta como la mas reciente innovacion en el segmento scooter de Colombia, disenada especificamente para una movilidad urbana agil, eficiente y con el respaldo de Auteco. Su llegada a los concesionarios se programo con una fecha estimada para noviembre de 2025, posicionandose como una opcion de vanguardia que combina un diseno moderno con dimensiones compactas para facilitar los desplazamientos diarios. Este modelo ofrece un peso en orden de marcha de 139 kg, una distancia entre ejes de 1360 mm y una altura al sillin de 785 mm, lo que asegura una posicion ergonomica accesible para diversos conductores en el entorno de la ciudad.
+
+
+**Kymco Sky Town** integra un motor monocilindrico de 4 tiempos y 149.6 cc con arbol de levas SOHC y un sistema de refrigeracion por liquido. Este propulsor entrega una potencia maxima de 12.7 HP a las 8000 rpm y un par motor de 12.8 Nm a 6000 rpm, operando mediante inyeccion electronica de combustible (Fuel Injection) para optimizar el rendimiento y reducir emisiones. La transmision es automatica de tipo CVT, lo que simplifica la conduccion, permitiendo un consumo estimado de 35 a 40 km por litro. Con su deposito de combustible de 2.2 galones (aproximadamente 8.3 litros), el vehiculo alcanza una autonomia cercana a los 315 km por tanque lleno bajo condiciones reales de uso.
+
+
+**Kymco Sky Town** destaca por su avanzado paquete de seguridad activa, el cual incluye frenos de disco en ambas ruedas asistidos por un sistema ABS de doble canal que evita el bloqueo de los neumaticos en frenadas bruscas. Ademas, incorpora control de traccion de serie, una tecnologia clave para mantener la estabilidad sobre superficies resbalosas o condiciones de lluvia. El conjunto ciclo se apoya en una suspension delantera de horquilla telescopica y un doble amortiguador trasero, utilizando neumaticos de medidas 110/80-14 en la parte frontal y 130/70-13 en la trasera, optimizados para un agarre firme en asfalto y carretera.
+
+
+**Kymco Sky Town** ofrece un equipamiento tecnologico premium encabezado por un sistema de encendido sin llave (Keyless) y una iluminacion Full LED que cubre faros, luces de freno y direccionales para una visibilidad maxima. El piloto dispone de un tablero digital LCD que proyecta informacion clara sobre la velocidad, el nivel de combustible y el odometro en tiempo real. En terminos de practicidad, el modelo incluye un puerto de carga USB para dispositivos moviles y un amplio espacio de almacenamiento bajo el asiento con capacidad para guardar un casco, garantizando que cada trayecto sea funcional, moderno y seguro.
+
+
+Ficha tecnica **Kymco Sky Town**
+* Tipo de Moto y Uso Principal: Scooter diseñada principalmente para la movilidad urbana y desplazamientos diarios en la ciudad.
+* Motor y Transmisión:
+    * Cilindrada: 149.6 cc.
+    * Potencia: 12.7 HP @ 8000 rpm.
+    * Par Motor: 12.8 Nm @ 6000 rpm.
+    * Tipo de Motor: Monocilíndrico, 4 tiempos, SOHC, refrigerado por líquido.
+    * Transmisión: Automática (CVT).
+* Rendimiento y Consumo:
+    * Consumo de Combustible: Aproximadamente 35-40 km/l (dato estimado en uso real).
+    * Autonomía: Cerca de 315 km por tanque lleno (estimado).
+* Dimensiones, Peso y Ergonomía:
+    * Peso en Orden de Marcha: 139 kg.
+    * Altura del Asiento: 785 mm.
+    * Distancia entre ejes: 1360 mm.
+    * Capacidad del depósito de combustible: 2.2 galones (aproximadamente 8.3 litros).
+* Chasis, Suspensión y Frenos:
+    * Suspensión Delantera: Horquilla telescópica.
+    * Suspensión Trasera: Doble amortiguador.
+    * Sistema de Frenos: Frenos de disco en ambas ruedas con sistema ABS de doble canal.
+* Neumáticos:
+    * Medidas (Delantero y Trasero): Delantero: 110/80-14, Trasero: 130/70-13.
+    * Tipo de Cubierta: Asfalto/Carretera.
+* Equipamiento y Características Clave:
+    * Sistemas de Ayuda a la Conducción: ABS de doble canal.
+    * Tipo de Encendido: Sistema sin llave (Keyless).
+    * Instrumentación: Tablero digital LCD.
+    * Iluminación: Sistema de iluminación Full LED.
+    * Características Adicionales: Puerto de carga USB, amplio espacio de almacenamiento bajo el asiento.

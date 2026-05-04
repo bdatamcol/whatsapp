@@ -1,30 +1,24 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    const publicRoutes = [
-        '/login',
-        '/api/auth',
-        '/api/public',
-        '/api/health',
-        '/api/whatsapp/webhook',
-        '/_next',
-        '/favicon.ico',
-    ];
-
-    if (publicRoutes.some(route => pathname.startsWith(route))) {
+    if (
+        pathname.startsWith('/login') ||
+        pathname.startsWith('/api/auth') ||
+        pathname.startsWith('/api/public') ||
+        pathname.startsWith('/api/health') ||
+        pathname.startsWith('/api/whatsapp') ||
+        pathname.startsWith('/whatsapp/webhook') ||
+        pathname.startsWith('/_next') ||
+        pathname === '/favicon.ico'
+    ) {
         return NextResponse.next();
     }
 
-    // SOLO verificar existencia de cookies
     const accessToken = request.cookies.get('sb-access-token')?.value;
     const refreshToken = request.cookies.get('sb-refresh-token')?.value;
-
-    if (pathname === '/' && !accessToken && !refreshToken) {
-        return NextResponse.redirect(new URL('/login', request.url));
-    }
 
     if (!accessToken && !refreshToken) {
         return NextResponse.redirect(new URL('/login', request.url));

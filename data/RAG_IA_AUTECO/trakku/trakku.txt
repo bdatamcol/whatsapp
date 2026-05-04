@@ -1,0 +1,64 @@
+TRAKKU es un sistema de rastreo satelital que permite a los usuarios monitorear y controlar su motocicleta en tiempo real a través de una aplicación disponible para Android e iOS. Este sistema se puede instalar en motos de la marca Auteco o en otras marcas como accesorio adicional.​ Debes aclarar en los vehiculos que cuenten con trakku  que el vehículo que llega desde planta con trakku y este tiene un período de hasta 6 meses gratis al momento de comprar la moto.
+
+
+DATOS IMPORTANTES TRAKKU
+1. Funcionalidades principales
+- Ubicación en tiempo real: Rastreo satelital 24/7 para conocer la ubicación exacta de la moto.
+- Alerta de movimiento: Notificaciones instantáneas si la moto es movida sin autorización.
+- Apagado remoto: Posibilidad de apagar la moto desde el celular en caso de emergencia o robo.
+- Estadísticas de recorridos: Registro de trayectos, velocidades y comportamientos de conducción.
+- Recordatorios y alertas: Notificaciones sobre vencimientos de SOAT, impuestos y mantenimientos.
+- Ofertas personalizadas: Promociones y recomendaciones basadas en el uso y estado de la moto.​
+
+
+2. TRAKKU ¿Cómo instalo el GPS en mi moto?
+- Adquiere el dispositivo GPS Trakku a través de la página de Auteco: https://www.auteco.com.co/dispositivo-gps-trakku/p
+- Recibirás el GPS en la dirección que indiques durante la compra.
+- Una vez recibido, agenda una cita en un taller autorizado de la red Auteco para realizar la instalación.
+- El valor sugerido para la instalación es de $60.000.
+- El dispositivo incluye:
+- Hasta 2 meses de uso gratuito de la app Trakku
+- 6 meses de garantía, tanto por instalación como por defectos de fábrica.
+
+
+3. TRAKKU ¿Qué beneficios obtengo si compro una moto ensamblada con GPS?
+- El GPS viene instalado de fábrica y conectado directamente al sistema eléctrico de la moto.
+- La garantía del GPS es gestionada como parte integral de la motocicleta.
+- Recibes hasta 6 meses de uso gratuito del servicio Trakku, activados tras el registro en el RUNT.
+
+
+4. TRAKKU ¿Qué hago en caso de emergencia?
+- Lo primero es verificar el estado de transmisión del GPS por medio del app, desde la linea de atención te podemos realizar acompañamiento y brindar indicaciones o información si lo requieres. Debes acudir a la policía nacional que junto al denuncio y la ubicación del GPS deben realizar el acompañamiento para la recuperación de la motocicleta
+ 
+
+5. TRAKKU ¿Cómo me registro?
+- El usuario al momento de realizar la compra se le entrega un código IMEI(único por GPS) y con este puede realizar el registro en la app de TRAKKU, escaneando junto al IMEI, el documento de identidad y tarjeta de propiedad para validar los datos del propietario el registro estaría listo
+
+
+6. TRAKKU Funcionalidades adicionales
+- QR de emergencia puedes apagar la moto aún si te roban el celular
+- Envió de alertas SOS desde el app
+- Creación de Geocercas para que te indique cuando la moto ingresa o sale de un sitio especifico
+- Actualización de kilometraje para que no pierdas las alertas de mantenimiento
+- Registro de conductores para que tengan acceso a la misma información de la motocicleta en el app
+- Compartir ubicación en tiempo real por hasta 4 horas
+- Por medio del app tienes acceso a línea de atención para ventas de repuestos
+
+
+7. TRAKKU ¿Qué los diferencia de otros proveedores?
+- TRAKKU es un sistema desarrollado 100% por Auteco lo que permite tener autonomía tecnológica y que podamos realizar todos los cambios que sean necesarios para que TRAKKU sea un diferencial para el usuario. Adicional somos el único GPS a nivel nacional que desde ensamble incorporamos el GPS para que los usuarios no pierdan sus garantías en otras tecnologías que necesitan intervenir el sistema eléctrico.
+
+
+8. TRAKKU Apagado remoto - https://www.youtube.com/watch?v=G2rWLRzThyo&list=PL61ttXlZl6px3H5y7oSIGBEk2hSKg1BP2&index=2
+Agregar contactos de emergencia - https://www.youtube.com/watch?v=NE4pY5dkquk&list=PL61ttXlZl6px3H5y7oSIGBEk2hSKg1BP2&index=6
+Como se renueva el plan de trakku - https://www.youtube.com/watch?v=aWO61GQyzg0&list=PL61ttXlZl6px3H5y7oSIGBEk2hSKg1BP2&index=16
+
+
+PRECIOS TRAKKU
+Cuando se compra como accesorio para motocicletas que no vienen con trakku desde ensamble tiene un valor de 350.000 GPS y viene con un un mes de servicio gratis
+Cuando la motocicleta es trakku, ya viene incluido y no toca pagarlo aparte, adicional que viene con hasta 6 meses de servicio gratis para todas las motos que lo tren de ensamble.
+
+Los planes luego de los periodos gratuitos son:
+- 23.990 plan mensual
+- 119.950 plan por 6 meses
+- 215.900 plan por 12 meses

@@ -1,0 +1,912 @@
+[
+{
+"linea": "VICTORY MRX200",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY X1 FI 125",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 200 ABS GP",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 150 CBS GP",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 125 CBS GP",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 125 S CBS GP",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "BENELLI 302S",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "BENELLI IMPERIALE 400",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "BENELLI LEONCINO 250",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "BENELLI LEONCINO 500 TRAIL",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "BENELLI TRK 251",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "BENELLI TRK 502",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "BENELLI TRK 502 X",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "CERONTE TRICARGO 200 REFRIGERADO POR ACEITE",
+"marca": "CERONTE"
+},
+
+
+{
+"linea": "CERONTE TRICARGO 300 CON GATO HIDRÁULICO",
+"marca": "CERONTE"
+},
+
+
+{
+"linea": "CERONTE TRICARGO 300",
+"marca": "CERONTE"
+},
+
+
+{
+"linea": "KAWASAKI JET SKI STX 160",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI JET SKI STX 160 LX",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI JET SKI SX R",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z500",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI BRUTE FORCE 450",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z1000 R",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KX 250",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KLX300R",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KX 114RL",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KX85",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KX 112",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI MULE 4010 TRANS 4X4",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI MULE PRO DXT",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI MULE PRO FXT",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI TERYX 1000",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI TERYX KRX 1000 ESPECIAL EDITION",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI TERYX KRX 1000 TRAIL EDITION",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI VERSYS 300 ABS",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI VERSYS 650",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z1000",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z1100",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z1100 SE",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z400",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z900",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z650 RS",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z900 RS",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z900 SE",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI Z900 RS CAFE",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KYMCO AGILITY FUSION",
+"marca": "KYMCO"
+},
+
+
+{
+"linea": "KYMCO AGILITY FUSION TRAKKU",
+"marca": "KYMCO"
+},
+
+
+{
+"linea": "SEGWAY B110S",
+"marca": "SEGWAY"
+},
+
+
+{
+"linea": "SEGWAY E110S",
+"marca": "SEGWAY"
+},
+
+
+{
+"linea": "SEGWAY E125S",
+"marca": "SEGWAY"
+},
+
+
+{
+"linea": "SEGWAY G30P",
+"marca": "SEGWAY"
+},
+
+
+{
+"linea": "SEGWAY X160",
+"marca": "SEGWAY"
+},
+
+
+{
+"linea": "SEGWAY X260",
+"marca": "SEGWAY"
+},
+
+
+{
+"linea": "STARKER COOL JOY",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER AVANTI 3.0",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER BICI ONE",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER BICI ONE ALUMINIO",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER REACTOR",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER SKUTY LED",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER SKUTY SPORT",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER SPORT 2.0",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER SPORT 2.0 PRO",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER STAR KIDS PRO",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER T-FLEX",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER T-FLEX ALUMINIO",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER T-FLEX PRO",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER T-FLEX PRO ALUMINIO",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER THUNDER 1500",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "SUPER SOCO CPX",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "SUPER SOCO CUX",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "SUPER SOCO TC 1900",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "SUPER SOCO TC MAX",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "SUPER SOCO TS 1200R",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "VELOCIFERO 1600 W",
+"marca": "VELOCIFERO"
+},
+
+
+{
+"linea": "VELOCIFERO 2000 W",
+"marca": "VELOCIFERO"
+},
+
+
+{
+"linea": "VELOCIFERO 800 W",
+"marca": "VELOCIFERO"
+},
+
+
+{
+"linea": "VELOCIFERO AIR 350 W",
+"marca": "VELOCIFERO"
+},
+
+
+{
+"linea": "VELOCIFERO PLUS 500 W",
+"marca": "VELOCIFERO"
+},
+
+
+{
+"linea": "VELOCIFERO TRUCK",
+"marca": "VELOCIFERO"
+},
+
+
+{
+"linea": "VICTORY ADVANCE R 125",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY ADVANCE R 125 TRAKKU",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY BOMBER 125",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY BOMBER 125 TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY NEW LIFE CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY NEW LIFE TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY BET ABS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 125",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 125 FOX",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 125S FOX",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 150",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 150 FOX",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX ARIZONA ABS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY NITRO 125 CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY NITRO 125 TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY ONE MP CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY ONE MP TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX ARIZONA XPLORE",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "ZONTES 350 R1",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "ZONTES 350 T1",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "ZONTES 350 T2",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "ZONTES 350 X1",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "WOLF ARTIC",
+"marca": "WOLF"
+},
+
+
+{
+"linea": "WOLF HUSKY",
+"marca": "WOLF"
+},
+
+
+{
+"linea": "WOLF IBERIAN",
+"marca": "WOLF"
+},
+
+
+{
+"linea": "WOLF RUFUS",
+"marca": "WOLF"
+},
+
+
+{
+"linea": "WOLF TIBETAN",
+"marca": "WOLF"
+},
+
+
+{
+"linea": "STARKER SKUTY ONE",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER STAR KIDS",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "VICTORY VENOM 18",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "SUPER SOCO NEW TC",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "SUPER SOCO NEW TS",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "SUPER SOCO CU MINI",
+"marca": "SUPER SOCO"
+},
+
+
+{
+"linea": "ZONTES 350 GK",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "KAWASAKI NINJA ZX6R",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI NINJA 500",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KLX250 S",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "STARKER AVANTI X",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "VICTORY VENOM 14",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "KAWASAKI NINJA ZX-10R",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "STARKER STAR-K",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "STARKER STAR-K PRO",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "KAWASAKI KLE 500",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KLE 500 SE",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI ZH2",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "STARKER TROTTER",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "KAWASAKI VERSYS 1000 S",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI KLX110R L",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "KAWASAKI NINJA 500 SE",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "VICTORY MRX 200 ABS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "BENELLI LEONCINO 800",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "VICTORY MRX 200 FOX",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY SWITCH 125 TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 125 S TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY BOMBER 125 TK",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY SWITCH 125 CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY X1 FI 125 TK",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "BENELLI LEONCINO 800 TRAIL",
+"marca": "BENELLI"
+},
+
+
+{
+"linea": "VICTORY COMBAT 100",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 125 S",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 150 TRAKKU",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY X1 FI TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX ARIZONA FOX",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "STARKER PRAIA 750W",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "VICTORY MRX 125 TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY SWITCH 125 TRAKKU",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "VICTORY MRX 150 TK CBS",
+"marca": "VICTORY"
+},
+
+
+{
+"linea": "STARKER VOLTA 350",
+"marca": "STARKER"
+},
+
+
+{
+"linea": "VELOCIFERO ECOMAD",
+"marca": "VELOCIFERO"
+},
+
+
+{
+"linea": "KAWASAKI NINJA ZX-4RR",
+"marca": "KAWASAKI"
+},
+
+
+{
+"linea": "ZONTES 368G",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "ZONTES 703F",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "ZONTES 703 RR",
+"marca": "ZONTES"
+},
+
+
+{
+"linea": "ZONTES 368M",
+"marca": "ZONTES"
+}
+]
