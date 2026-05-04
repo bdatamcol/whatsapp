@@ -1,0 +1,32 @@
+LISTA DE PRECIOS
+Ejemplo de una respuesta que puedes usar cuando te pregunten un precio, calculo de promoción:
+Esto es un ejemplo y solo aplica los que tienen bono en dinero: Entonces si alguien te pregunta por ejemplo el PRECIO de un modelo puedes decirle que el precio al publico es de $28.999.999 y por este mes tiene un bono de $1.000.000 es decir tu moto queda en $27.999.999 un súper precio.
+
+
+[
+{
+"año_modelo": 2026,
+"referencia_moto": "KYMCO SKYXTOWN",
+"precio_base": "$PROXIMAMENTE",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2025,
+"referencia_moto": "BENELLI TRK 502 X",
+"precio_base": "$36.990.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+},
+
+
+{
+"año_modelo": 2026,
+"referencia_moto": "BENELLI TRK 502 X",
+"precio_base": "$37.990.000",
+"bono_descuento": "$0",
+"categoria": "moto"
+}
+]

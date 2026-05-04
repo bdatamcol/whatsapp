@@ -1,0 +1,46 @@
+**CERONTE TRICARGO 300** se integra al portafolio de carga de Auteco como un motocarro tricargo (motocarguero) diseñado para transportar mercancias pesadas con una resistencia superior y el respaldo de una marca con trayectoria en soluciones para trabajar y progresar. Este vehiculo presenta dimensiones amplias con un largo total de 4130 mm, un ancho de 1580 mm y una altura total de 1590 mm, apoyandose en una distancia entre ejes de 2640 mm para garantizar estabilidad. Con un peso neto de 634 kg y una altura al sillin de 820 mm, su estructura robusta permite una operacion segura y eficiente en labores logisiticas de alta exigencia, estando disponible actualmente en color negro.
+
+
+**CERONTE TRICARGO 300** esta impulsado por un motor monocilindrico de 4 tiempos y 2 valvulas tipo OHV, con una cilindrada de 272 cc y un diametro por carrera de 73 por 65 mm. Este propulsor entrega una potencia maxima de 18.8 HP a las 7000 rpm y un torque maximo de 21 Nm a 4500 rpm, lo que asegura una respuesta excepcional para arranques en pendientes y maniobras con carga pesada. La refrigeracion es por liquido, permitiendo mantener el motor a una temperatura optima incluso en condiciones de uso intensivo, mientras que su alimentacion por carburador y relacion de compresion de 10.1:1 garantizan un rendimiento solido con gasolina corriente.
+
+
+**CERONTE TRICARGO 300** utiliza una transmision mecanica de 5 velocidades mas reversa, la cual incorpora un sistema Booster diseñado especificamente para mejorar el rendimiento y la fuerza en terrenos dificiles. El sistema de encendido se gestiona mediante tecnologia CDI para un arranque eficiente, contando con un doble sistema de activacion electrico y por pedal para mayor confiabilidad en cualquier situacion. Su autonomia esta respaldada por un tanque de combustible con capacidad de 23 litros (6.1 galones), lo que permite cubrir recorridos largos de distribucion sin interrupciones constantes para repostar.
+
+
+**CERONTE TRICARGO 300** destaca por su impresionante capacidad de carga disponible de hasta 1.000 kg (1 tonelada), facilitada por un volco de gran tamano que mide 242 cm de largo por 142 cm de ancho. Para soportar este peso, el vehiculo emplea una suspension delantera telescopica hidraulica equipada con 4 amortiguadores, mientras que la suspension trasera es de tipo ballesta reforzada con amortiguador. El sistema de frenos integra tecnologia CBS para un frenado combinado y seguro, utilizando un disco delantero de 220 mm y un tambor trasero de 220 mm sobre rines de acero con llantas de medida 5.00-12 en ambos ejes.
+
+
+**CERONTE TRICARGO 300** incorpora un avanzado sistema de iluminacion Full LED en farola, stop y direccionales, el cual se complementa con las funciones AHO y DRL para maximizar la visibilidad y seguridad del conductor en carretera. En la cabina, dispone de un velocimetro analogo diseñado para ser resistente al uso continuo y de facil lectura durante la marcha. El respaldo de la marca asegura un servicio posventa confiable con repuestos originales y una garantia de 12 meses o 20.000 km, proporcionando tranquilidad al propietario y garantizando la longevidad de este potente aliado para el transporte de carga exigente.
+
+
+Ficha tecnica CERONTE TRICARGO 300
+
+| Especificación | Valor / Detalle |
+|----------------|------------------|
+| **Motor** | 4T, 2V, Monocilíndrico OHV |
+| **Cilindraje** | 272 cc |
+| **Diámetro por carrera** | 73 x 65 mm |
+| **Potencia máxima** | 18,8 HP @ 7000 rpm |
+| **Torque máximo** | 21 Nm @ 4500 rpm |
+| **Relación de compresión** | 10.1:1 |
+| **Sistema de alimentación** | Carburador |
+| **Combustible** | Gasolina corriente |
+| **Sistema de encendido** | CDI |
+| **Arranque** | Eléctrico y pedal |
+| **Transmisión** | Mecánica 5 velocidades + Booster |
+| **Refrigeración** | Líquido |
+| **Suspensión delantera** | Telescópica hidráulica (4 Amortiguadores) |
+| **Suspensión trasera** | Tipo Ballesta + amortiguador |
+| **Freno delantero** | Disco (220 mm) |
+| **Freno trasero** | Tambor (220 mm) |
+| **Llanta delantera** | 5.00-12 |
+| **Llanta trasera** | 5.00-12 |
+| **Rines** | Acero |
+| **Capacidad del tanque (incluyendo la reserva)** | 23 L (6,1 gal) |
+| **Largo total** | 4130 mm |
+| **Ancho total** | 1580 mm |
+| **Altura total** | 1590 mm |
+| **Distancia entre ejes** | 2640 mm |
+| **Altura al sillín** | 820 mm |
+| **Capacidad de carga** | Carga disponible máxima 1.000 kg |
+| **Peso neto** | 634 kg |

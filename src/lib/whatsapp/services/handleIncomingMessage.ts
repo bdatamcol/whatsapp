@@ -3,6 +3,7 @@ import { getAllCitiesCached } from '@/lib/utils/cityCache';
 import { findCityIdInText } from '@/lib/utils/cityMatcher';
 import { getConversation, updateConversation } from '@/lib/ia/memory';
 import { CreditBotService } from '@/lib/ia/CreditBotService';
+import { processWithResponsesAPI } from '@/lib/ia/services/agent-service';
 import { sendTemplateMessage } from './sendTemplateMessage';
 import { needsHumanAgent } from '@/lib/utils/humanDetector';
 import { upsertContact } from './contacts';
@@ -237,16 +238,17 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         return;
     }
 
-    const enrichedPrompt = userInput;
-
-    // Usar el bot de créditos con creación automática del Assistant
     let iaResponse: string;
+    const useResponsesAPI = process.env.USE_RESPONSES_API === "true";
 
     try {
-        iaResponse = await CreditBotService.askCreditBot(from, enrichedPrompt, company);
+        if (useResponsesAPI) {
+            iaResponse = await processWithResponsesAPI(from, company.id, userInput, company);
+        } else {
+            iaResponse = await CreditBotService.askCreditBot(from, userInput, company);
+        }
     } catch (error: any) {
         console.error('Error en el servicio de IA:', error);
-        // Fallback a un mensaje de error amigable
         iaResponse = 'Lo siento, estoy experimentando dificultades técnicas. Por favor, intenta de nuevo en unos momentos.';
     }
 
