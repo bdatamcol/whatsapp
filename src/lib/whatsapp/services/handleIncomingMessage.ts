@@ -4,7 +4,6 @@ import { findCityIdInText } from '@/lib/utils/cityMatcher';
 import { getConversation, updateConversation } from '@/lib/ia/memory';
 import { CreditBotService } from '@/lib/ia/CreditBotService';
 import { processWithResponsesAPI } from '@/lib/ia/services/agent-service';
-import { sendTemplateMessage } from './sendTemplateMessage';
 import { needsHumanAgent } from '@/lib/utils/humanDetector';
 import { upsertContact } from './contacts';
 import { sendMessageToWhatsApp } from './send';
@@ -173,7 +172,7 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
         await syncContactProfileName(from, company.id, name);
     }
 
-    // Nuevo contacto
+    // Nuevo contacto: lo registramos y dejamos que continúe directo al bot.
     if (!contactStatus || contactStatus === 'new') {
         await upsertContact({
             phone: from,
@@ -183,33 +182,6 @@ export const handleIncomingMessage = async (message: any, metadata: IncomingMeta
             last_interaction_at: new Date().toISOString(),
             phone_number_id: phoneNumberId
         });
-
-        // Guardar primer mensaje del usuario en la conversación
-        const initialMessage = {
-            id: message.id,
-            role: 'user',
-            content: userInput,
-            timestamp,
-        };
-        await updateConversation(from, [initialMessage], company);
-        await sendTemplateMessage({
-            to: from,
-            templateName: 'menu_inicial',
-            company,
-        });
-        const convAfterTemplate = await getConversation(from, company.id);
-        await updateConversation(from, [
-            ...convAfterTemplate,
-            {
-                id: `template-${Date.now()}`,
-                role: 'system-template',
-                type: 'template',
-                content: '[Se envió la plantilla: menu_inicial]',
-                timestamp: new Date().toISOString(),
-                status: 'sent',
-            }
-        ], company);
-        return;
     }
 
     // Verificamos si el contacto ya fue escalado a humano
